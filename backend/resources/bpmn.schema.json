@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "task",
+              "process-start",
+              "process-end",
+              "gateway"
+            ]
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "condition",
+                  "fork",
+                  "join"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "properties"
+        ]
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "from": {
+            "type": "integer"
+          },
+          "to": {
+            "type": "integer"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "annotation": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "to"
+        ]
+      }
+    }
+  },
+  "required": [
+    "tasks",
+    "links"
+  ]
+}
