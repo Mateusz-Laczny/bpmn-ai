@@ -1,0 +1,125 @@
+{
+  "process": {
+    "id": "order-fulfillment",
+    "name": "Order Fulfillment",
+    "flowElements": [
+      {
+        "id": "startEvent",
+        "name": "Start",
+        "type": "StartEvent"
+      },
+      {
+        "id": "receiveOrder",
+        "name": "Receive Order",
+        "type": "Task"
+      },
+      {
+        "id": "checkCredit",
+        "name": "Check Credit",
+        "type": "Task"
+      },
+      {
+        "id": "fulfillOrder",
+        "name": "Fulfill Order",
+        "type": "Task"
+      },
+      {
+        "id": "sendInvoice",
+        "name": "Send Invoice",
+        "type": "Task"
+      },
+      {
+        "id": "creditRejected",
+        "name": "Credit Rejected",
+        "type": "IntermediateCatchEvent"
+      },
+      {
+        "id": "cancelOrder",
+        "name": "Cancel Order",
+        "type": "Task"
+      },
+      {
+        "id": "endEvent",
+        "name": "End",
+        "type": "EndEvent"
+      },
+      {
+        "id": "exclusiveGateway",
+        "name": "Exclusive Gateway",
+        "type": "ExclusiveGateway"
+      },
+      {
+        "id": "parallelGateway",
+        "name": "Parallel Gateway",
+        "type": "ParallelGateway"
+      },
+      {
+        "id": "receiveOrderSequenceFlow",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "startEvent",
+        "targetRef": "receiveOrder"
+      },
+      {
+        "id": "checkCreditSequenceFlow",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "receiveOrder",
+        "targetRef": "checkCredit"
+      },
+      {
+        "id": "exclusiveGatewaySequenceFlow",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "checkCredit",
+        "targetRef": "exclusiveGateway"
+      },
+      {
+        "id": "fulfillOrderSequenceFlow",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "exclusiveGateway",
+        "targetRef": "fulfillOrder",
+        "condition": "Credit approved"
+      },
+      {
+        "id": "creditRejectedSequenceFlow",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "exclusiveGateway",
+        "targetRef": "creditRejected",
+        "condition": "Credit rejected"
+      },
+      {
+        "id": "parallelGatewaySequenceFlow1",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "fulfillOrder",
+        "targetRef": "parallelGateway"
+      },
+      {
+        "id": "parallelGatewaySequenceFlow2",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "sendInvoice",
+        "targetRef": "parallelGateway"
+      },
+      {
+        "id": "cancelOrderSequenceFlow",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "creditRejected",
+        "targetRef": "cancelOrder"
+      },
+      {
+        "id": "parallelGatewaySequenceFlow3",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "parallelGateway",
+        "targetRef": "endEvent"
+      }
+    ]
+  }
+}
+
+This modified BPMN model includes gateways to indicate relationships between tasks. The Exclusive Gateway is used to determine whether the buyer's credit is approved or rejected. If the credit is approved, the process moves to the Task to fulfill the order. If the credit is rejected, the process moves to the Intermediate Catch Event to cancel the order. The Parallel Gateway is used to indicate that the Tasks to send the invoice and fulfill the order can be done in parallel. Once both Tasks are completed, the process moves to the End Event. This modification ensures that the process is optimized for efficiency and can handle different scenarios.

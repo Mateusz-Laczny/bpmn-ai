@@ -1,0 +1,75 @@
+{
+  "process": {
+    "id": "order-fulfillment",
+    "name": "Order Fulfillment",
+    "flowElements": [
+      {
+        "id": "startEvent",
+        "name": "Start",
+        "type": "StartEvent"
+      },
+      {
+        "id": "receiveOrder",
+        "name": "Receive Order",
+        "type": "Task"
+      },
+      {
+        "id": "checkCredit",
+        "name": "Check Credit",
+        "type": "Task"
+      },
+      {
+        "id": "fulfillOrder",
+        "name": "Fulfill Order",
+        "type": "Task"
+      },
+      {
+        "id": "sendInvoice",
+        "name": "Send Invoice",
+        "type": "Task"
+      },
+      {
+        "id": "endEvent",
+        "name": "End",
+        "type": "EndEvent"
+      },
+      {
+        "id": "receiveOrderSequenceFlow",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "startEvent",
+        "targetRef": "receiveOrder"
+      },
+      {
+        "id": "checkCreditSequenceFlow",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "receiveOrder",
+        "targetRef": "checkCredit"
+      },
+      {
+        "id": "fulfillOrderSequenceFlow",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "checkCredit",
+        "targetRef": "fulfillOrder"
+      },
+      {
+        "id": "sendInvoiceSequenceFlow",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "fulfillOrder",
+        "targetRef": "sendInvoice"
+      },
+      {
+        "id": "endEventSequenceFlow",
+        "name": "",
+        "type": "SequenceFlow",
+        "sourceRef": "sendInvoice",
+        "targetRef": "endEvent"
+      }
+    ]
+  }
+}
+
+This BPMN model represents the happy path of the order fulfillment process. It starts with a Start Event, followed by a Task to receive the order. Then, the process checks the buyer's credit with another Task. If the credit is approved, the process moves to the next Task to fulfill the order. Finally, the process sends an invoice with a Task and ends with an End Event.
