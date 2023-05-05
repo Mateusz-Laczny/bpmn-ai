@@ -21,7 +21,7 @@ class Chat:
         return response
 
 
-class OpenAIResponseProvider:
+class OpenAIPaidResponseProvider:
     example_prompts: list[Message]
 
     def __init__(self, example_prompts: list[Message]):
