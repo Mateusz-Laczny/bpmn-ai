@@ -1,6 +1,6 @@
 import pkgutil
 
-from ai_chat.message import Message, MessageType, from_filepath
+from ai_chat.message import Message, MessageType
 
 example_messages = [
     Message(MessageType.SYSTEM, pkgutil.get_data(__name__, 'resources/system_prompt.txt').decode('utf-8')),

@@ -7,12 +7,6 @@ class MessageType(Enum):
     ASSISTANT = 'assistant'
 
 
-def from_filepath(prompt_type: MessageType, path: str):
-    with open(path, 'r') as file:
-        contents_from_file = file.read()
-        return Message(prompt_type, contents_from_file)
-
-
 class Message:
     message_type: MessageType
     contents: str
