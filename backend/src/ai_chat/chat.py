@@ -1,3 +1,5 @@
+import pkgutil
+
 import openai
 
 from ai_chat import example_messages
@@ -43,8 +45,7 @@ class MockResponseProvider:
 
     def __init__(self):
         self.example_prompts = example_messages.copy()
-        with open('../ai_chat/resources/happy_path_response.txt') as f:
-            self.mock_response = f.read()
+        self.mock_response = pkgutil.get_data(__name__, 'resources/system_prompt.txt').decode('utf-8')
 
     def provide_response(self, _task_prompt):
         return self.mock_response
