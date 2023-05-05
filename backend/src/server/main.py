@@ -16,5 +16,4 @@ app = FastAPI()
 def get_model(text_description: TextDescription) -> BPMNModel:
     response = response_provider.provide_response(text_description)
     response_as_dict = json.loads(response)
-    bpmn_model_object = parse_obj_as(BPMNModel, response_as_dict)
-    return bpmn_model_object
+    return parse_obj_as(BPMNModel, response_as_dict)
