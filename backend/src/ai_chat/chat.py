@@ -1,4 +1,4 @@
-import pkgutil
+import re
 
 import openai
 
@@ -37,15 +37,26 @@ class OpenAIResponseProvider:
             temperature=0.2
         )
 
-        return response_object.choices[0].message.content
+        return format_model_response(response_object.choices[0].message.content)
 
 
 class MockResponseProvider:
     mock_response: str
 
-    def __init__(self):
+    def __init__(self, mock_response):
         self.example_prompts = example_messages.copy()
-        self.mock_response = pkgutil.get_data(__name__, 'resources/happy_path_response.txt').decode('utf-8')
+        self.mock_response = mock_response
 
     def provide_response(self, _task_prompt):
-        return self.mock_response
+        return format_model_response(self.mock_response)
+
+
+def format_model_response(response: str):
+    response_without_whitespace = re.sub(r'\s+', '', response)
+    return extract_json_from_string(response_without_whitespace)
+
+
+def extract_json_from_string(model_response: str) -> str:
+    json_start_index = model_response.find('{')
+    json_end_index = model_response.rfind('}')
+    return model_response[json_start_index:json_end_index + 1]

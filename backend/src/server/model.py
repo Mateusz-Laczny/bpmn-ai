@@ -1,6 +1,10 @@
 from pydantic import BaseModel
 
 
+class TextDescription(BaseModel):
+    description: str
+
+
 class BPMNFlowElement(BaseModel):
     id: str
     name: str | None
@@ -21,4 +25,3 @@ class BPMNProcess(BaseModel):
 
 class BPMNModel(BaseModel):
     process: BPMNProcess
-    links: list
