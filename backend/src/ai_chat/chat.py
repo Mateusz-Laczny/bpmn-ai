@@ -45,7 +45,7 @@ class MockResponseProvider:
 
     def __init__(self):
         self.example_prompts = example_messages.copy()
-        self.mock_response = pkgutil.get_data(__name__, 'resources/system_prompt.txt').decode('utf-8')
+        self.mock_response = pkgutil.get_data(__name__, 'resources/happy_path_response.txt').decode('utf-8')
 
     def provide_response(self, _task_prompt):
         return self.mock_response
