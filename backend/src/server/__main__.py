@@ -1,10 +1,4 @@
-import os
-
-import openai
-
 from ai_chat.chat import MockResponseProvider
-
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 response_provider = MockResponseProvider()
 
