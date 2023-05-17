@@ -7,6 +7,37 @@ class TextDescription(BaseModel):
     description: str
 
 
+def convert_to_bpmn_model_dto(model: str) -> BpmnJsonModel:
+    model_dict = json.loads(model)
+    process = TProcess()
+    process.id = model_dict['process']['id']
+    process.name = model_dict['process']['name']
+
+    tasks = _parse_tasks(model_dict['process']['tasks'])
+    process.task = tasks.tasks
+    process.userTask = tasks.user_tasks
+    process.serviceTask = tasks.service_tasks
+
+    gateways = _parse_gateways(model_dict['process']['gateways'])
+    process.exclusiveGateway = gateways.exclusive_gateways
+    process.parallelGateway = gateways.parallel_gateways
+
+    events = _parse_events(model_dict['process']['events'])
+    process.startEvent = events.start_event
+    process.endEvent = events.end_event
+    process.intermediateCatchEvent = events.intermediate_catch_events
+    process.intermediateThrowEvent = events.intermediate_throw_events
+
+    sequence_flows = _parse_sequence_flows(model_dict['process']['sequenceFlows'])
+    process.sequenceFlow = sequence_flows
+
+    definition = TDefinitions()
+    definition.process = process
+    model = BpmnJsonModel()
+    model.definitions = definition
+    return model
+
+
 class _Tasks:
     tasks: list[TTask]
     user_tasks: list[TUserTask]
@@ -89,37 +120,6 @@ def _parse_events(events_as_dicts: list[dict]) -> _Events:
                 events.intermediate_throw_events.append(TIntermediateThrowEvent(__root__=throw_event))
 
     return events
-
-
-def convert_to_bpmn_model_dto(model: str) -> BpmnJsonModel:
-    model_dict = json.loads(model)
-    process = TProcess()
-    process.id = model_dict['process']['id']
-    process.name = model_dict['process']['name']
-
-    tasks = _parse_tasks(model_dict['process']['tasks'])
-    process.task = tasks.tasks
-    process.userTask = tasks.user_tasks
-    process.serviceTask = tasks.service_tasks
-
-    gateways = _parse_gateways(model_dict['process']['gateways'])
-    process.exclusiveGateway = gateways.exclusive_gateways
-    process.parallelGateway = gateways.parallel_gateways
-
-    events = _parse_events(model_dict['process']['events'])
-    process.startEvent = events.start_event
-    process.endEvent = events.end_event
-    process.intermediateCatchEvent = events.intermediate_catch_events
-    process.intermediateThrowEvent = events.intermediate_throw_events
-
-    sequence_flows = _parse_sequence_flows(model_dict['process']['sequenceFlows'])
-    process.sequenceFlow = sequence_flows
-
-    definition = TDefinitions()
-    definition.process = process
-    model = BpmnJsonModel()
-    model.definitions = definition
-    return model
 
 
 def _parse_tasks(tasks_as_dicts: list[dict]) -> _Tasks:
