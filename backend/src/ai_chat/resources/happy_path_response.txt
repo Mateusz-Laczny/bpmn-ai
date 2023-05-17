@@ -1,75 +1,101 @@
 {
   "process": {
-    "id": "order-fulfillment",
-    "name": "Order Fulfillment",
-    "flowElements": [
+    "id": "process1",
+    "name": "Order Fulfillment Process",
+    "tasks": [
+      {
+        "id": "task1",
+        "name": "Receive Order",
+        "type": "userTask",
+        "assignee": "Sales Team"
+      },
+      {
+        "id": "task2",
+        "name": "Check Credit",
+        "type": "serviceTask",
+        "service": "Credit Checking Service"
+      },
+      {
+        "id": "task3",
+        "name": "Fulfill Order",
+        "type": "serviceTask",
+        "service": "Order Fulfillment Service"
+      },
+      {
+        "id": "task4",
+        "name": "Send Invoice",
+        "type": "serviceTask",
+        "service": "Invoicing Service"
+      }
+    ],
+    "gateways": [
+      {
+        "id": "gateway1",
+        "name": "Gateway 1",
+        "type": "exclusive"
+      },
+      {
+        "id": "gateway2",
+        "name": "Gateway 2",
+        "type": "inclusive"
+      }
+    ],
+    "events": [
       {
         "id": "startEvent",
-        "name": "Start",
-        "type": "StartEvent"
-      },
-      {
-        "id": "receiveOrder",
-        "name": "Receive Order",
-        "type": "Task"
-      },
-      {
-        "id": "checkCredit",
-        "name": "Check Credit",
-        "type": "Task"
-      },
-      {
-        "id": "fulfillOrder",
-        "name": "Fulfill Order",
-        "type": "Task"
-      },
-      {
-        "id": "sendInvoice",
-        "name": "Send Invoice",
-        "type": "Task"
+        "name": "Start Event",
+        "type": "start"
       },
       {
         "id": "endEvent",
-        "name": "End",
-        "type": "EndEvent"
-      },
+        "name": "End Event",
+        "type": "end"
+      }
+    ],
+    "sequenceFlows": [
       {
-        "id": "receiveOrderSequenceFlow",
-        "name": "",
-        "type": "SequenceFlow",
+        "id": "flow1",
         "sourceRef": "startEvent",
-        "targetRef": "receiveOrder"
+        "targetRef": "task1"
       },
       {
-        "id": "checkCreditSequenceFlow",
-        "name": "",
-        "type": "SequenceFlow",
-        "sourceRef": "receiveOrder",
-        "targetRef": "checkCredit"
+        "id": "flow2",
+        "sourceRef": "task1",
+        "targetRef": "gateway1"
       },
       {
-        "id": "fulfillOrderSequenceFlow",
-        "name": "",
-        "type": "SequenceFlow",
-        "sourceRef": "checkCredit",
-        "targetRef": "fulfillOrder"
+        "id": "flow3",
+        "sourceRef": "gateway1",
+        "targetRef": "task2",
+        "conditionExpression": "${creditCheckPassed}"
       },
       {
-        "id": "sendInvoiceSequenceFlow",
-        "name": "",
-        "type": "SequenceFlow",
-        "sourceRef": "fulfillOrder",
-        "targetRef": "sendInvoice"
+        "id": "flow4",
+        "sourceRef": "gateway1",
+        "targetRef": "endEvent",
+        "conditionExpression": "${!creditCheckPassed}"
       },
       {
-        "id": "endEventSequenceFlow",
-        "name": "",
-        "type": "SequenceFlow",
-        "sourceRef": "sendInvoice",
+        "id": "flow5",
+        "sourceRef": "task2",
+        "targetRef": "gateway2"
+      },
+      {
+        "id": "flow6",
+        "sourceRef": "gateway2",
+        "targetRef": "task3",
+        "conditionExpression": "${orderFulfilled}"
+      },
+      {
+        "id": "flow7",
+        "sourceRef": "task3",
+        "targetRef": "task4"
+      },
+      {
+        "id": "flow8",
+        "sourceRef": "task4",
         "targetRef": "endEvent"
       }
     ]
   }
 }
-
-This BPMN model represents the happy path of the order fulfillment process. It starts with a Start Event, followed by a Task to receive the order. Then, the process checks the buyer's credit with another Task. If the credit is approved, the process moves to the next Task to fulfill the order. Finally, the process sends an invoice with a Task and ends with an End Event.
