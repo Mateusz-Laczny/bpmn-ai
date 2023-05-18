@@ -1,7 +1,6 @@
-import pizzaDiagram from '../resources/pizza-example.bpmn';
-
-import BpmnViewer from 'bpmn-js';
-import "./css/style.css"
+import pizzaDiagram from 'bundle-text:./pizza-example.bpmn';
+import { BpmnVisualization } from "bpmn-visualization";
+import "./style.css"
 
 const MODEL_FETCH_URL = 'http://localhost:8000/generate/text'
 
@@ -20,23 +19,16 @@ async function fetchModel() {
   return data;
 }
 
-var viewer = new BpmnViewer({
-  container: '#viewer-container'
-});
-
 fetchModel().then(model => {
   console.log(model);
-  return viewer.importXML(pizzaDiagram);
-}).then(function(result) {
-
-  const { warnings } = result;
-
-  console.log('success !', warnings);
-
-  viewer.get('canvas').zoom('fit-viewport');
-}).catch(function(err) {
-
-  const { warnings, message } = err;
-
-  console.log('something went wrong:', warnings, message);
 });
+
+try{
+  const viewer = new BpmnVisualization({
+  container: 'viewer-container'
+});
+  console.log(viewer);
+  viewer.load(pizzaDiagram, { fit: { type: "Center", margin: 50 } });
+} catch(e) {
+  console.log(e);
+}

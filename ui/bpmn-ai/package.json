@@ -1,18 +1,22 @@
 {
-  "main": "src/app.js",
+  "version": "1.0.0",
+  "description": "",
   "scripts": {
-    "all": "run-s bundle open",
-    "build": "webpack",
-    "build:watch": "webpack -w",
-    "dev": "npm run build:watch"
+    "start": "parcel src/index.html --open",
+    "build": "parcel build src/index.html"
   },
   "dependencies": {
-    "bpmn-js": "^13.0.5"
+    "bpmn-visualization": "^0.33.1",
+    "ts-json-schema-generator": "^1.2.0"
   },
   "devDependencies": {
-    "css-loader": "^6.7.3",
-    "style-loader": "^3.3.2",
-    "webpack": "^5.82.1",
-    "webpack-cli": "^5.1.1"
-  }
+    "@babel/core": "7.2.0",
+    "@parcel/transformer-inline-string": "^2.8.3",
+    "parcel": "^2.8.3",
+    "parcel-bundler": "1.12.5"
+  },
+  "resolutions": {
+    "@babel/preset-env": "7.13.8"
+  },
+  "keywords": []
 }

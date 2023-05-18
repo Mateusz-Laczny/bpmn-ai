@@ -15,11 +15,13 @@ body {
     background: rgba(255, 255, 255, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.01);
     border-radius: 16px;
-    flex-basis: 800px;
-    height: 640px;
+    flex-basis: 90%;
+    height: 80%;
     padding: 20px 35px;
 }
 
 .viewer-container {
-    height: 400px;
+    display: flex;
+    height: 900px;
+    justify-content: center;
 }
