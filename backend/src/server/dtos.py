@@ -82,8 +82,8 @@ class BPMNProcess(BaseModel):
     events: List[BPMNEvent]
     sequenceFlows: List[BPMNSequenceFlow]
 
-    def _get_id_to_element_dict(self):
-        id_to_element_dict = {self.id: self}
+    def _get_id_to_element_dict(self, id_to_element_dict):
+        id_to_element_dict[self.id] = self
         for elem in self.tasks + self.gateways + self.events + self.sequenceFlows:
             elem._get_id_to_element_dict(id_to_element_dict)
 
@@ -94,7 +94,9 @@ class BPMNModel(BaseModel):
     process: BPMNProcess
 
     def get_id_to_element_dict(self):
-        return self.process._get_id_to_element_dict()
+        result = {}
+        self.process._get_id_to_element_dict(result)
+        return result
 
 
 def convert_to_bpmn_model_dto(json_string: str):
@@ -105,9 +107,8 @@ def generate_bpmn_xml_from_model(model: BPMNModel):
     id_to_element_dict = model.get_id_to_element_dict()
 
     bpmn_graph = bpmn_diagram.BpmnDiagramGraph()
-    bpmn_graph.create_new_diagram_graph(diagram_name="diagram1")
+    bpmn_graph.create_new_diagram_graph(diagram_name="diagram")
 
-    # Create a new process element
     process_id = bpmn_graph.add_process_to_diagram(process_name=model.process.name)
     model.process.id = process_id
 
@@ -144,7 +145,6 @@ def generate_bpmn_xml_from_model(model: BPMNModel):
                                                 target_ref_id=sequence_flow.targetRef)
 
     layouter.generate_layout(bpmn_graph)
-    # Export the diagram to an XML file
     bpmn_graph.export_xml_file(os.getcwd(), os.sep + 'result.bpmn')
     with open(os.path.join(os.getcwd(), 'result.bpmn'), 'r') as f:
         content = f.read()
