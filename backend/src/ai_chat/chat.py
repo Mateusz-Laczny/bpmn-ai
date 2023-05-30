@@ -1,4 +1,5 @@
 import re
+from typing import List
 
 import openai
 
@@ -8,7 +9,7 @@ from ai_chat.message import Message, MessageType
 
 class Chat:
     response_provider = None
-    message_history: list[Message]
+    message_history: List[Message]
 
     def __init__(self, response_provider) -> None:
         self.response_provider = response_provider
@@ -22,9 +23,9 @@ class Chat:
 
 
 class OpenAIPaidResponseProvider:
-    example_prompts: list[Message]
+    example_prompts: List[Message]
 
-    def __init__(self, example_prompts: list[Message]):
+    def __init__(self, example_prompts: List[Message]):
         self.example_prompts = example_prompts.copy()
 
     def provide_response(self, task_text):
