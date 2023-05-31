@@ -1,24 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <link href="./style.css" rel="stylesheet"/>
+  <head>
+    <meta charset="UTF-8" />
+    <link href="./style.css" rel="stylesheet" />
     <title>BPMN-Ai</title>
     <script src="./app.js" type="module"></script>
-</head>
+  </head>
 
-<body>
-<div class="wrapper">
-    <section class="description-input">
+  <body>
+    <div class="wrapper">
+      <section class="description-input">
         <h1>Process description</h1>
-        <input/>
-        <button class="prompt-input-button">Generate</button>
-    </section>
+        <div class="input-field-container">
+          <textarea
+            type="text"
+            placeholder="Enter your process description"
+            class="prompt-input"
+          ></textarea>
+          <button class="prompt-input-button">Generate</button>
+        </div>
+      </section>
 
-    <section class="bpmn-viewer">
+      <section class="bpmn-viewer">
         <h1>Result model</h1>
         <div class="viewer-container" id="viewer-container"></div>
-    </section>
-</div>
-</body>
+      </section>
+    </div>
+  </body>
 </html>

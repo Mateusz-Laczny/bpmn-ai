@@ -11,13 +11,42 @@ body {
     justify-content: center;
 }
 
+textarea {
+    resize: none;
+}  
+
 .wrapper {
     background: rgba(255, 255, 255, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.01);
     border-radius: 16px;
     flex-basis: 90%;
-    height: 80%;
-    padding: 20px 35px;
+    height: 90%;
+    padding: 15px 35px;
+}
+
+.input-field-container {
+    position: relative;
+    width: 100%;
+    height: 100px;
+    display: block;
+}
+
+.input-field-container textarea {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    border: 2px solid lightgray;
+    border-radius: 30px;
+    margin: 0 auto;
+    padding: 10px 10px;
+    box-shadow: 0 0 5px 1px rgba(0,0,0,0.1);
+}
+
+.input-field-container button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
 }
 
 .viewer-container {
