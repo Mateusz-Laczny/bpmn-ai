@@ -1,7 +1,17 @@
-import { BpmnVisualization } from 'bpmn-visualization';
+import BpmnModeler from 'bpmn-js/lib/Modeler';
+import 'bpmn-js/dist/assets/diagram-js.css';
+import 'bpmn-js/dist/assets/bpmn-js.css';
+import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
 import './style.css';
 
 const MODEL_FETCH_URL = 'http://localhost:8000/generate/text';
+
+const modeler = new BpmnModeler({
+  container: '#canvas',
+  keyboard: {
+    bindTo: window,
+  },
+});
 
 async function fetchModel() {
   let response = await fetch(MODEL_FETCH_URL, {
@@ -17,14 +27,6 @@ async function fetchModel() {
   return await response.text();
 }
 
-fetchModel().then((bpmnXML) => {
-  try {
-    const viewer = new BpmnVisualization({
-      container: 'viewer-container',
-    });
-    console.log(viewer);
-    viewer.load(bpmnXML, { fit: { type: 'Center', margin: 50 } });
-  } catch (e) {
-    console.log(e);
-  }
-});
+fetchModel()
+  .then((bpmnXML) => modeler.importXML(bpmnXML))
+  .then(() => modeler.get('canvas').zoom('fit-viewport'));

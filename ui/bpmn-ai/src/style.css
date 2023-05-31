@@ -4,9 +4,9 @@ html{
 }
 
 body {
+    display: flex;
     align-items: center;
     background: linear-gradient(320deg, #0AC752, #0CFA66, #58FB96);
-    display: flex;
     height: inherit;
     justify-content: center;
 }
@@ -16,12 +16,18 @@ textarea {
 }  
 
 .wrapper {
-    background: rgba(255, 255, 255, 0.75);
+    display: flex;
+    flex-direction: column;
+    flex-basis: 90%;
+    height: 85%;
+    background: rgba(255, 255, 255, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.01);
     border-radius: 16px;
-    flex-basis: 90%;
-    height: 90%;
     padding: 15px 35px;
+}
+
+.prompt-input {
+    height: 15%;
 }
 
 .input-field-container {
@@ -36,10 +42,10 @@ textarea {
     width: 100%;
     height: 100%;
     box-sizing: border-box;
-    border: 2px solid lightgray;
-    border-radius: 30px;
     margin: 0 auto;
-    padding: 10px 10px;
+    padding: 13px 10px;
+    border: 2px solid lightgray;
+    border-radius: 25px;
     box-shadow: 0 0 5px 1px rgba(0,0,0,0.1);
 }
 
@@ -50,7 +56,19 @@ textarea {
 }
 
 .viewer-container {
-    display: flex;
-    height: 900px;
+    width: 100%;
+    height: 85%;
+}
+
+.viewer-container h1 {
+    height: 2%;
+}
+
+.viewer-container .canvas {
+    width: 100%;
+    height: 94%;
     justify-content: center;
+    border: 0 solid black;
+    border-radius: 16px;
+    background-color: rgba(255, 255, 255, 0.7);
 }
