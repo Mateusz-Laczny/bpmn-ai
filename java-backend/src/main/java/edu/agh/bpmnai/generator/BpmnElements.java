@@ -4,6 +4,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.bpmn.instance.*;
+import org.tinylog.Logger;
 
 import java.util.List;
 import java.util.Map;
@@ -354,7 +355,7 @@ public class BpmnElements {
                                             "Id of the parent element of this event"
                                     ),
 
-                                    "sorceRef",
+                                    "sourceRef",
                                     Map.of(
                                             "type",
                                             "string",
@@ -442,7 +443,7 @@ public class BpmnElements {
     }
 
     public static void addSequenceFlow(BpmnModelInstance modelInstance, BpmnSequenceFlow sequenceFlow) {
-        Process process = modelInstance.getModelElementById(sequenceFlow.processId());
+        Process process = modelInstance.getModelElementById(sequenceFlow.parentElementId());
         FlowNode sourceElement = modelInstance.getModelElementById(sequenceFlow.sourceRef());
         FlowNode targetElement = modelInstance.getModelElementById(sequenceFlow.targetRef());
         SequenceFlow camudaSequenceFlow = createSequenceFlow(process, sourceElement, targetElement);
@@ -457,6 +458,7 @@ public class BpmnElements {
     }
 
     private static SequenceFlow createSequenceFlow(Process process, FlowNode from, FlowNode to) {
+        Logger.debug("Adding a sequence flow from " + from + " to " + to);
         String identifier = from.getId() + "-" + to.getId();
         SequenceFlow sequenceFlow = createElementWithParent(process, identifier, SequenceFlow.class);
         process.addChildElement(sequenceFlow);
