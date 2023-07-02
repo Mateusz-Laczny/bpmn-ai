@@ -32,6 +32,7 @@ public class BpmnProvider {
     private static final int messageTokenNumberCorrection = 50;
 
     private static ResponseEntity<ChatResponses> sendChatCompletionRequest(ChatRequest request) {
+        Logging.logInfoMessage("Sending request", new Logging.ObjectToLog("requestBody", request));
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
@@ -91,20 +92,18 @@ public class BpmnProvider {
         ResponseEntity<ChatResponses> httpResponseEntity = sendChatCompletionRequest(request);
 
         if (httpResponseEntity.getStatusCode() == HttpStatus.OK) {
-            System.out.println("Request successful");
-            System.out.println(httpResponseEntity.getBody());
+            Logging.logInfoMessage("Request successful", new Logging.ObjectToLog("requestBody", httpResponseEntity.getBody()));
         } else {
-            System.out.println("Request failed");
-            System.out.println(httpResponseEntity.getStatusCode());
+            Logging.logInfoMessage("Request failed", new Logging.ObjectToLog("statusCode", httpResponseEntity.getStatusCode()));
         }
 
-        ConversationStatus conversationStatus = ConversationStatus.CONTINUE;
         ChatResponses response = httpResponseEntity.getBody();
         int previousRequestUsedTokens = response.usage().total_tokens();
         SingleChatResponse chatResponse = httpResponseEntity.getBody().choices().get(0);
         ChatMessage responseMessage = chatResponse.message();
-        int numberOfTooManyTokensErrors = 0;
 
+        ConversationStatus conversationStatus = ConversationStatus.CONTINUE;
+        int numberOfTooManyTokensErrors = 0;
         while (isContinueConversation(conversationStatus)) {
             if (conversationStatus == ConversationStatus.ERROR_TOO_MANY_TOKENS_REQUESTED) {
                 numberOfTooManyTokensErrors += 1;
@@ -122,21 +121,18 @@ public class BpmnProvider {
                 List<ChatMessage> requestMessages = new ArrayList<>(request.getMessages());
                 requestMessages.add(responseMessage);
                 request = request.withMessagesAndMax_Tokens(requestMessages, modelProperties.maxNumberOfTokens() - previousRequestUsedTokens - messageTokenNumberCorrection);
-                System.out.println("====Request====");
-                System.out.println(request);
-                System.out.println("\n====Response====");
             }
 
             try {
                 httpResponseEntity = sendChatCompletionRequest(request);
-                System.out.println("Request successful. Response:\n");
-                System.out.println(httpResponseEntity.getBody());
+                Logging.logInfoMessage("Request successful\n", new Logging.ObjectToLog("requestBody", httpResponseEntity.getBody()));
                 response = httpResponseEntity.getBody();
                 chatResponse = response.choices().get(0);
                 responseMessage = chatResponse.message();
                 previousRequestUsedTokens = response.usage().total_tokens();
 
                 if (chatResponse.finish_reason().equals("stop")) {
+                    Logging.logInfoMessage("Reached the end of the conversation");
                     conversationStatus = ConversationStatus.STOP;
                 } else {
                     conversationStatus = ConversationStatus.CONTINUE;
@@ -146,8 +142,7 @@ public class BpmnProvider {
                 badRequest.printStackTrace();
                 conversationStatus = ConversationStatus.ERROR_TOO_MANY_TOKENS_REQUESTED;
             } catch (Exception e) {
-                System.out.println("Request failed");
-                e.printStackTrace();
+                Logging.logThrowable("Request failed", e);
                 conversationStatus = ConversationStatus.UNHANDLED_ERROR;
             }
         }
