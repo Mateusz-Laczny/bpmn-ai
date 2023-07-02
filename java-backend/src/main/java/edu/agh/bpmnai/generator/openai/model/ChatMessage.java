@@ -1,4 +1,4 @@
-package edu.agh.bpmnai.generator;
+package edu.agh.bpmnai.generator.openai.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

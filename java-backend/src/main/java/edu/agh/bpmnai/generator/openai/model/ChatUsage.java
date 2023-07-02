@@ -1,4 +1,4 @@
-package edu.agh.bpmnai.generator;
+package edu.agh.bpmnai.generator.openai.model;
 
 public record ChatUsage(
         Integer prompt_tokens,

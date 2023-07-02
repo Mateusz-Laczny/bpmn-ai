@@ -1,16 +1,21 @@
-package edu.agh.bpmnai.generator;
+package edu.agh.bpmnai.generator.bpmn;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.agh.bpmnai.generator.bpmn.model.*;
+import edu.agh.bpmnai.generator.openai.OpenAI;
+import edu.agh.bpmnai.generator.openai.model.ChatFunction;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.bpmn.instance.*;
-import org.tinylog.Logger;
 
 import java.util.List;
 import java.util.Map;
 
 public class BpmnElements {
 
+    public static final int functionDescriptionsTokens;
     public static List<ChatFunction> functionsDescriptions = List.of(
             new ChatFunction(
                     "addUserTask",
@@ -383,6 +388,14 @@ public class BpmnElements {
             )
     );
 
+    static {
+        try {
+            functionDescriptionsTokens = OpenAI.getApproximateNumberOfTokens(new ObjectMapper().writeValueAsString(functionsDescriptions));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static void addUserTask(BpmnModelInstance modelInstance, BpmnUserTask userTask) {
         Process process = modelInstance.getModelElementById(userTask.processId());
         UserTask camudaUserTask = createElementWithParent(process, userTask.id(), UserTask.class);
@@ -444,7 +457,14 @@ public class BpmnElements {
 
     public static void addSequenceFlow(BpmnModelInstance modelInstance, BpmnSequenceFlow sequenceFlow) {
         Process process = modelInstance.getModelElementById(sequenceFlow.parentElementId());
-        FlowNode sourceElement = modelInstance.getModelElementById(sequenceFlow.sourceRef());
+
+        FlowNode sourceElement;
+        if (sequenceFlow.sourceRef() == null) {
+            sourceElement = modelInstance.getModelElementsByType(StartEvent.class).iterator().next();
+        } else {
+            sourceElement = modelInstance.getModelElementById(sequenceFlow.sourceRef());
+        }
+
         FlowNode targetElement = modelInstance.getModelElementById(sequenceFlow.targetRef());
         SequenceFlow camudaSequenceFlow = createSequenceFlow(process, sourceElement, targetElement);
         camudaSequenceFlow.setName(sequenceFlow.name());
@@ -458,7 +478,6 @@ public class BpmnElements {
     }
 
     private static SequenceFlow createSequenceFlow(Process process, FlowNode from, FlowNode to) {
-        Logger.debug("Adding a sequence flow from " + from + " to " + to);
         String identifier = from.getId() + "-" + to.getId();
         SequenceFlow sequenceFlow = createElementWithParent(process, identifier, SequenceFlow.class);
         process.addChildElement(sequenceFlow);

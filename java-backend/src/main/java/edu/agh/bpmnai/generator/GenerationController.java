@@ -1,6 +1,7 @@
 package edu.agh.bpmnai.generator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import edu.agh.bpmnai.generator.bpmn.model.BpmnFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

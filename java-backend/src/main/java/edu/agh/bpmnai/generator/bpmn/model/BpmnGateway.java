@@ -1,4 +1,4 @@
-package edu.agh.bpmnai.generator;
+package edu.agh.bpmnai.generator.bpmn.model;
 
 public record BpmnGateway(String id, String processId, String name, BpmnGatewayType type) {
 }
