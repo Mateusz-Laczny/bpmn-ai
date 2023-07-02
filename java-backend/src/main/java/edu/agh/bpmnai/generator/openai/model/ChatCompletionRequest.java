@@ -11,7 +11,7 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 @AllArgsConstructor
-public final class ChatRequest {
+public final class ChatCompletionRequest {
     private final String model;
     private final List<ChatMessage> messages;
     private final List<ChatFunction> functions;
@@ -28,16 +28,16 @@ public final class ChatRequest {
     private final Map<String, Integer> logit_bias;
     private final String user;
 
-    public ChatRequest(String model,
-                       List<ChatMessage> messages,
-                       List<ChatFunction> functions,
-                       Float temperature,
-                       Integer max_tokens) {
+    public ChatCompletionRequest(String model,
+                                 List<ChatMessage> messages,
+                                 List<ChatFunction> functions,
+                                 Float temperature,
+                                 Integer max_tokens) {
         this(model, messages, functions, null, temperature, null, null, null, null, max_tokens, null, null, null, null);
     }
 
-    public ChatRequest withMessagesAndMax_Tokens(List<ChatMessage> messages, int max_tokens) {
-        return new ChatRequest(
+    public ChatCompletionRequest withMessagesAndMax_Tokens(List<ChatMessage> messages, int max_tokens) {
+        return new ChatCompletionRequest(
                 model,
                 messages,
                 functions,
