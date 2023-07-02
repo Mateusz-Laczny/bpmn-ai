@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.BpmnElements;
 import edu.agh.bpmnai.generator.bpmn.model.*;
 import edu.agh.bpmnai.generator.openai.OpenAI;
+import edu.agh.bpmnai.generator.openai.model.ChatCompletionRequest;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
-import edu.agh.bpmnai.generator.openai.model.ChatRequest;
 import edu.agh.bpmnai.generator.openai.model.ChatResponses;
 import edu.agh.bpmnai.generator.openai.model.SingleChatResponse;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -31,14 +31,14 @@ public class BpmnProvider {
 
     private static final int messageTokenNumberCorrection = 50;
 
-    private static ResponseEntity<ChatResponses> sendChatCompletionRequest(ChatRequest request) {
+    private static ResponseEntity<ChatResponses> sendChatCompletionRequest(ChatCompletionRequest request) {
         Logging.logInfoMessage("Sending request", new Logging.ObjectToLog("requestBody", request));
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.add("Authorization", "Bearer " + OpenAI.openAIApiKey);
 
-        HttpEntity<ChatRequest> requestHttpEntity = new HttpEntity<>(request, headers);
+        HttpEntity<ChatCompletionRequest> requestHttpEntity = new HttpEntity<>(request, headers);
         return restTemplate.exchange(
                 OpenAI.openAIApiUrl,
                 HttpMethod.POST,
@@ -60,28 +60,23 @@ public class BpmnProvider {
                     BpmnElements.addEndEvent(bpmnModelInstance, mapper.readValue(functionArguments.asText(), BpmnEndEvent.class));
             case "addUserTask" ->
                     BpmnElements.addUserTask(bpmnModelInstance, mapper.readValue(functionArguments.asText(), BpmnUserTask.class));
+            case "addGateway" ->
+                    BpmnElements.addGateway(bpmnModelInstance, mapper.readValue(functionArguments.asText(), BpmnGateway.class));
             case "addSequenceFlow" ->
                     BpmnElements.addSequenceFlow(bpmnModelInstance, mapper.readValue(functionArguments.asText(), BpmnSequenceFlow.class));
         }
     }
 
     private static boolean isContinueConversation(ConversationStatus conversationStatus) {
-        return conversationStatus != ConversationStatus.STOP && conversationStatus != ConversationStatus.UNHANDLED_ERROR;
+        return conversationStatus != ConversationStatus.FINISHED && conversationStatus != ConversationStatus.UNHANDLED_ERROR;
     }
 
-    public BpmnFile provideForTextPrompt(TextPrompt prompt) throws JsonProcessingException {
-        BpmnModelInstance bpmnModelInstance = BpmnElements.getModelInstance();
-
-        List<ChatMessage> messages = new ArrayList<>(List.of(
-                ChatMessage.systemMessage("When creating a BPMN model for the user, use only the provided functions"),
-                ChatMessage.userMessage(prompt.content())
-        ));
-
+    private static ChatConversation generateConversation(BpmnModelInstance bpmnModelInstance, List<ChatMessage> messages) throws JsonProcessingException {
         int numberOfTokensInMessages = messages.stream()
                 .mapToInt(chatMessage -> OpenAI.approximateTokensPerParagraph)
                 .sum();
 
-        ChatRequest request = new ChatRequest(
+        ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
                 modelProperties.name(),
                 messages,
                 BpmnElements.functionsDescriptions,
@@ -89,10 +84,10 @@ public class BpmnProvider {
                 modelProperties.maxNumberOfTokens() - numberOfTokensInMessages - BpmnElements.functionDescriptionsTokens
         );
 
-        ResponseEntity<ChatResponses> httpResponseEntity = sendChatCompletionRequest(request);
+        ResponseEntity<ChatResponses> httpResponseEntity = sendChatCompletionRequest(chatCompletionRequest);
 
         if (httpResponseEntity.getStatusCode() == HttpStatus.OK) {
-            Logging.logInfoMessage("Request successful", new Logging.ObjectToLog("requestBody", httpResponseEntity.getBody()));
+            Logging.logInfoMessage("Request was successful", new Logging.ObjectToLog("requestBody", httpResponseEntity.getBody()));
         } else {
             Logging.logInfoMessage("Request failed", new Logging.ObjectToLog("statusCode", httpResponseEntity.getStatusCode()));
         }
@@ -107,7 +102,7 @@ public class BpmnProvider {
         while (isContinueConversation(conversationStatus)) {
             if (conversationStatus == ConversationStatus.ERROR_TOO_MANY_TOKENS_REQUESTED) {
                 numberOfTooManyTokensErrors += 1;
-                request = request.withMax_tokens(request.getMax_tokens() - 200 * numberOfTooManyTokensErrors);
+                chatCompletionRequest = chatCompletionRequest.withMax_tokens(getNewValueOfMaxTokens(chatCompletionRequest.getMax_tokens(), numberOfTooManyTokensErrors));
 
             } else {
                 if (responseMessage.content() == null) {
@@ -118,14 +113,14 @@ public class BpmnProvider {
                     parseModelFunctionCall(bpmnModelInstance, responseMessage);
                 }
 
-                List<ChatMessage> requestMessages = new ArrayList<>(request.getMessages());
+                List<ChatMessage> requestMessages = new ArrayList<>(chatCompletionRequest.getMessages());
                 requestMessages.add(responseMessage);
-                request = request.withMessagesAndMax_Tokens(requestMessages, modelProperties.maxNumberOfTokens() - previousRequestUsedTokens - messageTokenNumberCorrection);
+                chatCompletionRequest = chatCompletionRequest.withMessagesAndMax_Tokens(requestMessages, modelProperties.maxNumberOfTokens() - previousRequestUsedTokens - messageTokenNumberCorrection);
             }
 
             try {
-                httpResponseEntity = sendChatCompletionRequest(request);
-                Logging.logInfoMessage("Request successful\n", new Logging.ObjectToLog("requestBody", httpResponseEntity.getBody()));
+                httpResponseEntity = sendChatCompletionRequest(chatCompletionRequest);
+                Logging.logInfoMessage("Request was successful", new Logging.ObjectToLog("requestBody", httpResponseEntity.getBody()));
                 response = httpResponseEntity.getBody();
                 chatResponse = response.choices().get(0);
                 responseMessage = chatResponse.message();
@@ -133,7 +128,7 @@ public class BpmnProvider {
 
                 if (chatResponse.finish_reason().equals("stop")) {
                     Logging.logInfoMessage("Reached the end of the conversation");
-                    conversationStatus = ConversationStatus.STOP;
+                    conversationStatus = ConversationStatus.FINISHED;
                 } else {
                     conversationStatus = ConversationStatus.CONTINUE;
                     numberOfTooManyTokensErrors = 0;
@@ -147,14 +142,40 @@ public class BpmnProvider {
             }
         }
 
+        return new ChatConversation(chatCompletionRequest.getMessages(), conversationStatus);
+    }
+
+    private static int getNewValueOfMaxTokens(int currentMaxTokens, int numberOfTooManyTokensErrors) {
+        return currentMaxTokens - 200 * numberOfTooManyTokensErrors;
+    }
+
+    public BpmnFile provideForTextPrompt(TextPrompt prompt) throws JsonProcessingException {
+        BpmnModelInstance bpmnModelInstance = BpmnElements.getModelInstance();
+
+        List<ChatMessage> messages = List.of(
+                ChatMessage.systemMessage("When creating a BPMN model for the user, use only the provided functions"),
+                ChatMessage.userMessage(prompt.content() + ". Start with the happy path.")
+        );
+
+        ChatConversation chatConversationForHappyPath = generateConversation(bpmnModelInstance, messages);
+
+        if (chatConversationForHappyPath.status == ConversationStatus.FINISHED) {
+            messages = new ArrayList<>(chatConversationForHappyPath.messages());
+            messages.add(ChatMessage.userMessage("Now think about what problems may arise during the process and modify the model accordingly."));
+            generateConversation(bpmnModelInstance, messages);
+        }
 
         return new BpmnFile(Bpmn.convertToString(bpmnModelInstance));
     }
 
     private enum ConversationStatus {
         CONTINUE,
-        STOP,
+        FINISHED,
         ERROR_TOO_MANY_TOKENS_REQUESTED,
         UNHANDLED_ERROR
+    }
+
+    private record ChatConversation(List<ChatMessage> messages, ConversationStatus status) {
+
     }
 }
