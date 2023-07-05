@@ -9,7 +9,11 @@
     "bpmn-js": "^13.1.0",
     "bpmn-moddle": "^8.0.1",
     "bpmn-visualization": "^0.33.1",
-    "ts-json-schema-generator": "^1.2.0"
+    "graphology": "^0.25.1",
+    "graphology-layout": "^0.6.1",
+    "graphology-layout-noverlap": "^0.4.2",
+    "ts-json-schema-generator": "^1.2.0",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@babel/core": "7.2.0",

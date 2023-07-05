@@ -30,7 +30,7 @@ public class BpmnElements {
                                             "type",
                                             "string",
                                             "description",
-                                            "Id of the element"
+                                            "Id of the element. Must be globally unique"
                                     ),
                                     "processId",
                                     Map.of(
@@ -71,7 +71,7 @@ public class BpmnElements {
                                             "type",
                                             "string",
                                             "description",
-                                            "Id of the element"
+                                            "Id of the element. Must be globally unique"
                                     ),
                                     "processId",
                                     Map.of(
@@ -105,7 +105,7 @@ public class BpmnElements {
                                             "type",
                                             "string",
                                             "description",
-                                            "Id of the element"
+                                            "Id of the element. Must be globally unique"
                                     ),
                                     "name",
                                     Map.of(
@@ -131,7 +131,7 @@ public class BpmnElements {
                                             "type",
                                             "string",
                                             "description",
-                                            "Id of the element"
+                                            "Id of the element. Must be globally unique"
                                     ),
                                     "processId",
                                     Map.of(
@@ -175,7 +175,7 @@ public class BpmnElements {
                                             "type",
                                             "string",
                                             "description",
-                                            "Id of the element"
+                                            "Id of the element. Must be globally unique"
                                     ),
                                     "processId",
                                     Map.of(
@@ -201,7 +201,7 @@ public class BpmnElements {
                                             "type",
                                             "string",
                                             "description",
-                                            "Id of the element"
+                                            "Id of the element. Must be globally unique"
                                     ),
                                     "processId",
                                     Map.of(
@@ -227,7 +227,7 @@ public class BpmnElements {
                                             "type",
                                             "string",
                                             "description",
-                                            "Id of the element"
+                                            "Id of the element. Must be globally unique"
                                     ),
                                     "processId",
                                     Map.of(
@@ -349,7 +349,7 @@ public class BpmnElements {
                                             "type",
                                             "string",
                                             "description",
-                                            "Id of the element"
+                                            "Id of the element. Must be globally unique"
                                     ),
 
                                     "parentElementId",

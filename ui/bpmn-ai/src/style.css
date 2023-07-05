@@ -1,17 +1,22 @@
 html{
     box-sizing: border-box;
     height: 100%;
+    font-family: 'Akatab', sans-serif;
+    font-weight: 400;
+    color: #141414;
 }
 
 body {
     display: flex;
     align-items: center;
-    background: linear-gradient(320deg, #0AC752, #0CFA66, #58FB96);
+    background-color: #003366;
     height: inherit;
     justify-content: center;
 }
 
 textarea {
+    font-family: 'Akatab', sans-serif;
+    font-weight: 400;
     resize: none;
 }  
 
@@ -20,14 +25,17 @@ textarea {
     flex-direction: column;
     flex-basis: 90%;
     height: 85%;
-    background: rgba(255, 255, 255, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.01);
-    border-radius: 16px;
-    padding: 15px 35px;
+    padding: 10px 35px;
 }
 
 .prompt-input {
     height: 15%;
+    width: 100%;
+    padding: 0px 10px 15px 15px;
+    border-radius: 16px;
+    background-color: #FFF9E6;
+    backdrop-filter: blur(5.5px);
 }
 
 .input-field-container {
@@ -50,14 +58,21 @@ textarea {
 }
 
 .input-field-container button {
+    width: 80px;
+    height: 30px;
     position: absolute;
     top: 15px;
     right: 15px;
 }
 
 .viewer-container {
+    position: relative;
     width: 100%;
     height: 85%;
+    background-color: #FFF9E6;
+    border-radius: 16px;
+    padding: 10px;
+    margin-top: 40px;
 }
 
 .viewer-container h1 {
@@ -69,6 +84,20 @@ textarea {
     height: 94%;
     justify-content: center;
     border: 0 solid black;
-    border-radius: 16px;
-    background-color: rgba(255, 255, 255, 0.7);
 }
+
+#overlay {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 25px;
+    width: 100%;
+    height: 100%;
+    top: 0; 
+    left: 0;
+    background-color: #FFF9E6;
+    border-radius: 16px;
+    z-index: 9999;
+  }
+  

@@ -3,6 +3,7 @@ package edu.agh.bpmnai.generator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.agh.bpmnai.generator.Logging.ObjectToLog;
 import edu.agh.bpmnai.generator.bpmn.BpmnElements;
 import edu.agh.bpmnai.generator.bpmn.model.*;
 import edu.agh.bpmnai.generator.openai.OpenAI;
@@ -31,8 +32,10 @@ public class BpmnProvider {
 
     private static final int messageTokenNumberCorrection = 50;
 
+    private static final int multiplicativeBackoffStartingPoint = 200;
+
     private static ResponseEntity<ChatResponses> sendChatCompletionRequest(ChatCompletionRequest request) {
-        Logging.logInfoMessage("Sending request", new Logging.ObjectToLog("requestBody", request));
+        Logging.logInfoMessage("Sending request", new ObjectToLog("requestBody", request));
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
@@ -71,7 +74,7 @@ public class BpmnProvider {
         return conversationStatus != ConversationStatus.FINISHED && conversationStatus != ConversationStatus.UNHANDLED_ERROR;
     }
 
-    private static ChatConversation generateConversation(BpmnModelInstance bpmnModelInstance, List<ChatMessage> messages) throws JsonProcessingException {
+    private static ChatConversation carryOutConversation(BpmnModelInstance bpmnModelInstance, List<ChatMessage> messages) throws JsonProcessingException {
         int numberOfTokensInMessages = messages.stream()
                 .mapToInt(chatMessage -> OpenAI.approximateTokensPerParagraph)
                 .sum();
@@ -87,9 +90,9 @@ public class BpmnProvider {
         ResponseEntity<ChatResponses> httpResponseEntity = sendChatCompletionRequest(chatCompletionRequest);
 
         if (httpResponseEntity.getStatusCode() == HttpStatus.OK) {
-            Logging.logInfoMessage("Request was successful", new Logging.ObjectToLog("requestBody", httpResponseEntity.getBody()));
+            Logging.logInfoMessage("Request was successful", new ObjectToLog("requestBody", httpResponseEntity.getBody()));
         } else {
-            Logging.logInfoMessage("Request failed", new Logging.ObjectToLog("statusCode", httpResponseEntity.getStatusCode()));
+            Logging.logInfoMessage("Request failed", new ObjectToLog("statusCode", httpResponseEntity.getStatusCode()));
         }
 
         ChatResponses response = httpResponseEntity.getBody();
@@ -120,7 +123,7 @@ public class BpmnProvider {
 
             try {
                 httpResponseEntity = sendChatCompletionRequest(chatCompletionRequest);
-                Logging.logInfoMessage("Request was successful", new Logging.ObjectToLog("requestBody", httpResponseEntity.getBody()));
+                Logging.logInfoMessage("Request was successful", new ObjectToLog("requestBody", httpResponseEntity.getBody()));
                 response = httpResponseEntity.getBody();
                 chatResponse = response.choices().get(0);
                 responseMessage = chatResponse.message();
@@ -146,7 +149,7 @@ public class BpmnProvider {
     }
 
     private static int getNewValueOfMaxTokens(int currentMaxTokens, int numberOfTooManyTokensErrors) {
-        return currentMaxTokens - 200 * numberOfTooManyTokensErrors;
+        return currentMaxTokens - multiplicativeBackoffStartingPoint * numberOfTooManyTokensErrors;
     }
 
     public BpmnFile provideForTextPrompt(TextPrompt prompt) throws JsonProcessingException {
@@ -157,12 +160,12 @@ public class BpmnProvider {
                 ChatMessage.userMessage(prompt.content() + ". Start with the happy path.")
         );
 
-        ChatConversation chatConversationForHappyPath = generateConversation(bpmnModelInstance, messages);
+        ChatConversation chatConversationForHappyPath = carryOutConversation(bpmnModelInstance, messages);
 
         if (chatConversationForHappyPath.status == ConversationStatus.FINISHED) {
             messages = new ArrayList<>(chatConversationForHappyPath.messages());
             messages.add(ChatMessage.userMessage("Now think about what problems may arise during the process and modify the model accordingly."));
-            generateConversation(bpmnModelInstance, messages);
+            carryOutConversation(bpmnModelInstance, messages);
         }
 
         return new BpmnFile(Bpmn.convertToString(bpmnModelInstance));

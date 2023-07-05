@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <link href="./style.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Akatab:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <title>BPMN-Ai</title>
     <script src="./app.js" type="module"></script>
   </head>
@@ -10,19 +16,24 @@
   <body>
     <div class="wrapper">
       <section class="prompt-input">
-        <h1>Process description</h1>
+        <h1>Prompt</h1>
         <div class="input-field-container">
           <textarea
             type="text"
-            placeholder="Enter your process description"
+            placeholder="Enter your prompt here"
             class="prompt-input"
+            id="prompt-input-textarea"
           ></textarea>
-          <button class="prompt-input-button">Generate</button>
+          <button class="prompt-input-button" id="prompt-input-button">
+            Generate
+          </button>
         </div>
       </section>
 
       <section class="viewer-container">
-        <h1>Result model</h1>
+        <div id="overlay">
+          <h1>Your model will appear here</h1>
+        </div>
         <div class="canvas" id="canvas"></div>
       </section>
     </div>

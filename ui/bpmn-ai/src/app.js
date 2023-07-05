@@ -3,8 +3,9 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
 import './style.css';
+import { layoutBPMN } from './layouting';
 
-const MODEL_FETCH_URL = 'http://localhost:8000/generate/text';
+const MODEL_FETCH_URL = 'http://localhost:8080/generate/from/text';
 
 const modeler = new BpmnModeler({
   container: '#canvas',
@@ -13,20 +14,48 @@ const modeler = new BpmnModeler({
   },
 });
 
-async function fetchModel() {
+const promptTextarea = document.getElementById('prompt-input-textarea');
+const overlay = document.getElementById('overlay');
+
+async function fetchModel(prompt) {
   let response = await fetch(MODEL_FETCH_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      description: 'Test',
+      content: prompt,
     }),
   });
-  console.log(response);
-  return await response.text();
+
+  return await response.json();
 }
 
-fetchModel()
-  .then((bpmnXML) => modeler.importXML(bpmnXML))
-  .then(() => modeler.get('canvas').zoom('fit-viewport'));
+function generateModel() {
+  const prompt = promptTextarea.value;
+  fetchModel(prompt)
+    .then((response) => response.xml)
+    .then((bpmnXML) => {
+      const bpmnXMLAfterLayout = layoutBPMN(bpmnXML);
+      return modeler.importXML(bpmnXMLAfterLayout);
+    })
+    .then(() => modeler.get('canvas').zoom('fit-viewport'));
+}
+
+const promptInputButton = document.getElementById('prompt-input-button');
+
+function onPromptInputButtonClick() {
+  showOverlay();
+  generateModel();
+  hideOverlay();
+}
+
+function showOverlay() {
+  overlay.style.display = 'block';
+}
+
+function hideOverlay() {
+  overlay.style.display = 'none';
+}
+
+promptInputButton.addEventListener('click', onPromptInputButtonClick);
