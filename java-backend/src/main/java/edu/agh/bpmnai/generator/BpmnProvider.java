@@ -145,9 +145,7 @@ public class BpmnProvider {
                 chatCompletionRequest = chatCompletionRequest.withMax_tokens(getNewValueOfMaxTokens(chatCompletionRequest.getMax_tokens(), numberOfTooManyTokensErrors));
 
             } else {
-                if (responseMessage.content() == null) {
-                    responseMessage.setContent("");
-                }
+                adjustModelResponseForFurtherUse(responseMessage);
 
                 List<ChatMessage> requestMessages = new ArrayList<>(chatCompletionRequest.getMessages());
                 requestMessages.add(responseMessage);
@@ -157,12 +155,14 @@ public class BpmnProvider {
                     optionalFunctionCallError.ifPresent(functionCallError -> requestMessages.add(handleIncorrectFunctionCall(functionCallError)));
                 }
 
-                chatCompletionRequest = chatCompletionRequest.withMessagesAndMax_Tokens(requestMessages, modelProperties.maxNumberOfTokens() - previousRequestUsedTokens - messageTokenNumberCorrection);
+                int newMaxTokensValue = modelProperties.maxNumberOfTokens() - previousRequestUsedTokens - messageTokenNumberCorrection;
+                chatCompletionRequest = chatCompletionRequest.withMessagesAndMax_Tokens(requestMessages, newMaxTokensValue);
             }
 
             try {
                 httpResponseEntity = sendChatCompletionRequest(chatCompletionRequest);
                 Logging.logInfoMessage("Request was successful", new ObjectToLog("requestBody", httpResponseEntity.getBody()));
+
                 response = httpResponseEntity.getBody();
                 chatResponse = response.choices().get(0);
                 responseMessage = chatResponse.message();
@@ -176,7 +176,7 @@ public class BpmnProvider {
                     numberOfTooManyTokensErrors = 0;
                 }
             } catch (HttpClientErrorException.BadRequest badRequest) {
-                badRequest.printStackTrace();
+                Logging.logThrowable("Request failed", badRequest);
                 conversationStatus = ConversationStatus.ERROR_TOO_MANY_TOKENS_REQUESTED;
             } catch (Exception e) {
                 Logging.logThrowable("Request failed", e);
@@ -185,6 +185,12 @@ public class BpmnProvider {
         }
 
         return new ChatConversation(chatCompletionRequest.getMessages(), conversationStatus);
+    }
+
+    private static void adjustModelResponseForFurtherUse(ChatMessage responseMessage) {
+        if (responseMessage.content() == null) {
+            responseMessage.setContent("");
+        }
     }
 
     private static ChatMessage handleIncorrectFunctionCall(FunctionCallError functionCallError) {
