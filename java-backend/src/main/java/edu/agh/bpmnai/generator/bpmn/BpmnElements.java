@@ -466,7 +466,7 @@ public class BpmnElements {
         }
 
         FlowNode targetElement = modelInstance.getModelElementById(sequenceFlow.targetRef());
-        SequenceFlow camudaSequenceFlow = createSequenceFlow(process, sourceElement, targetElement);
+        SequenceFlow camudaSequenceFlow = createSequenceFlow(process, sequenceFlow.id(), sourceElement, targetElement);
         camudaSequenceFlow.setName(sequenceFlow.name());
     }
 
@@ -477,9 +477,8 @@ public class BpmnElements {
         return element;
     }
 
-    private static SequenceFlow createSequenceFlow(Process process, FlowNode from, FlowNode to) {
-        String identifier = from.getId() + "-" + to.getId();
-        SequenceFlow sequenceFlow = createElementWithParent(process, identifier, SequenceFlow.class);
+    private static SequenceFlow createSequenceFlow(Process process, String id, FlowNode from, FlowNode to) {
+        SequenceFlow sequenceFlow = createElementWithParent(process, id, SequenceFlow.class);
         process.addChildElement(sequenceFlow);
         sequenceFlow.setSource(from);
         from.getOutgoing().add(sequenceFlow);
