@@ -20,6 +20,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class BpmnProvider {
@@ -50,24 +52,59 @@ public class BpmnProvider {
         );
     }
 
-    private static void parseModelFunctionCall(BpmnModelInstance bpmnModelInstance, ChatMessage responseMessage) throws JsonProcessingException {
+    private static Optional<FunctionCallError> parseModelFunctionCall(BpmnModelInstance bpmnModelInstance, ChatMessage responseMessage) throws JsonProcessingException {
         String functionName = responseMessage.function_call().get("name").asText();
         JsonNode functionArguments = responseMessage.function_call().get("arguments");
-        System.out.println(functionArguments);
         switch (functionName) {
-            case "addProcess" ->
-                    BpmnElements.addProcess(bpmnModelInstance, mapper.readValue(functionArguments.asText(), BpmnProcess.class));
-            case "addStartEvent" ->
-                    BpmnElements.addStartEvent(bpmnModelInstance, mapper.readValue(functionArguments.asText(), BpmnStartEvent.class));
-            case "addEndEvent" ->
-                    BpmnElements.addEndEvent(bpmnModelInstance, mapper.readValue(functionArguments.asText(), BpmnEndEvent.class));
-            case "addUserTask" ->
-                    BpmnElements.addUserTask(bpmnModelInstance, mapper.readValue(functionArguments.asText(), BpmnUserTask.class));
-            case "addGateway" ->
-                    BpmnElements.addGateway(bpmnModelInstance, mapper.readValue(functionArguments.asText(), BpmnGateway.class));
-            case "addSequenceFlow" ->
-                    BpmnElements.addSequenceFlow(bpmnModelInstance, mapper.readValue(functionArguments.asText(), BpmnSequenceFlow.class));
+            case "addProcess" -> {
+                BpmnProcess processParameters = mapper.readValue(functionArguments.asText(), BpmnProcess.class);
+                if (doesIdExist(processParameters.id(), bpmnModelInstance)) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+                BpmnElements.addProcess(bpmnModelInstance, processParameters);
+            }
+            case "addStartEvent" -> {
+                BpmnStartEvent startEventParameters = mapper.readValue(functionArguments.asText(), BpmnStartEvent.class);
+                if (doesIdExist(startEventParameters.id(), bpmnModelInstance)) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+                BpmnElements.addStartEvent(bpmnModelInstance, startEventParameters);
+            }
+            case "addEndEvent" -> {
+                BpmnEndEvent endEventParameters = mapper.readValue(functionArguments.asText(), BpmnEndEvent.class);
+                if (doesIdExist(endEventParameters.id(), bpmnModelInstance)) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+                BpmnElements.addEndEvent(bpmnModelInstance, endEventParameters);
+            }
+            case "addUserTask" -> {
+                BpmnUserTask userTaskParameters = mapper.readValue(functionArguments.asText(), BpmnUserTask.class);
+                if (doesIdExist(userTaskParameters.id(), bpmnModelInstance)) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+                BpmnElements.addUserTask(bpmnModelInstance, userTaskParameters);
+            }
+            case "addGateway" -> {
+                BpmnGateway gatewayParameters = mapper.readValue(functionArguments.asText(), BpmnGateway.class);
+                if (doesIdExist(gatewayParameters.id(), bpmnModelInstance)) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+                BpmnElements.addGateway(bpmnModelInstance, gatewayParameters);
+            }
+            case "addSequenceFlow" -> {
+                BpmnSequenceFlow sequenceFlowParameters = mapper.readValue(functionArguments.asText(), BpmnSequenceFlow.class);
+                if (doesIdExist(sequenceFlowParameters.id(), bpmnModelInstance)) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+                BpmnElements.addSequenceFlow(bpmnModelInstance, sequenceFlowParameters);
+            }
         }
+
+        return Optional.empty();
+    }
+
+    private static boolean doesIdExist(String id, BpmnModelInstance modelInstance) {
+        return modelInstance.getModelElementById(id) != null;
     }
 
     private static boolean isContinueConversation(ConversationStatus conversationStatus) {
@@ -112,12 +149,14 @@ public class BpmnProvider {
                     responseMessage.setContent("");
                 }
 
-                if (responseMessage.function_call() != null) {
-                    parseModelFunctionCall(bpmnModelInstance, responseMessage);
-                }
-
                 List<ChatMessage> requestMessages = new ArrayList<>(chatCompletionRequest.getMessages());
                 requestMessages.add(responseMessage);
+
+                if (responseMessage.function_call() != null) {
+                    Optional<FunctionCallError> optionalFunctionCallError = parseModelFunctionCall(bpmnModelInstance, responseMessage);
+                    optionalFunctionCallError.ifPresent(functionCallError -> requestMessages.add(handleIncorrectFunctionCall(functionCallError)));
+                }
+
                 chatCompletionRequest = chatCompletionRequest.withMessagesAndMax_Tokens(requestMessages, modelProperties.maxNumberOfTokens() - previousRequestUsedTokens - messageTokenNumberCorrection);
             }
 
@@ -146,6 +185,14 @@ public class BpmnProvider {
         }
 
         return new ChatConversation(chatCompletionRequest.getMessages(), conversationStatus);
+    }
+
+    private static ChatMessage handleIncorrectFunctionCall(FunctionCallError functionCallError) {
+        if (Objects.requireNonNull(functionCallError) == FunctionCallError.NON_UNIQUE_ID) {
+            return ChatMessage.userMessage("The id used in the last function call was not globally unique. Please, call the function again with the same parameters and a new, globally unique id");
+        }
+
+        throw new UnhandledFunctionCallErrorException();
     }
 
     private static int getNewValueOfMaxTokens(int currentMaxTokens, int numberOfTooManyTokensErrors) {
@@ -178,7 +225,14 @@ public class BpmnProvider {
         UNHANDLED_ERROR
     }
 
+    private enum FunctionCallError {
+        NON_UNIQUE_ID
+    }
+
     private record ChatConversation(List<ChatMessage> messages, ConversationStatus status) {
 
+    }
+
+    private static class UnhandledFunctionCallErrorException extends RuntimeException {
     }
 }
