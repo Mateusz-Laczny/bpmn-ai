@@ -39,7 +39,8 @@ function generateModel() {
       const bpmnXMLAfterLayout = layoutBPMN(bpmnXML);
       return modeler.importXML(bpmnXMLAfterLayout);
     })
-    .then(() => modeler.get('canvas').zoom('fit-viewport'));
+    .then(() => modeler.get('canvas').zoom('fit-viewport'))
+    .then(() => hideOverlay());
 }
 
 const promptInputButton = document.getElementById('prompt-input-button');
@@ -47,11 +48,10 @@ const promptInputButton = document.getElementById('prompt-input-button');
 function onPromptInputButtonClick() {
   showOverlay();
   generateModel();
-  hideOverlay();
 }
 
 function showOverlay() {
-  overlay.style.display = 'block';
+  overlay.style.display = 'flex';
 }
 
 function hideOverlay() {
