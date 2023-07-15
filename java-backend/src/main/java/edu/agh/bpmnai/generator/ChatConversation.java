@@ -1,11 +1,9 @@
 package edu.agh.bpmnai.generator;
 
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
-import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-@Component
 class ChatConversation {
     private final List<ChatMessage> messages;
     private ConversationStatus status;
