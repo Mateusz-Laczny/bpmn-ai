@@ -51,17 +51,24 @@ textarea {
     box-sizing: border-box;
     margin: 0 auto;
     padding: 13px 10px;
-    border: 2px solid lightgray;
+    border: 3px solid lightgray;
     border-radius: 25px;
     box-shadow: 0 0 5px 1px rgba(0,0,0,0.1);
 }
 
 .input-field-container button {
-    width: 80px;
-    height: 30px;
+    width: 100px;
+    height: 40px;
     position: absolute;
     top: 15px;
     right: 15px;
+    border-radius: 12px;
+    border: 2px solid lightgray;
+    background-color: #003366;
+    font-family: 'Akatab', sans-serif;
+    font-weight: 500;
+    font-size: 17px;
+    color: white;
 }
 
 .viewer-container {
