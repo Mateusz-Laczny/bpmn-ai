@@ -26,6 +26,9 @@ export function layoutBPMN(bpmnXML) {
       case 'userTask':
         graph.addNode(childNode.getAttribute('id'), { type: 'userTask' });
         break;
+      case 'serviceTask':
+        graph.addNode(childNode.getAttribute('id'), { type: 'serviceTask' });
+        break;
       case 'exclusiveGateway':
         graph.addNode(childNode.getAttribute('id'), {
           type: 'exclusiveGateway',
@@ -35,11 +38,12 @@ export function layoutBPMN(bpmnXML) {
         graph.addNode(childNode.getAttribute('id'), { type: 'endEvent' });
         break;
       case 'sequenceFlow':
-        graph.addDirectedEdge(
-          childNode.getAttribute('sourceRef'),
-          childNode.getAttribute('targetRef'),
-          { bpmnElementId: childNode.getAttribute('id') }
-        );
+        const edgeSource = childNode.getAttribute('sourceRef');
+        const edgeTarget = childNode.getAttribute('targetRef');
+        if (!graph.hasDirectedEdge(edgeSource, edgeTarget))
+          graph.addDirectedEdge(edgeSource, edgeTarget, {
+            bpmnElementId: childNode.getAttribute('id'),
+          });
     }
   }
 
@@ -80,6 +84,7 @@ export function layoutBPMN(bpmnXML) {
         bpmnShapeElement.appendChild(boundsElement);
         bpmnPlaneElement.appendChild(bpmnShapeElement);
         break;
+      case 'serviceTask':
       case 'userTask':
         bpmnShapeElement = xmlDoc.createElement('bpmndi:BPMNShape');
         bpmnShapeElement.setAttribute('bpmnElement', node);

@@ -36,6 +36,7 @@ function generateModel() {
   fetchModel(prompt)
     .then((response) => response.xml)
     .then((bpmnXML) => {
+      console.log(bpmnXML);
       const bpmnXMLAfterLayout = layoutBPMN(bpmnXML);
       return modeler.importXML(bpmnXMLAfterLayout);
     })
@@ -56,6 +57,7 @@ function showOverlay() {
 
 function hideOverlay() {
   overlay.style.display = 'none';
+  console.log('overlay hidden');
 }
 
 promptInputButton.addEventListener('click', onPromptInputButtonClick);

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.Logging.ObjectToLog;
 import edu.agh.bpmnai.generator.bpmn.BpmnElements;
+import edu.agh.bpmnai.generator.bpmn.ElementToRemove;
 import edu.agh.bpmnai.generator.bpmn.model.*;
 import edu.agh.bpmnai.generator.openai.OpenAI;
 import edu.agh.bpmnai.generator.openai.model.ChatCompletionRequest;
@@ -19,7 +20,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -34,7 +34,6 @@ public class BpmnProvider {
     private static final int messageTokenNumberCorrection = 50;
 
     private static final int multiplicativeBackoffStartingPoint = 200;
-    private final BpmnModelInstance bpmnModelInstance = BpmnElements.getModelInstance();
 
     private static ResponseEntity<ChatResponses> sendChatCompletionRequest(ChatCompletionRequest request) {
         Logging.logInfoMessage("Sending request", new ObjectToLog("requestBody", request));
@@ -84,6 +83,13 @@ public class BpmnProvider {
                 }
                 BpmnElements.addUserTask(bpmnModelInstance, userTaskParameters);
             }
+            case "addServiceTask" -> {
+                BpmnServiceTask serviceTaskParameters = mapper.readValue(functionArguments.asText(), BpmnServiceTask.class);
+                if (doesIdExist(serviceTaskParameters.id(), bpmnModelInstance)) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+                BpmnElements.addServiceTask(bpmnModelInstance, serviceTaskParameters);
+            }
             case "addGateway" -> {
                 BpmnGateway gatewayParameters = mapper.readValue(functionArguments.asText(), BpmnGateway.class);
                 if (doesIdExist(gatewayParameters.id(), bpmnModelInstance)) {
@@ -95,8 +101,14 @@ public class BpmnProvider {
                 BpmnSequenceFlow sequenceFlowParameters = mapper.readValue(functionArguments.asText(), BpmnSequenceFlow.class);
                 if (doesIdExist(sequenceFlowParameters.id(), bpmnModelInstance)) {
                     return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                } else if (sequenceFlowParameters.id() == null) {
+                    return Optional.of(FunctionCallError.MISSING_PARAMETER);
                 }
                 BpmnElements.addSequenceFlow(bpmnModelInstance, sequenceFlowParameters);
+            }
+            case "removeElement" -> {
+                ElementToRemove elementToRemove = mapper.readValue(functionArguments.asText(), ElementToRemove.class);
+                BpmnElements.removeElement(bpmnModelInstance, elementToRemove.id(), elementToRemove.parentId());
             }
         }
 
@@ -195,8 +207,10 @@ public class BpmnProvider {
     }
 
     private static ChatMessage handleIncorrectFunctionCall(FunctionCallError functionCallError) {
-        if (Objects.requireNonNull(functionCallError) == FunctionCallError.NON_UNIQUE_ID) {
+        if (functionCallError == FunctionCallError.NON_UNIQUE_ID) {
             return ChatMessage.userMessage("The id used in the last function call was not globally unique. Please, call the function again with the same parameters and a new, globally unique id");
+        } else if (functionCallError == FunctionCallError.MISSING_PARAMETER) {
+            return ChatMessage.userMessage("The last function call was missing a parameter. Please, call the function again with all required parameters");
         }
 
         throw new UnhandledFunctionCallErrorException();
@@ -207,6 +221,8 @@ public class BpmnProvider {
     }
 
     public BpmnFile provideForTextPrompt(TextPrompt prompt) throws JsonProcessingException {
+        BpmnModelInstance bpmnModelInstance = BpmnElements.getModelInstance();
+
         ChatConversation chatConversation = ChatConversation.emptyConversation();
         chatConversation.addMessages(List.of(
                 ChatMessage.systemMessage("When creating a BPMN model for the user, use only the provided functions"),
@@ -224,7 +240,8 @@ public class BpmnProvider {
     }
 
     private enum FunctionCallError {
-        NON_UNIQUE_ID
+        NON_UNIQUE_ID,
+        MISSING_PARAMETER
     }
 
     private static class UnhandledFunctionCallErrorException extends RuntimeException {

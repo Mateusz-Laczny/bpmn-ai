@@ -9,6 +9,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.bpmn.instance.*;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 import java.util.List;
 import java.util.Map;
@@ -385,6 +386,33 @@ public class BpmnElements {
                             "required",
                             List.of("id", "parentElementId", "sorceRef", "targetRef")
                     )
+            ),
+            new ChatFunction(
+                    "removeElement",
+                    "Removes an element with a given id from the model",
+                    Map.of(
+                            "type",
+                            "object",
+                            "properties",
+                            Map.of(
+                                    "id",
+                                    Map.of(
+                                            "type",
+                                            "string",
+                                            "description",
+                                            "Id of the element. Must be globally unique"
+                                    ),
+                                    "parentId",
+                                    Map.of(
+                                            "type",
+                                            "string",
+                                            "description",
+                                            "Id of the element's parent"
+                                    )
+                            ),
+                            "required",
+                            List.of("id", "parentId")
+                    )
             )
     );
 
@@ -468,6 +496,11 @@ public class BpmnElements {
         FlowNode targetElement = modelInstance.getModelElementById(sequenceFlow.targetRef());
         SequenceFlow camudaSequenceFlow = createSequenceFlow(process, sequenceFlow.id(), sourceElement, targetElement);
         camudaSequenceFlow.setName(sequenceFlow.name());
+    }
+
+    public static void removeElement(BpmnModelInstance modelInstance, String id, String parentId) {
+        ModelElementInstance parentElement = modelInstance.getModelElementById(parentId);
+        parentElement.removeChildElement(modelInstance.getModelElementById(id));
     }
 
     private static <T extends BpmnModelElementInstance> T createElementWithParent(BpmnModelElementInstance parentElement, String id, Class<T> elementClass) {
