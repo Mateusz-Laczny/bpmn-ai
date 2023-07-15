@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,6 +34,7 @@ public class BpmnProvider {
     private static final int messageTokenNumberCorrection = 50;
 
     private static final int multiplicativeBackoffStartingPoint = 200;
+    private final BpmnModelInstance bpmnModelInstance = BpmnElements.getModelInstance();
 
     private static ResponseEntity<ChatResponses> sendChatCompletionRequest(ChatCompletionRequest request) {
         Logging.logInfoMessage("Sending request", new ObjectToLog("requestBody", request));
@@ -111,17 +111,20 @@ public class BpmnProvider {
         return conversationStatus != ConversationStatus.FINISHED && conversationStatus != ConversationStatus.UNHANDLED_ERROR;
     }
 
-    private static ChatConversation carryOutConversation(BpmnModelInstance bpmnModelInstance, List<ChatMessage> messages) throws JsonProcessingException {
-        int numberOfTokensInMessages = messages.stream()
+    private static void carryOutConversation(BpmnModelInstance bpmnModelInstance, ChatConversation chatConversation) throws JsonProcessingException {
+        chatConversation.setStatus(ConversationStatus.IN_PROGRESS);
+
+        int numberOfTokensInMessages = chatConversation.getMessages().stream()
                 .mapToInt(chatMessage -> OpenAI.approximateTokensPerParagraph)
                 .sum();
 
+        int startingMaxTokens = modelProperties.maxNumberOfTokens() - numberOfTokensInMessages - BpmnElements.functionDescriptionsTokens;
         ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
                 modelProperties.name(),
-                messages,
+                chatConversation.getMessages(),
                 BpmnElements.functionsDescriptions,
                 temperature,
-                modelProperties.maxNumberOfTokens() - numberOfTokensInMessages - BpmnElements.functionDescriptionsTokens
+                startingMaxTokens
         );
 
         ResponseEntity<ChatResponses> httpResponseEntity = sendChatCompletionRequest(chatCompletionRequest);
@@ -137,26 +140,24 @@ public class BpmnProvider {
         SingleChatResponse chatResponse = httpResponseEntity.getBody().choices().get(0);
         ChatMessage responseMessage = chatResponse.message();
 
-        ConversationStatus conversationStatus = ConversationStatus.CONTINUE;
+        ConversationStatus conversationStatus = ConversationStatus.IN_PROGRESS;
         int numberOfTooManyTokensErrors = 0;
         while (isContinueConversation(conversationStatus)) {
             if (conversationStatus == ConversationStatus.ERROR_TOO_MANY_TOKENS_REQUESTED) {
                 numberOfTooManyTokensErrors += 1;
                 chatCompletionRequest = chatCompletionRequest.withMax_tokens(getNewValueOfMaxTokens(chatCompletionRequest.getMax_tokens(), numberOfTooManyTokensErrors));
-
             } else {
                 adjustModelResponseForFurtherUse(responseMessage);
 
-                List<ChatMessage> requestMessages = new ArrayList<>(chatCompletionRequest.getMessages());
-                requestMessages.add(responseMessage);
+                chatConversation.addMessage(responseMessage);
 
                 if (responseMessage.function_call() != null) {
                     Optional<FunctionCallError> optionalFunctionCallError = parseModelFunctionCall(bpmnModelInstance, responseMessage);
-                    optionalFunctionCallError.ifPresent(functionCallError -> requestMessages.add(handleIncorrectFunctionCall(functionCallError)));
+                    optionalFunctionCallError.ifPresent(functionCallError -> chatConversation.addMessage(handleIncorrectFunctionCall(functionCallError)));
                 }
 
                 int newMaxTokensValue = modelProperties.maxNumberOfTokens() - previousRequestUsedTokens - messageTokenNumberCorrection;
-                chatCompletionRequest = chatCompletionRequest.withMessagesAndMax_Tokens(requestMessages, newMaxTokensValue);
+                chatCompletionRequest = chatCompletionRequest.withMessagesAndMax_Tokens(chatConversation.getMessages(), newMaxTokensValue);
             }
 
             try {
@@ -172,7 +173,7 @@ public class BpmnProvider {
                     Logging.logInfoMessage("Reached the end of the conversation");
                     conversationStatus = ConversationStatus.FINISHED;
                 } else {
-                    conversationStatus = ConversationStatus.CONTINUE;
+                    conversationStatus = ConversationStatus.IN_PROGRESS;
                     numberOfTooManyTokensErrors = 0;
                 }
             } catch (HttpClientErrorException.BadRequest badRequest) {
@@ -184,7 +185,7 @@ public class BpmnProvider {
             }
         }
 
-        return new ChatConversation(chatCompletionRequest.getMessages(), conversationStatus);
+        chatConversation.setStatus(conversationStatus);
     }
 
     private static void adjustModelResponseForFurtherUse(ChatMessage responseMessage) {
@@ -206,37 +207,24 @@ public class BpmnProvider {
     }
 
     public BpmnFile provideForTextPrompt(TextPrompt prompt) throws JsonProcessingException {
-        BpmnModelInstance bpmnModelInstance = BpmnElements.getModelInstance();
-
-        List<ChatMessage> messages = List.of(
+        ChatConversation chatConversation = ChatConversation.emptyConversation();
+        chatConversation.addMessages(List.of(
                 ChatMessage.systemMessage("When creating a BPMN model for the user, use only the provided functions"),
                 ChatMessage.userMessage(prompt.content() + ". Start with the happy path.")
-        );
+        ));
 
-        ChatConversation chatConversationForHappyPath = carryOutConversation(bpmnModelInstance, messages);
+        carryOutConversation(bpmnModelInstance, chatConversation);
 
-        if (chatConversationForHappyPath.status == ConversationStatus.FINISHED) {
-            messages = new ArrayList<>(chatConversationForHappyPath.messages());
-            messages.add(ChatMessage.userMessage("Now think about what problems may arise during the process and modify the model accordingly."));
-            carryOutConversation(bpmnModelInstance, messages);
+        if (chatConversation.getStatus() == ConversationStatus.FINISHED) {
+            chatConversation.addMessage(ChatMessage.userMessage("Now think about what problems may arise during the process and modify the model accordingly."));
+            carryOutConversation(bpmnModelInstance, chatConversation);
         }
 
         return new BpmnFile(Bpmn.convertToString(bpmnModelInstance));
     }
 
-    private enum ConversationStatus {
-        CONTINUE,
-        FINISHED,
-        ERROR_TOO_MANY_TOKENS_REQUESTED,
-        UNHANDLED_ERROR
-    }
-
     private enum FunctionCallError {
         NON_UNIQUE_ID
-    }
-
-    private record ChatConversation(List<ChatMessage> messages, ConversationStatus status) {
-
     }
 
     private static class UnhandledFunctionCallErrorException extends RuntimeException {
