@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.Logging.ObjectToLog;
-import edu.agh.bpmnai.generator.bpmn.BpmnElements;
 import edu.agh.bpmnai.generator.bpmn.ElementToRemove;
 import edu.agh.bpmnai.generator.bpmn.model.*;
 import edu.agh.bpmnai.generator.openai.OpenAI;
@@ -12,8 +11,6 @@ import edu.agh.bpmnai.generator.openai.model.ChatCompletionRequest;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
 import edu.agh.bpmnai.generator.openai.model.ChatResponses;
 import edu.agh.bpmnai.generator.openai.model.SingleChatResponse;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -51,90 +48,93 @@ public class BpmnProvider {
         );
     }
 
-    private static Optional<FunctionCallError> parseModelFunctionCall(BpmnModelInstance bpmnModelInstance, ChatMessage responseMessage) throws JsonProcessingException {
+    private static Optional<FunctionCallError> parseModelFunctionCall(BpmnModel bpmnModel, ChatMessage responseMessage) throws JsonProcessingException {
         String functionName = responseMessage.function_call().get("name").asText();
         JsonNode functionArguments = responseMessage.function_call().get("arguments");
         switch (functionName) {
             case "addProcess" -> {
-                BpmnProcess processParameters = mapper.readValue(functionArguments.asText(), BpmnProcess.class);
-                if (doesIdExist(processParameters.id(), bpmnModelInstance)) {
+                BpmnProcess process = mapper.readValue(functionArguments.asText(), BpmnProcess.class);
+                if (bpmnModel.doesIdExist(process.id())) {
                     return Optional.of(FunctionCallError.NON_UNIQUE_ID);
                 }
-                BpmnElements.addProcess(bpmnModelInstance, processParameters);
+
+                bpmnModel.addProcess(process);
             }
             case "addStartEvent" -> {
-                BpmnStartEvent startEventParameters = mapper.readValue(functionArguments.asText(), BpmnStartEvent.class);
-                if (doesIdExist(startEventParameters.id(), bpmnModelInstance)) {
+                BpmnStartEvent startEvent = mapper.readValue(functionArguments.asText(), BpmnStartEvent.class);
+                if (bpmnModel.doesIdExist(startEvent.id())) {
                     return Optional.of(FunctionCallError.NON_UNIQUE_ID);
                 }
-                BpmnElements.addStartEvent(bpmnModelInstance, startEventParameters);
+
+                bpmnModel.addStartEvent(startEvent);
             }
             case "addEndEvent" -> {
-                BpmnEndEvent endEventParameters = mapper.readValue(functionArguments.asText(), BpmnEndEvent.class);
-                if (doesIdExist(endEventParameters.id(), bpmnModelInstance)) {
+                BpmnEndEvent endEvent = mapper.readValue(functionArguments.asText(), BpmnEndEvent.class);
+                if (bpmnModel.doesIdExist(endEvent.id())) {
                     return Optional.of(FunctionCallError.NON_UNIQUE_ID);
                 }
-                BpmnElements.addEndEvent(bpmnModelInstance, endEventParameters);
+
+                bpmnModel.addEndEvent(endEvent);
             }
             case "addUserTask" -> {
-                BpmnUserTask userTaskParameters = mapper.readValue(functionArguments.asText(), BpmnUserTask.class);
-                if (doesIdExist(userTaskParameters.id(), bpmnModelInstance)) {
+                BpmnUserTask userTask = mapper.readValue(functionArguments.asText(), BpmnUserTask.class);
+                if (bpmnModel.doesIdExist(userTask.id())) {
                     return Optional.of(FunctionCallError.NON_UNIQUE_ID);
                 }
-                BpmnElements.addUserTask(bpmnModelInstance, userTaskParameters);
+
+                bpmnModel.addUserTask(userTask);
             }
             case "addServiceTask" -> {
-                BpmnServiceTask serviceTaskParameters = mapper.readValue(functionArguments.asText(), BpmnServiceTask.class);
-                if (doesIdExist(serviceTaskParameters.id(), bpmnModelInstance)) {
+                BpmnServiceTask serviceTask = mapper.readValue(functionArguments.asText(), BpmnServiceTask.class);
+                if (bpmnModel.doesIdExist(serviceTask.id())) {
                     return Optional.of(FunctionCallError.NON_UNIQUE_ID);
                 }
-                BpmnElements.addServiceTask(bpmnModelInstance, serviceTaskParameters);
+
+                bpmnModel.addServiceTask(serviceTask);
             }
             case "addGateway" -> {
-                BpmnGateway gatewayParameters = mapper.readValue(functionArguments.asText(), BpmnGateway.class);
-                if (doesIdExist(gatewayParameters.id(), bpmnModelInstance)) {
+                BpmnGateway gateway = mapper.readValue(functionArguments.asText(), BpmnGateway.class);
+                if (bpmnModel.doesIdExist(gateway.id())) {
                     return Optional.of(FunctionCallError.NON_UNIQUE_ID);
                 }
-                BpmnElements.addGateway(bpmnModelInstance, gatewayParameters);
+
+                bpmnModel.addGateway(gateway);
             }
             case "addSequenceFlow" -> {
-                BpmnSequenceFlow sequenceFlowParameters = mapper.readValue(functionArguments.asText(), BpmnSequenceFlow.class);
-                if (doesIdExist(sequenceFlowParameters.id(), bpmnModelInstance)) {
+                BpmnSequenceFlow sequenceFlow = mapper.readValue(functionArguments.asText(), BpmnSequenceFlow.class);
+                if (bpmnModel.doesIdExist(sequenceFlow.id())) {
                     return Optional.of(FunctionCallError.NON_UNIQUE_ID);
-                } else if (sequenceFlowParameters.id() == null) {
+                } else if (sequenceFlow.id() == null) {
                     return Optional.of(FunctionCallError.MISSING_PARAMETER);
                 }
-                BpmnElements.addSequenceFlow(bpmnModelInstance, sequenceFlowParameters);
+
+                bpmnModel.addSequenceFlow(sequenceFlow);
             }
             case "removeElement" -> {
                 ElementToRemove elementToRemove = mapper.readValue(functionArguments.asText(), ElementToRemove.class);
-                BpmnElements.removeElement(bpmnModelInstance, elementToRemove.id(), elementToRemove.parentId());
+                bpmnModel.removeElement(elementToRemove.id(), elementToRemove.parentId());
             }
         }
 
         return Optional.empty();
     }
 
-    private static boolean doesIdExist(String id, BpmnModelInstance modelInstance) {
-        return modelInstance.getModelElementById(id) != null;
-    }
-
     private static boolean isContinueConversation(ConversationStatus conversationStatus) {
         return conversationStatus != ConversationStatus.FINISHED && conversationStatus != ConversationStatus.UNHANDLED_ERROR;
     }
 
-    private static void carryOutConversation(BpmnModelInstance bpmnModelInstance, ChatConversation chatConversation) throws JsonProcessingException {
+    private static void carryOutConversation(BpmnModel bpmnModel, ChatConversation chatConversation) throws JsonProcessingException {
         chatConversation.setStatus(ConversationStatus.IN_PROGRESS);
 
         int numberOfTokensInMessages = chatConversation.getMessages().stream()
                 .mapToInt(chatMessage -> OpenAI.approximateTokensPerParagraph)
                 .sum();
 
-        int startingMaxTokens = modelProperties.maxNumberOfTokens() - numberOfTokensInMessages - BpmnElements.functionDescriptionsTokens;
+        int startingMaxTokens = modelProperties.maxNumberOfTokens() - numberOfTokensInMessages - BpmnModel.functionDescriptionsTokens;
         ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
                 modelProperties.name(),
                 chatConversation.getMessages(),
-                BpmnElements.functionsDescriptions,
+                BpmnModel.functionsDescriptions,
                 temperature,
                 startingMaxTokens
         );
@@ -164,7 +164,7 @@ public class BpmnProvider {
                 chatConversation.addMessage(responseMessage);
 
                 if (responseMessage.function_call() != null) {
-                    Optional<FunctionCallError> optionalFunctionCallError = parseModelFunctionCall(bpmnModelInstance, responseMessage);
+                    Optional<FunctionCallError> optionalFunctionCallError = parseModelFunctionCall(bpmnModel, responseMessage);
                     optionalFunctionCallError.ifPresent(functionCallError -> chatConversation.addMessage(handleIncorrectFunctionCall(functionCallError)));
                 }
 
@@ -221,7 +221,7 @@ public class BpmnProvider {
     }
 
     public BpmnFile provideForTextPrompt(TextPrompt prompt) throws JsonProcessingException {
-        BpmnModelInstance bpmnModelInstance = BpmnElements.getModelInstance();
+        BpmnModel bpmnModel = new BpmnModel();
 
         ChatConversation chatConversation = ChatConversation.emptyConversation();
         chatConversation.addMessages(List.of(
@@ -229,14 +229,14 @@ public class BpmnProvider {
                 ChatMessage.userMessage(prompt.content() + ". Start with the happy path.")
         ));
 
-        carryOutConversation(bpmnModelInstance, chatConversation);
+        carryOutConversation(bpmnModel, chatConversation);
 
         if (chatConversation.getStatus() == ConversationStatus.FINISHED) {
             chatConversation.addMessage(ChatMessage.userMessage("Now think about what problems may arise during the process and modify the model accordingly."));
-            carryOutConversation(bpmnModelInstance, chatConversation);
+            carryOutConversation(bpmnModel, chatConversation);
         }
 
-        return new BpmnFile(Bpmn.convertToString(bpmnModelInstance));
+        return BpmnFile.fromModel(bpmnModel);
     }
 
     private enum FunctionCallError {
