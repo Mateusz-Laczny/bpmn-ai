@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator;
 
+import edu.agh.bpmnai.generator.openai.OpenAI;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
 
 import java.util.*;
@@ -35,6 +36,12 @@ class ChatConversation {
 
     public void setStatus(ConversationStatus status) {
         this.status = status;
+    }
+
+    public int getUsedTokens() {
+        return messages.stream()
+                .mapToInt(chatMessage -> OpenAI.approximateTokensPerParagraph)
+                .sum();
     }
 
     @Override

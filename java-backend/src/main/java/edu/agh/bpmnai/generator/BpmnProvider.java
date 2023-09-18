@@ -126,10 +126,7 @@ public class BpmnProvider {
     private static void carryOutConversation(BpmnModel bpmnModel, ChatConversation chatConversation) throws JsonProcessingException {
         chatConversation.setStatus(ConversationStatus.IN_PROGRESS);
 
-        int numberOfTokensInMessages = chatConversation.getMessages().stream()
-                .mapToInt(chatMessage -> OpenAI.approximateTokensPerParagraph)
-                .sum();
-
+        int numberOfTokensInMessages = chatConversation.getUsedTokens();
         int startingMaxTokens = modelProperties.maxNumberOfTokens() - numberOfTokensInMessages - BpmnModel.functionDescriptionsTokens;
         ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
                 modelProperties.name(),
