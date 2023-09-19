@@ -17,6 +17,18 @@ public class Logging {
         }
     }
 
+    public static void logErrorMessage(String message, ObjectToLog... objectsToLog) {
+        if (log.isErrorEnabled()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(message).append(';').append(' ');
+            for (ObjectToLog objectToLog : objectsToLog) {
+                sb.append(objectToLog.label()).append('=').append(objectToLog.object().toString()).append(", ");
+            }
+
+            log.error(sb.toString());
+        }
+    }
+
     public static void logThrowable(String message, Throwable throwable) {
         if (log.isErrorEnabled()) {
             log.error(message, throwable);

@@ -15,7 +15,7 @@ public class OpenAI {
     }
 
     public enum OpenAIModel {
-        GPT_3_5_TURBO_16K(new OpenAIModelProperties("gpt-3.5-turbo-16k-0613", 16_384, EncodingType.CL100K_BASE));
+        GPT_3_5_TURBO_16K(new OpenAIModelProperties("gpt-3.5-turbo-16k-0613", 16_385, EncodingType.CL100K_BASE));
 
         private final OpenAIModelProperties modelProperties;
 

@@ -3,12 +3,10 @@ package edu.agh.bpmnai.generator.openai;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.Logging;
-import edu.agh.bpmnai.generator.openai.model.ChatCompletionRequest;
-import edu.agh.bpmnai.generator.openai.model.ChatCompletionResponse;
-import edu.agh.bpmnai.generator.openai.model.ChatFunction;
-import edu.agh.bpmnai.generator.openai.model.ChatMessage;
+import edu.agh.bpmnai.generator.openai.model.*;
 import org.springframework.http.*;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -32,9 +30,9 @@ public class OpenAIModelAPIConnection {
     }
 
     public ChatCompletionResponse sendChatCompletionRequest(List<ChatMessage> messages, List<ChatFunction> functionDescriptions, float temperature) throws ModelCommunicationException {
-
         int numberOfTokensInMessages = calculateTokensUsedByMessages(messages);
         int numberOfTokensInFunctionDescriptions;
+
         try {
             numberOfTokensInFunctionDescriptions = OpenAI.getNumberOfTokens(new ObjectMapper().writeValueAsString(functionDescriptions), usedModel);
         } catch (JsonProcessingException e) {
@@ -80,14 +78,19 @@ public class OpenAIModelAPIConnection {
                     responseOptional = Optional.of(response.getBody());
                     communicationStatus = CommunicationStatus.SUCCESSFUL;
                 } else {
-                    Logging.logInfoMessage("Request failed", new Logging.ObjectToLog("statusCode", response.getStatusCode()));
+                    Logging.logInfoMessage("Request status was different than OK", new Logging.ObjectToLog("statusCode", response.getStatusCode()));
                     communicationStatus = CommunicationStatus.UNHANDLED_ERROR;
                 }
             } catch (HttpClientErrorException.BadRequest badRequest) {
-                Logging.logThrowable("Request failed due to bad request content", badRequest);
-                communicationStatus = CommunicationStatus.TOO_MANY_TOKENS_REQUESTED;
-            } catch (Exception e) {
-                Logging.logThrowable("Request failed due to exception", e);
+                ApiErrorResponse errorResponse = badRequest.getResponseBodyAs(ApiErrorResponse.class);
+                Logging.logInfoMessage("Request failed due to bad request content", new Logging.ObjectToLog("response", errorResponse));
+                if (errorResponse.errorProperties().code().equals("context_length_exceeded")) {
+                    communicationStatus = CommunicationStatus.TOO_MANY_TOKENS_REQUESTED;
+                } else {
+                    communicationStatus = CommunicationStatus.UNHANDLED_ERROR;
+                }
+            } catch (HttpStatusCodeException e) {
+                Logging.logThrowable("Request failed", e);
                 communicationStatus = CommunicationStatus.UNHANDLED_ERROR;
             }
         }
