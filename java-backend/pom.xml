@@ -46,6 +46,12 @@
 			<version>1.18.28</version>
 			<scope>provided</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>com.knuddels</groupId>
+			<artifactId>jtokkit</artifactId>
+			<version>0.6.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>

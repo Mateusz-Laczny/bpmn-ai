@@ -1,68 +1,22 @@
 package edu.agh.bpmnai.generator;
 
-import edu.agh.bpmnai.generator.openai.OpenAI;
+import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
 
-class ChatConversation {
-    private final List<ChatMessage> messages;
-    private ConversationStatus status;
+public interface ChatConversation {
 
-    private ChatConversation(List<ChatMessage> messages, ConversationStatus status) {
-        this.messages = new ArrayList<>(messages);
-        this.status = status;
-    }
+    void addMessage(ChatMessage message);
 
-    public static ChatConversation emptyConversation() {
-        return new ChatConversation(new ArrayList<>(), ConversationStatus.NEW);
-    }
+    void addMessages(Collection<ChatMessage> messages);
 
-    public void addMessage(ChatMessage message) {
-        this.messages.add(message);
-    }
+    List<ChatMessage> getMessages();
 
-    public void addMessages(Collection<ChatMessage> messages) {
-        this.messages.addAll(messages);
-    }
+    ConversationStatus getCurrentConversationStatus();
 
-    public List<ChatMessage> getMessages() {
-        return Collections.unmodifiableList(messages);
-    }
+    void setCurrentConversationStatus(ConversationStatus currentConversationStatus);
 
-    public ConversationStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ConversationStatus status) {
-        this.status = status;
-    }
-
-    public int getUsedTokens() {
-        return messages.stream()
-                .mapToInt(chatMessage -> OpenAI.approximateTokensPerParagraph)
-                .sum();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (ChatConversation) obj;
-        return Objects.equals(this.messages, that.messages) &&
-                Objects.equals(this.status, that.status);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(messages, status);
-    }
-
-    @Override
-    public String toString() {
-        return "ChatConversation[" +
-                "messages=" + messages + ",\n" +
-                "status=" + status + ']';
-    }
-
+    void carryOutConversation(BpmnModel bpmnModel);
 }

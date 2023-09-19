@@ -1,9 +1,11 @@
 package edu.agh.bpmnai.generator.bpmn.model;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.agh.bpmnai.generator.openai.OpenAI;
+import edu.agh.bpmnai.generator.bpmn.ElementToRemove;
 import edu.agh.bpmnai.generator.openai.model.ChatFunction;
+import edu.agh.bpmnai.generator.openai.model.ChatMessage;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Process;
@@ -13,9 +15,11 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public final class BpmnModel {
-    public static final int functionDescriptionsTokens;
+
+    private static final ObjectMapper mapper = new ObjectMapper();
     public static List<ChatFunction> functionsDescriptions = List.of(
             new ChatFunction(
                     "addUserTask",
@@ -414,15 +418,6 @@ public final class BpmnModel {
                     )
             )
     );
-
-    static {
-        try {
-            functionDescriptionsTokens = OpenAI.getApproximateNumberOfTokens(new ObjectMapper().writeValueAsString(functionsDescriptions));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private final BpmnModelInstance modelInstance;
 
     public BpmnModel() {
@@ -448,6 +443,119 @@ public final class BpmnModel {
         sequenceFlow.setTarget(to);
         to.getIncoming().add(sequenceFlow);
         return sequenceFlow;
+    }
+
+    public Optional<FunctionCallError> parseModelFunctionCall(ChatMessage responseMessage) {
+        String functionName = responseMessage.function_call().get("name").asText();
+        JsonNode functionArguments = responseMessage.function_call().get("arguments");
+        switch (functionName) {
+            case "addProcess" -> {
+                BpmnProcess process;
+                try {
+                    process = mapper.readValue(functionArguments.asText(), BpmnProcess.class);
+                } catch (JsonProcessingException e) {
+                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                }
+
+                if (doesIdExist(process.id())) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+
+                addProcess(process);
+            }
+            case "addStartEvent" -> {
+                BpmnStartEvent startEvent;
+                try {
+                    startEvent = mapper.readValue(functionArguments.asText(), BpmnStartEvent.class);
+                } catch (JsonProcessingException e) {
+                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                }
+
+                if (doesIdExist(startEvent.id())) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+
+                addStartEvent(startEvent);
+            }
+            case "addEndEvent" -> {
+                BpmnEndEvent endEvent;
+                try {
+                    endEvent = mapper.readValue(functionArguments.asText(), BpmnEndEvent.class);
+                } catch (JsonProcessingException e) {
+                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                }
+                if (doesIdExist(endEvent.id())) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+
+                addEndEvent(endEvent);
+            }
+            case "addUserTask" -> {
+                BpmnUserTask userTask;
+                try {
+                    userTask = mapper.readValue(functionArguments.asText(), BpmnUserTask.class);
+                } catch (JsonProcessingException e) {
+                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                }
+                if (doesIdExist(userTask.id())) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+
+                addUserTask(userTask);
+            }
+            case "addServiceTask" -> {
+                BpmnServiceTask serviceTask;
+                try {
+                    serviceTask = mapper.readValue(functionArguments.asText(), BpmnServiceTask.class);
+                } catch (JsonProcessingException e) {
+                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                }
+                if (doesIdExist(serviceTask.id())) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+
+                addServiceTask(serviceTask);
+            }
+            case "addGateway" -> {
+                BpmnGateway gateway;
+                try {
+                    gateway = mapper.readValue(functionArguments.asText(), BpmnGateway.class);
+                } catch (JsonProcessingException e) {
+                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                }
+                if (doesIdExist(gateway.id())) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                }
+
+                addGateway(gateway);
+            }
+            case "addSequenceFlow" -> {
+                BpmnSequenceFlow sequenceFlow;
+                try {
+                    sequenceFlow = mapper.readValue(functionArguments.asText(), BpmnSequenceFlow.class);
+                } catch (JsonProcessingException e) {
+                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                }
+                if (doesIdExist(sequenceFlow.id())) {
+                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                } else if (sequenceFlow.id() == null) {
+                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                }
+
+                addSequenceFlow(sequenceFlow);
+            }
+            case "removeElement" -> {
+                ElementToRemove elementToRemove;
+                try {
+                    elementToRemove = mapper.readValue(functionArguments.asText(), ElementToRemove.class);
+                } catch (JsonProcessingException e) {
+                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                }
+                removeElement(elementToRemove.id(), elementToRemove.parentId());
+            }
+        }
+
+        return Optional.empty();
     }
 
     public String asXmlString() {
@@ -556,4 +664,8 @@ public final class BpmnModel {
                 "modelInstance=" + modelInstance + ']';
     }
 
+    public enum FunctionCallError {
+        NON_UNIQUE_ID,
+        INVALID_PARAMETERS
+    }
 }
