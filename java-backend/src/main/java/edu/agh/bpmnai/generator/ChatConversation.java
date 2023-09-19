@@ -16,7 +16,5 @@ public interface ChatConversation {
 
     ConversationStatus getCurrentConversationStatus();
 
-    void setCurrentConversationStatus(ConversationStatus currentConversationStatus);
-
     void carryOutConversation(BpmnModel bpmnModel);
 }

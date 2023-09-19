@@ -92,8 +92,7 @@ class OpenAIChatConversation implements ChatConversation {
         return currentConversationStatus;
     }
 
-    @Override
-    public void setCurrentConversationStatus(ConversationStatus currentConversationStatus) {
+    private void setCurrentConversationStatus(ConversationStatus currentConversationStatus) {
         this.currentConversationStatus = currentConversationStatus;
     }
 
