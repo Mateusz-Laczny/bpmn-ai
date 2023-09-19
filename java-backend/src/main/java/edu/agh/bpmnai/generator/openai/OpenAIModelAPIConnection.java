@@ -84,7 +84,7 @@ public class OpenAIModelAPIConnection {
             } catch (HttpClientErrorException.BadRequest badRequest) {
                 ApiErrorResponse errorResponse = badRequest.getResponseBodyAs(ApiErrorResponse.class);
                 Logging.logInfoMessage("Request failed due to bad request content", new Logging.ObjectToLog("response", errorResponse));
-                if (errorResponse.errorProperties().code().equals("context_length_exceeded")) {
+                if (errorResponse.error().code().equals("context_length_exceeded")) {
                     communicationStatus = CommunicationStatus.TOO_MANY_TOKENS_REQUESTED;
                 } else {
                     communicationStatus = CommunicationStatus.UNHANDLED_ERROR;
@@ -103,9 +103,15 @@ public class OpenAIModelAPIConnection {
     }
 
     private int calculateTokensUsedByMessages(List<ChatMessage> messages) {
-        return messages.stream()
-                .mapToInt(chatMessage -> OpenAI.getNumberOfTokens(chatMessage.content(), usedModel))
-                .sum();
+        int sum = 0;
+        for (ChatMessage chatMessage : messages) {
+            int tokensUsedByMessage = OpenAI.getNumberOfTokens(chatMessage.content(), usedModel);
+            if (chatMessage.function_call() != null) {
+                OpenAI.getNumberOfTokens(chatMessage.function_call().asText(), usedModel);
+            }
+            sum += tokensUsedByMessage;
+        }
+        return sum;
     }
 
     private enum CommunicationStatus {
