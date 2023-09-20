@@ -8,8 +8,6 @@ public class OpenAI {
     public static final String openAIApiUrl = "https://api.openai.com/v1/chat/completions";
     public static final String openAIApiKey = System.getenv("OPENAI_API_KEY");
 
-    public static final int approximateTokensPerParagraph = 100;
-
     public static int getNumberOfTokens(String text, OpenAIModel model) {
         return Encodings.getNumberOfTokensAfterEncoding(text, model.getModelProperties().encodingType());
     }
