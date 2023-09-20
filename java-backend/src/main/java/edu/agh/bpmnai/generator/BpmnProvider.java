@@ -38,11 +38,6 @@ public class BpmnProvider {
         }
 
         if (chatConversation.getCurrentConversationStatus() == ConversationStatus.FINISHED) {
-            chatConversation.addMessage(ChatMessage.userMessage("Remove unnecessary elements from the model. Try to make it as succinct as possible. Use the provided \"removeElement\" function to remove redundant elements."));
-            chatConversation.carryOutConversation(bpmnModel);
-        }
-
-        if (chatConversation.getCurrentConversationStatus() == ConversationStatus.FINISHED) {
             chatConversation.addMessage(ChatMessage.userMessage("""
                     Fix the errors that could be introduced in the model. Examples of possible errors:
                     - A gateway should have one incoming sequence flow, and two or more outgoing sequence flows.
