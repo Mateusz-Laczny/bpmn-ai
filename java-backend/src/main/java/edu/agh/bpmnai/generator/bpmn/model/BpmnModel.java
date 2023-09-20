@@ -540,6 +540,8 @@ public final class BpmnModel {
                     return Optional.of(FunctionCallError.NON_UNIQUE_ID);
                 } else if (sequenceFlow.id() == null) {
                     return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                } else if (!doesIdExist(sequenceFlow.sourceRef()) || !doesIdExist(sequenceFlow.targetRef())) {
+                    return Optional.of(FunctionCallError.ELEMENT_NOT_FOUND);
                 }
 
                 addSequenceFlow(sequenceFlow);
@@ -551,6 +553,11 @@ public final class BpmnModel {
                 } catch (JsonProcessingException e) {
                     return Optional.of(FunctionCallError.INVALID_PARAMETERS);
                 }
+
+                if (!doesIdExist(elementToRemove.id()) || !doesIdExist(elementToRemove.parentId())) {
+                    return Optional.of(FunctionCallError.ELEMENT_NOT_FOUND);
+                }
+
                 removeElement(elementToRemove.id(), elementToRemove.parentId());
             }
         }
@@ -666,6 +673,7 @@ public final class BpmnModel {
 
     public enum FunctionCallError {
         NON_UNIQUE_ID,
-        INVALID_PARAMETERS
+        INVALID_PARAMETERS,
+        ELEMENT_NOT_FOUND,
     }
 }

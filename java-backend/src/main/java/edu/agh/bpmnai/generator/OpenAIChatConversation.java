@@ -37,7 +37,9 @@ class OpenAIChatConversation implements ChatConversation {
         if (functionCallError == BpmnModel.FunctionCallError.NON_UNIQUE_ID) {
             return ChatMessage.userMessage("The id used in the last function call was not globally unique. Please, call the function again with the same parameters and a new, globally unique id");
         } else if (functionCallError == BpmnModel.FunctionCallError.INVALID_PARAMETERS) {
-            return ChatMessage.userMessage("The last function call was missing a parameter. Please, call the function again with all required parameters");
+            return ChatMessage.userMessage("The last function call had invalid parameters. Please, call the function again with all required parameters");
+        } else if (functionCallError == BpmnModel.FunctionCallError.ELEMENT_NOT_FOUND) {
+            return ChatMessage.userMessage("The last function call contained id of an element that does not exist. Please, call the function again with a proper element id");
         }
 
         throw new UnhandledFunctionCallErrorException();
@@ -63,7 +65,11 @@ class OpenAIChatConversation implements ChatConversation {
 
                 if (responseMessage.function_call() != null) {
                     Optional<BpmnModel.FunctionCallError> optionalFunctionCallError = bpmnModel.parseModelFunctionCall(responseMessage);
-                    optionalFunctionCallError.ifPresent(functionCallError -> addMessage(handleIncorrectFunctionCall(functionCallError)));
+                    if (optionalFunctionCallError.isPresent()) {
+                        BpmnModel.FunctionCallError functionCallError = optionalFunctionCallError.get();
+                        Logging.logWarnMessage("The chat function call could not be executed", new Logging.ObjectToLog("Chat response", chatResponse), new Logging.ObjectToLog("Error", functionCallError));
+                        addMessage(handleIncorrectFunctionCall(functionCallError));
+                    }
                 }
             } catch (OpenAIModelAPIConnection.ModelCommunicationException e) {
                 Logging.logThrowable("Exception during communication with model API", e);
