@@ -5,13 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Logging {
 
-    public static void logInfoMessage(String message, ObjectToLog... objectsToLog) {
-        if (log.isInfoEnabled()) {
-            String logMessage = buildLogMessage(message, objectsToLog);
-            log.info(logMessage);
-        }
-    }
-
     private static String buildLogMessage(String message, ObjectToLog[] objectsToLog) {
         StringBuilder sb = new StringBuilder();
         sb.append(message).append(';').append(' ');
@@ -19,6 +12,20 @@ public class Logging {
             sb.append(objectToLog.label()).append('=').append(objectToLog.object().toString()).append(", ");
         }
         return sb.toString();
+    }
+
+    public static void logDebugMessage(String message, ObjectToLog... objectsToLog) {
+        if (log.isDebugEnabled()) {
+            String logMessage = buildLogMessage(message, objectsToLog);
+            log.debug(logMessage);
+        }
+    }
+
+    public static void logInfoMessage(String message, ObjectToLog... objectsToLog) {
+        if (log.isInfoEnabled()) {
+            String logMessage = buildLogMessage(message, objectsToLog);
+            log.info(logMessage);
+        }
     }
 
     public static void logWarnMessage(String message, ObjectToLog... objectsToLog) {

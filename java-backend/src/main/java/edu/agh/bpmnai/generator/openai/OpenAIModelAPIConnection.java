@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.Logging;
 import edu.agh.bpmnai.generator.openai.model.*;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -58,7 +61,7 @@ public class OpenAIModelAPIConnection {
                 request = request.withMax_tokens(getNewValueOfMaxTokens(request.getMax_tokens(), numberOfTooManyTokensErrors));
             }
 
-            Logging.logInfoMessage("Sending request", new Logging.ObjectToLog("requestBody", request));
+            Logging.logDebugMessage("Sending request", new Logging.ObjectToLog("requestBody", request));
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
             headers.setAccept(List.of(MediaType.APPLICATION_JSON));
@@ -66,24 +69,23 @@ public class OpenAIModelAPIConnection {
 
             HttpEntity<ChatCompletionRequest> requestHttpEntity = new HttpEntity<>(request, headers);
             try {
-                ResponseEntity<ChatCompletionResponse> response = restTemplate.exchange(
+                ResponseEntity<ChatCompletionResponse> response = restTemplate.postForEntity(
                         OpenAI.openAIApiUrl,
-                        HttpMethod.POST,
                         requestHttpEntity,
                         ChatCompletionResponse.class
                 );
 
-                if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                    Logging.logInfoMessage("Request was successful", new Logging.ObjectToLog("requestBody", response.getBody()));
+                if (response.getBody() != null) {
+                    Logging.logDebugMessage("Request was successful", new Logging.ObjectToLog("requestBody", response.getBody()));
                     responseOptional = Optional.of(response.getBody());
                     communicationStatus = CommunicationStatus.SUCCESSFUL;
                 } else {
-                    Logging.logInfoMessage("Request status was different than OK", new Logging.ObjectToLog("statusCode", response.getStatusCode()));
+                    Logging.logWarnMessage("Response body not present", new Logging.ObjectToLog("statusCode", response.getStatusCode()));
                     communicationStatus = CommunicationStatus.UNHANDLED_ERROR;
                 }
             } catch (HttpClientErrorException.BadRequest badRequest) {
                 ApiErrorResponse errorResponse = badRequest.getResponseBodyAs(ApiErrorResponse.class);
-                Logging.logInfoMessage("Request failed due to bad request content", new Logging.ObjectToLog("response", errorResponse));
+                Logging.logWarnMessage("Request failed due to bad request content", new Logging.ObjectToLog("response", errorResponse));
                 if (errorResponse.error().code().equals("context_length_exceeded")) {
                     communicationStatus = CommunicationStatus.TOO_MANY_TOKENS_REQUESTED;
                 } else {
