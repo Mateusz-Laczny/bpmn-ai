@@ -7,25 +7,31 @@ public class Logging {
 
     public static void logInfoMessage(String message, ObjectToLog... objectsToLog) {
         if (log.isInfoEnabled()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(message).append(';').append(' ');
-            for (ObjectToLog objectToLog : objectsToLog) {
-                sb.append(objectToLog.label()).append('=').append(objectToLog.object().toString()).append(", ");
-            }
+            String logMessage = buildLogMessage(message, objectsToLog);
+            log.info(logMessage);
+        }
+    }
 
-            log.info(sb.toString());
+    private static String buildLogMessage(String message, ObjectToLog[] objectsToLog) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(message).append(';').append(' ');
+        for (ObjectToLog objectToLog : objectsToLog) {
+            sb.append(objectToLog.label()).append('=').append(objectToLog.object().toString()).append(", ");
+        }
+        return sb.toString();
+    }
+
+    public static void logWarnMessage(String message, ObjectToLog... objectsToLog) {
+        if (log.isWarnEnabled()) {
+            String logMessage = buildLogMessage(message, objectsToLog);
+            log.warn(logMessage);
         }
     }
 
     public static void logErrorMessage(String message, ObjectToLog... objectsToLog) {
         if (log.isErrorEnabled()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(message).append(';').append(' ');
-            for (ObjectToLog objectToLog : objectsToLog) {
-                sb.append(objectToLog.label()).append('=').append(objectToLog.object().toString()).append(", ");
-            }
-
-            log.error(sb.toString());
+            String logMessage = buildLogMessage(message, objectsToLog);
+            log.error(logMessage);
         }
     }
 
