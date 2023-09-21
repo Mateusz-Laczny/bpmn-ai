@@ -34,12 +34,16 @@ class OpenAIChatConversation implements ChatConversation {
     }
 
     private static ChatMessage handleIncorrectFunctionCall(BpmnModel.FunctionCallError functionCallError) {
-        if (functionCallError == BpmnModel.FunctionCallError.NON_UNIQUE_ID) {
-            return ChatMessage.userMessage("The id used in the last function call was not globally unique. Please, call the function again with the same parameters and a new, globally unique id");
-        } else if (functionCallError == BpmnModel.FunctionCallError.INVALID_PARAMETERS) {
-            return ChatMessage.userMessage("The last function call had invalid parameters. Please, call the function again with all required parameters");
-        } else if (functionCallError == BpmnModel.FunctionCallError.ELEMENT_NOT_FOUND) {
-            return ChatMessage.userMessage("The last function call contained id of an element that does not exist. Please, call the function again with a proper element id");
+        String functionCallAsText = functionCallError.functionCallAsJson().asText();
+
+        if (functionCallError.errorType() == BpmnModel.FunctionCallErrorType.NON_UNIQUE_ID) {
+            return ChatMessage.userMessage("The id used in the last function call was not globally unique. Call the function again with the same parameters and a new, globally unique id. Invalid function call:\n" + functionCallAsText);
+        } else if (functionCallError.errorType() == BpmnModel.FunctionCallErrorType.INVALID_PARAMETERS) {
+            return ChatMessage.userMessage("The last function call had invalid parameters. Call the function again with proper arguments. Invalid function call:\n" + functionCallAsText);
+        } else if (functionCallError.errorType() == BpmnModel.FunctionCallErrorType.MISSING_PARAMETERS) {
+            return ChatMessage.userMessage("The last function call was missing one or more parameters. Call the function again with missing parameters added. Invalid function call:\n" + functionCallAsText);
+        } else if (functionCallError.errorType() == BpmnModel.FunctionCallErrorType.ELEMENT_NOT_FOUND) {
+            return ChatMessage.userMessage("The last function call contained id of an element that does not exist. Call the function again with a proper element id. Invalid function call:\n" + functionCallAsText);
         }
 
         throw new UnhandledFunctionCallErrorException();
@@ -53,6 +57,8 @@ class OpenAIChatConversation implements ChatConversation {
             try {
                 ChatCompletionResponse chatCompletionResponse = apiConnection.sendChatCompletionRequest(getMessages(), BpmnModel.functionsDescriptions, temperature);
                 SingleChatResponse chatResponse = chatCompletionResponse.choices().get(0);
+
+                Logging.logInfoMessage("Received response from the model", new Logging.ObjectToLog("Response", chatResponse));
 
                 if (chatResponse.finish_reason().equals("stop")) {
                     Logging.logInfoMessage("Reached the end of the conversation");

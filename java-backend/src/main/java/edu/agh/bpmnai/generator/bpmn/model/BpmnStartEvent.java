@@ -1,4 +1,4 @@
 package edu.agh.bpmnai.generator.bpmn.model;
 
-public record BpmnStartEvent(String id, String processId) {
+public record BpmnStartEvent(String id, String processId, String name) {
 }

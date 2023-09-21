@@ -187,6 +187,13 @@ public final class BpmnModel {
                                             "string",
                                             "description",
                                             "Id of the parent process element of this element"
+                                    ),
+                                    "name",
+                                    Map.of(
+                                            "type",
+                                            "string",
+                                            "description",
+                                            "Name of the start event"
                                     )
                             ),
                             "required",
@@ -213,10 +220,17 @@ public final class BpmnModel {
                                             "string",
                                             "description",
                                             "Id of the parent process element of this element"
+                                    ),
+                                    "name",
+                                    Map.of(
+                                            "type",
+                                            "string",
+                                            "description",
+                                            "Name of the end event"
                                     )
                             ),
                             "required",
-                            List.of("id", "processId")
+                            List.of("id", "processId", "name")
                     )),
             new ChatFunction(
                     "addIntermediateEvent",
@@ -454,11 +468,11 @@ public final class BpmnModel {
                 try {
                     process = mapper.readValue(functionArguments.asText(), BpmnProcess.class);
                 } catch (JsonProcessingException e) {
-                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.INVALID_PARAMETERS, functionArguments));
                 }
 
                 if (doesIdExist(process.id())) {
-                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.NON_UNIQUE_ID, functionArguments));
                 }
 
                 addProcess(process);
@@ -468,11 +482,11 @@ public final class BpmnModel {
                 try {
                     startEvent = mapper.readValue(functionArguments.asText(), BpmnStartEvent.class);
                 } catch (JsonProcessingException e) {
-                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.INVALID_PARAMETERS, functionArguments));
                 }
 
                 if (doesIdExist(startEvent.id())) {
-                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.NON_UNIQUE_ID, functionArguments));
                 }
 
                 addStartEvent(startEvent);
@@ -482,11 +496,13 @@ public final class BpmnModel {
                 try {
                     endEvent = mapper.readValue(functionArguments.asText(), BpmnEndEvent.class);
                 } catch (JsonProcessingException e) {
-                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.INVALID_PARAMETERS, functionArguments));
                 }
+
                 if (doesIdExist(endEvent.id())) {
-                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.NON_UNIQUE_ID, functionArguments));
                 }
+
 
                 addEndEvent(endEvent);
             }
@@ -495,10 +511,11 @@ public final class BpmnModel {
                 try {
                     userTask = mapper.readValue(functionArguments.asText(), BpmnUserTask.class);
                 } catch (JsonProcessingException e) {
-                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.INVALID_PARAMETERS, functionArguments));
                 }
+
                 if (doesIdExist(userTask.id())) {
-                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.NON_UNIQUE_ID, functionArguments));
                 }
 
                 addUserTask(userTask);
@@ -508,11 +525,13 @@ public final class BpmnModel {
                 try {
                     serviceTask = mapper.readValue(functionArguments.asText(), BpmnServiceTask.class);
                 } catch (JsonProcessingException e) {
-                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.INVALID_PARAMETERS, functionArguments));
                 }
+
                 if (doesIdExist(serviceTask.id())) {
-                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.NON_UNIQUE_ID, functionArguments));
                 }
+
 
                 addServiceTask(serviceTask);
             }
@@ -521,10 +540,11 @@ public final class BpmnModel {
                 try {
                     gateway = mapper.readValue(functionArguments.asText(), BpmnGateway.class);
                 } catch (JsonProcessingException e) {
-                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.INVALID_PARAMETERS, functionArguments));
                 }
+
                 if (doesIdExist(gateway.id())) {
-                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.NON_UNIQUE_ID, functionArguments));
                 }
 
                 addGateway(gateway);
@@ -534,83 +554,108 @@ public final class BpmnModel {
                 try {
                     sequenceFlow = mapper.readValue(functionArguments.asText(), BpmnSequenceFlow.class);
                 } catch (JsonProcessingException e) {
-                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.INVALID_PARAMETERS, functionArguments));
                 }
+
                 if (doesIdExist(sequenceFlow.id())) {
-                    return Optional.of(FunctionCallError.NON_UNIQUE_ID);
-                } else if (sequenceFlow.id() == null) {
-                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.NON_UNIQUE_ID, functionArguments));
+                } else if (sequenceFlow.parentElementId() == null || sequenceFlow.id() == null || sequenceFlow.sourceRef() == null || sequenceFlow.targetRef() == null) {
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.MISSING_PARAMETERS, functionArguments));
                 } else if (!doesIdExist(sequenceFlow.sourceRef()) || !doesIdExist(sequenceFlow.targetRef())) {
-                    return Optional.of(FunctionCallError.ELEMENT_NOT_FOUND);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.ELEMENT_NOT_FOUND, functionArguments));
                 }
 
                 addSequenceFlow(sequenceFlow);
+            }
+            case "addIntermediateEvent" -> {
+                BpmnIntermediateEvent intermediateEvent;
+                try {
+                    intermediateEvent = mapper.readValue(functionArguments.asText(), BpmnIntermediateEvent.class);
+                } catch (JsonProcessingException e) {
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.INVALID_PARAMETERS, functionArguments));
+                }
+
+                if (doesIdExist(intermediateEvent.id())) {
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.NON_UNIQUE_ID, functionArguments));
+                }
+
+                addIntermediateEvent(intermediateEvent);
             }
             case "removeElement" -> {
                 ElementToRemove elementToRemove;
                 try {
                     elementToRemove = mapper.readValue(functionArguments.asText(), ElementToRemove.class);
                 } catch (JsonProcessingException e) {
-                    return Optional.of(FunctionCallError.INVALID_PARAMETERS);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.INVALID_PARAMETERS, functionArguments));
                 }
 
                 if (!doesIdExist(elementToRemove.id()) || !doesIdExist(elementToRemove.parentId())) {
-                    return Optional.of(FunctionCallError.ELEMENT_NOT_FOUND);
+                    return Optional.of(new FunctionCallError(FunctionCallErrorType.ELEMENT_NOT_FOUND, functionArguments));
                 }
 
                 removeElement(elementToRemove.id(), elementToRemove.parentId());
             }
+            default -> throw new IllegalStateException("Unrecognised function name:" + functionName);
         }
 
         return Optional.empty();
     }
 
     public String asXmlString() {
+        Bpmn.validateModel(modelInstance);
         return Bpmn.convertToString(modelInstance);
     }
 
     public void addUserTask(BpmnUserTask userTask) {
         Process process = modelInstance.getModelElementById(userTask.processId());
-        UserTask camudaUserTask = createElementWithParent(process, userTask.id(), UserTask.class);
-        camudaUserTask.setName(userTask.name());
-        camudaUserTask.setCamundaAssignee(userTask.assignee());
+        UserTask userTaskElement = createElementWithParent(process, userTask.id(), UserTask.class);
+        userTaskElement.setAttributeValue("name", userTask.name());
+        userTaskElement.setCamundaAssignee(userTask.assignee());
     }
 
     public void addServiceTask(BpmnServiceTask serviceTask) {
         Process process = modelInstance.getModelElementById(serviceTask.processId());
-        ServiceTask camudaServiceTask = createElementWithParent(process, serviceTask.id(), ServiceTask.class);
-        camudaServiceTask.setName(serviceTask.name());
+        ServiceTask serviceTaskElement = createElementWithParent(process, serviceTask.id(), ServiceTask.class);
+        serviceTaskElement.setAttributeValue("name", serviceTask.name());
     }
 
     public void addProcess(BpmnProcess process) {
-        Process camudaProcess = createElementWithParent(modelInstance.getDefinitions(), process.id(), Process.class);
-        camudaProcess.setName(process.name());
+        Process processElement = createElementWithParent(modelInstance.getDefinitions(), process.id(), Process.class);
+        processElement.setAttributeValue("name", process.name());
     }
 
     public void addGateway(BpmnGateway gateway) {
         Process process = modelInstance.getModelElementById(gateway.processId());
+        Gateway gatewayElement;
         switch (gateway.type()) {
-            case EXCLUSIVE -> createElementWithParent(process, gateway.id(), ExclusiveGateway.class);
-            case INCLUSIVE -> createElementWithParent(process, gateway.id(), InclusiveGateway.class);
+            case EXCLUSIVE -> gatewayElement = createElementWithParent(process, gateway.id(), ExclusiveGateway.class);
+            case INCLUSIVE -> gatewayElement = createElementWithParent(process, gateway.id(), InclusiveGateway.class);
+            default -> throw new IllegalStateException("Unexpected gateway type value: " + gateway.type());
         }
+
+        gatewayElement.setAttributeValue("name", gateway.name());
     }
 
     public void addStartEvent(BpmnStartEvent startEvent) {
         Process process = modelInstance.getModelElementById(startEvent.processId());
-        createElementWithParent(process, startEvent.id(), StartEvent.class);
+        StartEvent startEventElement = createElementWithParent(process, startEvent.id(), StartEvent.class);
+        startEventElement.setAttributeValue("name", startEvent.name());
     }
 
     public void addEndEvent(BpmnEndEvent endEvent) {
         Process process = modelInstance.getModelElementById(endEvent.processId());
-        createElementWithParent(process, endEvent.id(), EndEvent.class);
+        EndEvent endEventElement = createElementWithParent(process, endEvent.id(), EndEvent.class);
+        endEventElement.setAttributeValue("name", endEvent.name());
     }
 
     public void addIntermediateEvent(BpmnIntermediateEvent intermediateEvent) {
         Process process = modelInstance.getModelElementById(intermediateEvent.processId());
         if (intermediateEvent.catchEvent()) {
-            createElementWithParent(process, intermediateEvent.id(), IntermediateCatchEvent.class);
+            CatchEvent catchEventElement = createElementWithParent(process, intermediateEvent.id(), IntermediateCatchEvent.class);
+            catchEventElement.setAttributeValue("name", intermediateEvent.name());
         } else {
-            createElementWithParent(process, intermediateEvent.id(), IntermediateThrowEvent.class);
+            ThrowEvent throwEventElement = createElementWithParent(process, intermediateEvent.id(), IntermediateThrowEvent.class);
+            throwEventElement.setAttributeValue("name", intermediateEvent.name());
         }
     }
 
@@ -639,8 +684,8 @@ public final class BpmnModel {
         }
 
         FlowNode targetElement = modelInstance.getModelElementById(sequenceFlow.targetRef());
-        SequenceFlow camudaSequenceFlow = createSequenceFlow(process, sequenceFlow.id(), sourceElement, targetElement);
-        camudaSequenceFlow.setName(sequenceFlow.name());
+        SequenceFlow sequenceFlowElement = createSequenceFlow(process, sequenceFlow.id(), sourceElement, targetElement);
+        sequenceFlowElement.setAttributeValue("name", sequenceFlow.name());
     }
 
     public void removeElement(String id, String parentId) {
@@ -671,9 +716,13 @@ public final class BpmnModel {
                 "modelInstance=" + modelInstance + ']';
     }
 
-    public enum FunctionCallError {
+    public enum FunctionCallErrorType {
         NON_UNIQUE_ID,
         INVALID_PARAMETERS,
+        MISSING_PARAMETERS,
         ELEMENT_NOT_FOUND,
+    }
+
+    public record FunctionCallError(FunctionCallErrorType errorType, JsonNode functionCallAsJson) {
     }
 }
