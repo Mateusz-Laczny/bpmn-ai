@@ -17,7 +17,7 @@ import java.util.Optional;
 
 public class OpenAIModelAPIConnection {
 
-    private static final int multiplicativeBackoffStartingPoint = 200;
+    private static final int multiplicativeBackoffStartingPoint = 500;
     private final OpenAI.OpenAIModel usedModel;
 
     public OpenAIModelAPIConnection(OpenAI.OpenAIModel modelToUse) {
@@ -33,16 +33,7 @@ public class OpenAIModelAPIConnection {
     }
 
     public ChatCompletionResponse sendChatCompletionRequest(List<ChatMessage> messages, List<ChatFunction> functionDescriptions, float temperature) throws ModelCommunicationException {
-        int numberOfTokensInMessages = calculateTokensUsedByMessages(messages);
-        int numberOfTokensInFunctionDescriptions;
-
-        try {
-            numberOfTokensInFunctionDescriptions = OpenAI.getNumberOfTokens(new ObjectMapper().writeValueAsString(functionDescriptions), usedModel);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-
-        int startingMaxTokens = usedModel.getModelProperties().maxNumberOfTokens() - numberOfTokensInMessages - numberOfTokensInFunctionDescriptions;
+        int startingMaxTokens = calculateTokensUsed(messages, functionDescriptions);
         ChatCompletionRequest request = new ChatCompletionRequest(
                 usedModel.getModelProperties().name(),
                 messages,
@@ -69,6 +60,7 @@ public class OpenAIModelAPIConnection {
 
             HttpEntity<ChatCompletionRequest> requestHttpEntity = new HttpEntity<>(request, headers);
             try {
+                OpenAIApiThrottling.bucket.asBlocking().consume(request.getMax_tokens());
                 ResponseEntity<ChatCompletionResponse> response = restTemplate.postForEntity(
                         OpenAI.openAIApiUrl,
                         requestHttpEntity,
@@ -94,6 +86,8 @@ public class OpenAIModelAPIConnection {
             } catch (HttpStatusCodeException e) {
                 Logging.logThrowable("Request failed", e);
                 communicationStatus = CommunicationStatus.UNHANDLED_ERROR;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
 
@@ -104,16 +98,40 @@ public class OpenAIModelAPIConnection {
         throw new ModelCommunicationException();
     }
 
-    private int calculateTokensUsedByMessages(List<ChatMessage> messages) {
-        int sum = 0;
+    private int calculateTokensUsed(List<ChatMessage> messages, List<ChatFunction> functionDescriptions) {
+        int numberOfTokensInMessages = 0;
         for (ChatMessage chatMessage : messages) {
-            int tokensUsedByMessage = OpenAI.getNumberOfTokens(chatMessage.content(), usedModel);
-            if (chatMessage.function_call() != null) {
-                OpenAI.getNumberOfTokens(chatMessage.function_call().asText(), usedModel);
-            }
-            sum += tokensUsedByMessage;
+            numberOfTokensInMessages += calculateTokensUsedByMessage(chatMessage);
         }
-        return sum;
+        int numberOfTokensInFunctionDescriptions;
+
+        try {
+            numberOfTokensInFunctionDescriptions = OpenAI.getNumberOfTokens(new ObjectMapper().writeValueAsString(functionDescriptions), usedModel);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        return usedModel.getModelProperties().maxNumberOfTokens() - numberOfTokensInMessages - numberOfTokensInFunctionDescriptions;
+    }
+
+    private int calculateTokensUsedByMessage(ChatMessage message) {
+        int tokensUsedByMessage = usedModel.getModelProperties().tokensPerMessage();
+
+        tokensUsedByMessage += OpenAI.getNumberOfTokens(message.role().getRoleName(), usedModel);
+
+        if (message.content() != null) {
+            tokensUsedByMessage += OpenAI.getNumberOfTokens(message.content(), usedModel);
+        }
+
+        if (message.name() != null) {
+            tokensUsedByMessage += usedModel.getModelProperties().tokensPerName();
+        }
+
+        if (message.function_call() != null) {
+            tokensUsedByMessage += OpenAI.getNumberOfTokens(message.function_call().asText(), usedModel);
+        }
+
+        return tokensUsedByMessage;
     }
 
     private enum CommunicationStatus {
