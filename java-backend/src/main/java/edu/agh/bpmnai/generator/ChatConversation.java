@@ -14,6 +14,8 @@ public interface ChatConversation {
 
     List<ChatMessage> getMessages();
 
+    ChatMessage getLastMessage();
+
     ConversationStatus getCurrentConversationStatus();
 
     void carryOutConversation(BpmnModel bpmnModel);
