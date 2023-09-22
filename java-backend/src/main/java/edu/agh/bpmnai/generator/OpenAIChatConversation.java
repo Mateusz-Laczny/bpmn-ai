@@ -57,25 +57,28 @@ class OpenAIChatConversation implements ChatConversation {
             try {
                 ChatCompletionResponse chatCompletionResponse = apiConnection.sendChatCompletionRequest(getMessages(), BpmnModel.functionsDescriptions, temperature);
                 SingleChatResponse chatResponse = chatCompletionResponse.choices().get(0);
+                ChatMessage responseMessage = chatResponse.message();
 
-                Logging.logInfoMessage("Received response from the model", new Logging.ObjectToLog("Response", chatResponse));
-
-                if (chatResponse.finish_reason().equals("stop")) {
-                    Logging.logInfoMessage("Reached the end of the conversation");
-                    currentConversationStatus = ConversationStatus.FINISHED;
+                if (responseMessage.content() != null) {
+                    Logging.logInfoMessage("Received response from the model", new Logging.ObjectToLog("Response content", chatResponse.message().content()));
                 }
 
-                ChatMessage responseMessage = chatResponse.message();
                 adjustModelResponseForFurtherUse(responseMessage);
                 addMessage(responseMessage);
 
                 if (responseMessage.function_call() != null) {
+                    Logging.logInfoMessage("Received function call from model", new Logging.ObjectToLog("Response function call", chatResponse.message().function_call()));
                     Optional<BpmnModel.FunctionCallError> optionalFunctionCallError = bpmnModel.parseModelFunctionCall(responseMessage);
                     if (optionalFunctionCallError.isPresent()) {
                         BpmnModel.FunctionCallError functionCallError = optionalFunctionCallError.get();
                         Logging.logWarnMessage("The chat function call could not be executed", new Logging.ObjectToLog("Chat response", chatResponse), new Logging.ObjectToLog("Error", functionCallError));
                         addMessage(handleIncorrectFunctionCall(functionCallError));
                     }
+                }
+
+                if (chatResponse.finish_reason().equals("stop")) {
+                    Logging.logInfoMessage("Reached the end of the conversation");
+                    currentConversationStatus = ConversationStatus.FINISHED;
                 }
             } catch (OpenAIModelAPIConnection.ModelCommunicationException e) {
                 Logging.logThrowable("Exception during communication with model API", e);
@@ -97,6 +100,11 @@ class OpenAIChatConversation implements ChatConversation {
     @Override
     public List<ChatMessage> getMessages() {
         return Collections.unmodifiableList(messages);
+    }
+
+    @Override
+    public ChatMessage getLastMessage() {
+        return messages.get(messages.size() - 1);
     }
 
     @Override
