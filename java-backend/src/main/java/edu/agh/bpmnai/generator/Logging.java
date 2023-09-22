@@ -9,7 +9,7 @@ public class Logging {
         StringBuilder sb = new StringBuilder();
         sb.append(message).append(';').append(' ');
         for (ObjectToLog objectToLog : objectsToLog) {
-            sb.append(objectToLog.label()).append('=').append(objectToLog.object().toString()).append(", ");
+            sb.append(objectToLog.label()).append('=').append(objectToLog.object().toString()).append(",\n");
         }
         return sb.toString();
     }
