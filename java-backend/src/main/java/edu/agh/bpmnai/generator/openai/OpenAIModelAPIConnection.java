@@ -25,7 +25,7 @@ public class OpenAIModelAPIConnection {
     }
 
     private static boolean isRetryCommunication(CommunicationStatus communicationStatus) {
-        return communicationStatus == CommunicationStatus.STARTING || communicationStatus == CommunicationStatus.RETRYING || communicationStatus == CommunicationStatus.TOO_MANY_TOKENS_REQUESTED;
+        return communicationStatus == CommunicationStatus.STARTING || communicationStatus == CommunicationStatus.RETRYING;
     }
 
     private static int getNewValueOfMaxTokens(int currentMaxTokens, int numberOfTooManyTokensErrors) {
@@ -33,25 +33,17 @@ public class OpenAIModelAPIConnection {
     }
 
     public ChatCompletionResponse sendChatCompletionRequest(List<ChatMessage> messages, List<ChatFunction> functionDescriptions, float temperature) throws ModelCommunicationException {
-        int startingMaxTokens = calculateTokensUsed(messages, functionDescriptions);
         ChatCompletionRequest request = new ChatCompletionRequest(
                 usedModel.getModelProperties().name(),
                 messages,
                 functionDescriptions,
-                temperature,
-                startingMaxTokens
+                temperature
         );
 
-        int numberOfTooManyTokensErrors = 0;
         CommunicationStatus communicationStatus = CommunicationStatus.STARTING;
         Optional<ChatCompletionResponse> responseOptional = Optional.empty();
 
         while (isRetryCommunication(communicationStatus)) {
-            if (communicationStatus == CommunicationStatus.TOO_MANY_TOKENS_REQUESTED) {
-                numberOfTooManyTokensErrors += 1;
-                request = request.withMax_tokens(getNewValueOfMaxTokens(request.getMax_tokens(), numberOfTooManyTokensErrors));
-            }
-
             Logging.logDebugMessage("Sending request", new Logging.ObjectToLog("requestBody", request));
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
@@ -60,7 +52,8 @@ public class OpenAIModelAPIConnection {
 
             HttpEntity<ChatCompletionRequest> requestHttpEntity = new HttpEntity<>(request, headers);
             try {
-                OpenAIApiThrottling.bucket.asBlocking().consume(request.getMax_tokens());
+                int usedTokens = calculateTokensUsed(messages, functionDescriptions);
+                OpenAIApiThrottling.bucket.asBlocking().consume(usedTokens);
                 ResponseEntity<ChatCompletionResponse> response = restTemplate.postForEntity(
                         OpenAI.openAIApiUrl,
                         requestHttpEntity,

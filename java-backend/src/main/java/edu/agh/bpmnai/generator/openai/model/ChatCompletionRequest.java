@@ -31,9 +31,8 @@ public final class ChatCompletionRequest {
     public ChatCompletionRequest(String model,
                                  List<ChatMessage> messages,
                                  List<ChatFunction> functions,
-                                 Float temperature,
-                                 Integer max_tokens) {
-        this(model, messages, functions, null, temperature, null, null, null, null, max_tokens, null, null, null, null);
+                                 Float temperature) {
+        this(model, messages, functions, null, temperature, null, null, null, null, null, null, null, null, null);
     }
 
     public ChatCompletionRequest withMessagesAndMax_Tokens(List<ChatMessage> messages, int max_tokens) {
