@@ -18,5 +18,5 @@ public interface ChatConversation {
 
     ConversationStatus getCurrentConversationStatus();
 
-    void carryOutConversation(BpmnModel bpmnModel);
+    void carryOutConversation(BpmnModel bpmnModel, boolean allowCallingFunctions);
 }

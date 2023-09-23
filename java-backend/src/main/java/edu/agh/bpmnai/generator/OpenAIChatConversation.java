@@ -49,13 +49,18 @@ class OpenAIChatConversation implements ChatConversation {
         throw new UnhandledFunctionCallErrorException();
     }
 
-    public void carryOutConversation(BpmnModel bpmnModel) {
+    public void carryOutConversation(BpmnModel bpmnModel, boolean allowCallingFunctions) {
         setCurrentConversationStatus(ConversationStatus.IN_PROGRESS);
         OpenAIModelAPIConnection apiConnection = new OpenAIModelAPIConnection(usedModel);
 
         while (isContinueConversation()) {
             try {
-                ChatCompletionResponse chatCompletionResponse = apiConnection.sendChatCompletionRequest(getMessages(), BpmnModel.functionsDescriptions, temperature);
+                ChatCompletionResponse chatCompletionResponse;
+                if (allowCallingFunctions) {
+                    chatCompletionResponse = apiConnection.sendChatCompletionRequest(getMessages(), BpmnModel.functionsDescriptions, temperature);
+                } else {
+                    chatCompletionResponse = apiConnection.sendChatCompletionRequest(getMessages(), null, temperature);
+                }
                 SingleChatResponse chatResponse = chatCompletionResponse.choices().get(0);
                 ChatMessage responseMessage = chatResponse.message();
 
