@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.ElementToRemove;
+import edu.agh.bpmnai.generator.openai.ChatCallableInterface;
 import edu.agh.bpmnai.generator.openai.model.ChatFunction;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -12,15 +13,12 @@ import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.bpmn.instance.*;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 public final class BpmnModel {
 
     private static final ObjectMapper mapper = new ObjectMapper();
-    public static List<ChatFunction> functionsDescriptions = List.of(
+    public static ChatCallableInterface callableInterface = new ChatCallableInterface(Set.of(
             new ChatFunction(
                     "addUserTask",
                     "Add a user task to the model",
@@ -431,7 +429,7 @@ public final class BpmnModel {
                             List.of("id", "parentId")
                     )
             )
-    );
+    ));
     private final BpmnModelInstance modelInstance;
 
     public BpmnModel() {

@@ -16,16 +16,18 @@ public class OpenAIChatConversation implements ChatConversation {
     private final List<ChatMessage> messages;
     private final float temperature;
     private ConversationStatus currentConversationStatus;
+    private ChatCallableInterface callableInterface;
 
-    private OpenAIChatConversation(OpenAI.OpenAIModel modelToUse, float temperature, List<ChatMessage> messages, ConversationStatus currentConversationStatus) {
+    private OpenAIChatConversation(OpenAI.OpenAIModel modelToUse, ChatCallableInterface callableInterface, float temperature, List<ChatMessage> messages, ConversationStatus currentConversationStatus) {
         this.usedModel = modelToUse;
+        this.callableInterface = callableInterface;
         this.temperature = temperature;
         this.messages = new ArrayList<>(messages);
         this.currentConversationStatus = currentConversationStatus;
     }
 
-    public static OpenAIChatConversation emptyConversationWith(OpenAI.OpenAIModel modelToUse, float temperature) {
-        return new OpenAIChatConversation(modelToUse, temperature, new ArrayList<>(), ConversationStatus.NEW);
+    public static OpenAIChatConversation emptyConversation(OpenAI.OpenAIModel modelToUse, ChatCallableInterface callableInterface, float temperature) {
+        return new OpenAIChatConversation(modelToUse, callableInterface, temperature, new ArrayList<>(), ConversationStatus.NEW);
     }
 
     private static void adjustModelResponseForFurtherUse(ChatMessage responseMessage) {
@@ -50,6 +52,14 @@ public class OpenAIChatConversation implements ChatConversation {
         throw new UnhandledFunctionCallErrorException();
     }
 
+    public ChatCallableInterface getCallableInterface() {
+        return callableInterface;
+    }
+
+    public void setCallableInterface(ChatCallableInterface callableInterface) {
+        this.callableInterface = callableInterface;
+    }
+
     public void carryOutConversation(BpmnModel bpmnModel, boolean allowCallingFunctions) {
         setCurrentConversationStatus(ConversationStatus.IN_PROGRESS);
         OpenAIModelAPIConnection apiConnection = new OpenAIModelAPIConnection(usedModel);
@@ -58,7 +68,7 @@ public class OpenAIChatConversation implements ChatConversation {
             try {
                 ChatCompletionResponse chatCompletionResponse;
                 if (allowCallingFunctions) {
-                    chatCompletionResponse = apiConnection.sendChatCompletionRequest(getMessages(), BpmnModel.functionsDescriptions, temperature);
+                    chatCompletionResponse = apiConnection.sendChatCompletionRequest(getMessages(), callableInterface.getCallableFunctions().stream().toList(), temperature);
                 } else {
                     chatCompletionResponse = apiConnection.sendChatCompletionRequest(getMessages(), null, temperature);
                 }
