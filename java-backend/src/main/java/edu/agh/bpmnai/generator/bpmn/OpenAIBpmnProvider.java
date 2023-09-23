@@ -18,9 +18,9 @@ public class OpenAIBpmnProvider implements BpmnProvider {
 
     @Override
     public BpmnFile provideForTextPrompt(TextPrompt prompt) {
-        BpmnModel bpmnModel = new BpmnModel();
+        var bpmnModel = new BpmnModel();
 
-        OpenAIChatConversation chatConversation = OpenAIChatConversation.emptyConversation(aiModel, BpmnModel.callableInterface, temperature);
+        var chatConversation = OpenAIChatConversation.emptyConversation(aiModel, BpmnModel.callableInterface, temperature);
         chatConversation.addMessages(List.of(
                 ChatMessage.systemMessage("You will be provided a business process description. First work out your own business process description based on the one provided by the user. Think about all relevant specifics and details. Focus on the happy path in this step. Enclose all your work for this step within triple quotes (\"\"\""),
                 ChatMessage.userMessage(prompt.content())
