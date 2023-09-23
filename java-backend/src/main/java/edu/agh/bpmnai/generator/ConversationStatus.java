@@ -1,6 +1,6 @@
 package edu.agh.bpmnai.generator;
 
-enum ConversationStatus {
+public enum ConversationStatus {
     NEW,
     IN_PROGRESS,
     FINISHED,
