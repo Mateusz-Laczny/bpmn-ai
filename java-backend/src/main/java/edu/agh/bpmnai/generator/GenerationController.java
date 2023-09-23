@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnProvider;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
