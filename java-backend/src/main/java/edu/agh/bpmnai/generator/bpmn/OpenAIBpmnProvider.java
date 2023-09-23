@@ -5,6 +5,7 @@ import edu.agh.bpmnai.generator.TextPrompt;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnFile;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.openai.OpenAI;
+import edu.agh.bpmnai.generator.openai.OpenAIChatConversation;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
 import org.springframework.stereotype.Service;
 
