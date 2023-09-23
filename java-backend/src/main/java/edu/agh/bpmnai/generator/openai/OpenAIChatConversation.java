@@ -59,7 +59,7 @@ public class OpenAIChatConversation {
         this.callableInterface = callableInterface;
     }
 
-    public void carryOutConversation(BpmnModel bpmnModel, boolean allowCallingFunctions) {
+    public void getModelResponses(BpmnModel bpmnModel, boolean allowCallingFunctions) {
         setCurrentConversationStatus(ConversationStatus.IN_PROGRESS);
         OpenAIModelAPIConnection apiConnection = new OpenAIModelAPIConnection(usedModel);
 
