@@ -1,6 +1,5 @@
 package edu.agh.bpmnai.generator.bpmn;
 
-import edu.agh.bpmnai.generator.ChatConversation;
 import edu.agh.bpmnai.generator.TextPrompt;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnFile;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
@@ -20,7 +19,7 @@ public class OpenAIBpmnProvider implements BpmnProvider {
     public BpmnFile provideForTextPrompt(TextPrompt prompt) {
         BpmnModel bpmnModel = new BpmnModel();
 
-        ChatConversation chatConversation = OpenAIChatConversation.emptyConversation(OpenAI.OpenAIModel.GPT_3_5_TURBO_16K, BpmnModel.callableInterface, temperature);
+        OpenAIChatConversation chatConversation = OpenAIChatConversation.emptyConversation(OpenAI.OpenAIModel.GPT_3_5_TURBO_16K, BpmnModel.callableInterface, temperature);
         chatConversation.addMessages(List.of(
                 ChatMessage.systemMessage("You will be provided a business process description. First work out your own business process description based on the one provided by the user. Think about all relevant specifics and details. Focus on the happy path in this step. Enclose all your work for this step within triple quotes (\"\"\""),
                 ChatMessage.userMessage(prompt.content())

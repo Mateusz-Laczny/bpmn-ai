@@ -1,6 +1,5 @@
 package edu.agh.bpmnai.generator.openai;
 
-import edu.agh.bpmnai.generator.ChatConversation;
 import edu.agh.bpmnai.generator.ConversationStatus;
 import edu.agh.bpmnai.generator.Logging;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
@@ -10,7 +9,7 @@ import edu.agh.bpmnai.generator.openai.model.SingleChatResponse;
 
 import java.util.*;
 
-public class OpenAIChatConversation implements ChatConversation {
+public class OpenAIChatConversation {
 
     private final OpenAI.OpenAIModel usedModel;
     private final List<ChatMessage> messages;
@@ -103,27 +102,22 @@ public class OpenAIChatConversation implements ChatConversation {
         }
     }
 
-    @Override
     public void addMessage(ChatMessage message) {
         this.messages.add(message);
     }
 
-    @Override
     public void addMessages(Collection<ChatMessage> messages) {
         this.messages.addAll(messages);
     }
 
-    @Override
     public List<ChatMessage> getMessages() {
         return Collections.unmodifiableList(messages);
     }
 
-    @Override
     public ChatMessage getLastMessage() {
         return messages.get(messages.size() - 1);
     }
 
-    @Override
     public ConversationStatus getCurrentConversationStatus() {
         return currentConversationStatus;
     }
