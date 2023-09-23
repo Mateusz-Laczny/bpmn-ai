@@ -9,7 +9,7 @@ import edu.agh.bpmnai.generator.openai.model.SingleChatResponse;
 
 import java.util.*;
 
-class OpenAIChatConversation implements ChatConversation {
+public class OpenAIChatConversation implements ChatConversation {
 
     private final OpenAI.OpenAIModel usedModel;
     private final List<ChatMessage> messages;
