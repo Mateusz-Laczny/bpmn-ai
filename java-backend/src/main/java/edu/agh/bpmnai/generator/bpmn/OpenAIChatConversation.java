@@ -1,5 +1,8 @@
-package edu.agh.bpmnai.generator;
+package edu.agh.bpmnai.generator.bpmn;
 
+import edu.agh.bpmnai.generator.ChatConversation;
+import edu.agh.bpmnai.generator.ConversationStatus;
+import edu.agh.bpmnai.generator.Logging;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.openai.OpenAI;
 import edu.agh.bpmnai.generator.openai.OpenAIModelAPIConnection;
