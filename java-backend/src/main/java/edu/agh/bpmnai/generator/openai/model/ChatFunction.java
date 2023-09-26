@@ -1,10 +1,20 @@
 package edu.agh.bpmnai.generator.openai.model;
 
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
+import lombok.Builder;
 
+import java.util.Optional;
+import java.util.function.Function;
+
+@Builder
 public record ChatFunction(
         String name,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         String description,
-        Map<String, Object> parameters
+        JsonNode parameters,
+        @JsonIgnore
+        Function<JsonNode, Optional<ChatMessage>> executor
 ) {
 }

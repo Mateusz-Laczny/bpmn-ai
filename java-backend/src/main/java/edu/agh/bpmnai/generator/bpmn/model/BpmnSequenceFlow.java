@@ -1,4 +1,16 @@
 package edu.agh.bpmnai.generator.bpmn.model;
 
-public record BpmnSequenceFlow(String id, String parentElementId, String sourceRef, String targetRef, String name) {
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public record BpmnSequenceFlow(
+        @JsonProperty(required = true)
+        String id,
+        @JsonProperty(required = true)
+        String parentElementId,
+        @JsonProperty(required = true)
+        String sourceElementId,
+        @JsonProperty(required = true)
+        String targetElementId,
+        String name
+) {
 }

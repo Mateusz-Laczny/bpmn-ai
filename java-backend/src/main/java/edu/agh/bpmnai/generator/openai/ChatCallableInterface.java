@@ -1,19 +1,34 @@
 package edu.agh.bpmnai.generator.openai;
 
 import edu.agh.bpmnai.generator.openai.model.ChatFunction;
+import edu.agh.bpmnai.generator.openai.model.ChatMessage;
+import edu.agh.bpmnai.generator.openai.model.FunctionCall;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class ChatCallableInterface {
     private final Set<ChatFunction> callableFunctions;
 
+    private final Map<String, ChatFunction> nameToFunctionMap;
+
     public ChatCallableInterface(Set<ChatFunction> callableFunctions) {
         this.callableFunctions = new HashSet<>(callableFunctions);
+        this.nameToFunctionMap = new HashMap<>();
+        for (ChatFunction function : callableFunctions) {
+            nameToFunctionMap.put(function.name(), function);
+        }
     }
 
     public Set<ChatFunction> getCallableFunctions() {
         return Collections.unmodifiableSet(callableFunctions);
+    }
+
+    public Optional<ChatMessage> executeFunctionCall(FunctionCall functionCall) {
+        if (!nameToFunctionMap.containsKey(functionCall.name())) {
+            return Optional.of(ChatMessage.userMessage("The function \"" + functionCall.name() + "\n does not exist."));
+        }
+
+        ChatFunction calledFunction = nameToFunctionMap.get(functionCall.name());
+        return calledFunction.executor().apply(functionCall.arguments());
     }
 }
