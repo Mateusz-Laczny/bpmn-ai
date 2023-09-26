@@ -2,6 +2,7 @@ package edu.agh.bpmnai.generator;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnProvider;
 import edu.agh.bpmnai.generator.bpmn.OpenAIBpmnProvider;
+import edu.agh.bpmnai.generator.bpmn.layouting.BpmnSemanticLayouting;
 import edu.agh.bpmnai.generator.openai.OpenAIChatSessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -13,7 +14,7 @@ import org.springframework.web.client.RestTemplate;
 @Profile("paid-api")
 public class MainConfiguration {
     @Bean
-    public BpmnProvider bpmnProvider(@Autowired OpenAIChatSessionFactory chatSessionFactory) {
+    public BpmnProvider bpmnProvider(@Autowired OpenAIChatSessionFactory chatSessionFactory, @Autowired BpmnSemanticLayouting layouting) {
         return new OpenAIBpmnProvider(chatSessionFactory, layouting);
     }
 
