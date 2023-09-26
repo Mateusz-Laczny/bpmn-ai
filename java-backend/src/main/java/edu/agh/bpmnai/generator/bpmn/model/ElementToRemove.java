@@ -1,4 +1,4 @@
-package edu.agh.bpmnai.generator.bpmn;
+package edu.agh.bpmnai.generator.bpmn.model;
 
 public record ElementToRemove(String id, String parentId) {
 }

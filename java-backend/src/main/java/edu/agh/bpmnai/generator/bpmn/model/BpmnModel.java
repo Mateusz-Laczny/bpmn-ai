@@ -1,6 +1,5 @@
 package edu.agh.bpmnai.generator.bpmn.model;
 
-import edu.agh.bpmnai.generator.bpmn.ElementToRemove;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Process;
