@@ -1,7 +1,9 @@
 package edu.agh.bpmnai.generator.bpmn;
 
 import edu.agh.bpmnai.generator.TextPrompt;
+import edu.agh.bpmnai.generator.bpmn.layouting.BpmnSemanticLayouting;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnFile;
+import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.openai.OpenAI;
 import edu.agh.bpmnai.generator.openai.OpenAIChatSession;
 import edu.agh.bpmnai.generator.openai.OpenAIChatSessionFactory;
@@ -19,9 +21,12 @@ public class OpenAIBpmnProvider implements BpmnProvider {
 
     private final OpenAIChatSessionFactory chatSessionFactory;
 
+    private final BpmnSemanticLayouting layouting;
+
     @Autowired
-    public OpenAIBpmnProvider(OpenAIChatSessionFactory chatSessionFactory) {
+    public OpenAIBpmnProvider(OpenAIChatSessionFactory chatSessionFactory, BpmnSemanticLayouting layouting) {
         this.chatSessionFactory = chatSessionFactory;
+        this.layouting = layouting;
     }
 
     @Override
@@ -55,7 +60,10 @@ public class OpenAIBpmnProvider implements BpmnProvider {
 
         chatSession.generateResponseFromPrompt(prompt, bpmnModelChatModificationWrapper.getCallableInterface());
 
-        return BpmnFile.fromModel(bpmnModelChatModificationWrapper.getModel());
+        BpmnModel bpmnModel = bpmnModelChatModificationWrapper.getModel();
+        layouting.layoutModel(bpmnModel);
+
+        return BpmnFile.fromModel(bpmnModel);
     }
 
 }

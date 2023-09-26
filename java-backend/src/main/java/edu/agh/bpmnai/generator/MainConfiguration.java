@@ -14,7 +14,7 @@ import org.springframework.web.client.RestTemplate;
 public class MainConfiguration {
     @Bean
     public BpmnProvider bpmnProvider(@Autowired OpenAIChatSessionFactory chatSessionFactory) {
-        return new OpenAIBpmnProvider(chatSessionFactory);
+        return new OpenAIBpmnProvider(chatSessionFactory, layouting);
     }
 
     @Bean
