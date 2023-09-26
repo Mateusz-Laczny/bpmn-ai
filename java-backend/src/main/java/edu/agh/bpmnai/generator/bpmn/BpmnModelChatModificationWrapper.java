@@ -1,10 +1,10 @@
-package edu.agh.bpmnai.generator.bpmn.model;
+package edu.agh.bpmnai.generator.bpmn;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.Logging;
-import edu.agh.bpmnai.generator.bpmn.ElementToRemove;
+import edu.agh.bpmnai.generator.bpmn.model.*;
 import edu.agh.bpmnai.generator.openai.ChatCallableInterface;
 import edu.agh.bpmnai.generator.openai.model.ChatFunction;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
