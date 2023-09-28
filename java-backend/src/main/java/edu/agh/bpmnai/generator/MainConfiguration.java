@@ -14,8 +14,13 @@ import org.springframework.web.client.RestTemplate;
 @Profile("paid-api")
 public class MainConfiguration {
     @Bean
-    public BpmnProvider bpmnProvider(@Autowired OpenAIChatSessionFactory chatSessionFactory, @Autowired BpmnSemanticLayouting layouting) {
-        return new OpenAIBpmnProvider(chatSessionFactory, layouting);
+    BpmnSemanticLayouting bpmnSemanticLayouting() {
+        return new BpmnSemanticLayouting();
+    }
+
+    @Bean
+    public BpmnProvider bpmnProvider(@Autowired OpenAIChatSessionFactory chatSessionFactory, @Autowired BpmnSemanticLayouting bpmnSemanticLayouting) {
+        return new OpenAIBpmnProvider(chatSessionFactory, bpmnSemanticLayouting);
     }
 
     @Bean
