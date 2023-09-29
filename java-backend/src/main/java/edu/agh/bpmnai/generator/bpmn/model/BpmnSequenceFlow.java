@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record BpmnSequenceFlow(
         @JsonProperty(required = true)
-        String id,
-        @JsonProperty(required = true)
-        String parentElementId,
+        String processId,
         @JsonProperty(required = true)
         String sourceElementId,
         @JsonProperty(required = true)

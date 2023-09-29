@@ -7,6 +7,7 @@ import org.camunda.bpm.model.bpmn.instance.*;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 import java.util.Objects;
+import java.util.UUID;
 
 public final class BpmnModel {
     private final BpmnModelInstance modelInstance;
@@ -30,8 +31,8 @@ public final class BpmnModel {
         return element;
     }
 
-    private static SequenceFlow createSequenceFlow(Process process, String id, FlowNode from, FlowNode to) {
-        SequenceFlow sequenceFlow = createElementWithParent(process, id, SequenceFlow.class);
+    private SequenceFlow createSequenceFlow(Process process, String sequenceFlowId, FlowNode from, FlowNode to) {
+        SequenceFlow sequenceFlow = createElementWithParent(process, sequenceFlowId, SequenceFlow.class);
         process.addChildElement(sequenceFlow);
         sequenceFlow.setSource(from);
         from.getOutgoing().add(sequenceFlow);
@@ -45,120 +46,106 @@ public final class BpmnModel {
         return Bpmn.convertToString(modelInstance);
     }
 
-    public void addUserTask(BpmnUserTask userTask) {
-        if (doesIdExist(userTask.id())) {
-            throw new IllegalArgumentException("Id \"" + userTask.id() + "\" is not unique");
-        }
-
+    public String addUserTask(BpmnUserTask userTask) {
         Process process = modelInstance.getModelElementById(userTask.processId());
-        UserTask userTaskElement = createElementWithParent(process, userTask.id(), UserTask.class);
+        String id = generateUniqueId();
+        UserTask userTaskElement = createElementWithParent(process, id, UserTask.class);
         userTaskElement.setAttributeValue("name", userTask.name());
         userTaskElement.setCamundaAssignee(userTask.assignee());
+        return id;
     }
 
-    public void addServiceTask(BpmnServiceTask serviceTask) {
-        if (doesIdExist(serviceTask.id())) {
-            throw new IllegalArgumentException("Id \"" + serviceTask.id() + "\" is not unique");
-        }
-
+    public String addServiceTask(BpmnServiceTask serviceTask) {
         Process process = modelInstance.getModelElementById(serviceTask.processId());
-        ServiceTask serviceTaskElement = createElementWithParent(process, serviceTask.id(), ServiceTask.class);
+        String id = generateUniqueId();
+        ServiceTask serviceTaskElement = createElementWithParent(process, id, ServiceTask.class);
         serviceTaskElement.setAttributeValue("name", serviceTask.name());
+        return id;
     }
 
-    public void addProcess(BpmnProcess process) {
-        if (doesIdExist(process.id())) {
-            throw new IllegalArgumentException("Id \"" + process.id() + "\" is not unique");
-        }
-
-        Process processElement = createElementWithParent(modelInstance.getDefinitions(), process.id(), Process.class);
+    public String addProcess(BpmnProcess process) {
+        String id = generateUniqueId();
+        Process processElement = createElementWithParent(modelInstance.getDefinitions(), id, Process.class);
         processElement.setAttributeValue("name", process.name());
+        return id;
     }
 
-    public void addGateway(BpmnGateway gateway) {
-        if (doesIdExist(gateway.id())) {
-            throw new IllegalArgumentException("Id \"" + gateway.id() + "\" is not unique");
-        }
-
+    public String addGateway(BpmnGateway gateway) {
         Process process = modelInstance.getModelElementById(gateway.processId());
         Gateway gatewayElement;
+        final String id = generateUniqueId();
         switch (gateway.type()) {
-            case EXCLUSIVE -> gatewayElement = createElementWithParent(process, gateway.id(), ExclusiveGateway.class);
-            case INCLUSIVE -> gatewayElement = createElementWithParent(process, gateway.id(), InclusiveGateway.class);
+            case EXCLUSIVE -> gatewayElement = createElementWithParent(process, id, ExclusiveGateway.class);
+            case INCLUSIVE -> gatewayElement = createElementWithParent(process, id, InclusiveGateway.class);
             default -> throw new IllegalStateException("Unexpected gateway type value: " + gateway.type());
         }
 
         gatewayElement.setAttributeValue("name", gateway.name());
+        return id;
     }
 
-    public void addStartEvent(BpmnStartEvent startEvent) {
-        if (doesIdExist(startEvent.id())) {
-            throw new IllegalArgumentException("Id \"" + startEvent.id() + "\" is not unique");
-        }
-
+    public String addStartEvent(BpmnStartEvent startEvent) {
         Process process = modelInstance.getModelElementById(startEvent.processId());
-        StartEvent startEventElement = createElementWithParent(process, startEvent.id(), StartEvent.class);
+        String id = generateUniqueId();
+        StartEvent startEventElement = createElementWithParent(process, id, StartEvent.class);
         startEventElement.setAttributeValue("name", startEvent.name());
+        return id;
     }
 
-    public void addEndEvent(BpmnEndEvent endEvent) {
-        if (doesIdExist(endEvent.id())) {
-            throw new IllegalArgumentException("Id \"" + endEvent.id() + "\" is not unique");
-        }
-
+    public String addEndEvent(BpmnEndEvent endEvent) {
         Process process = modelInstance.getModelElementById(endEvent.processId());
-        EndEvent endEventElement = createElementWithParent(process, endEvent.id(), EndEvent.class);
+        String id = generateUniqueId();
+        EndEvent endEventElement = createElementWithParent(process, id, EndEvent.class);
         endEventElement.setAttributeValue("name", endEvent.name());
+        return id;
     }
 
-    public void addIntermediateEvent(BpmnIntermediateEvent intermediateEvent) {
-        if (doesIdExist(intermediateEvent.id())) {
-            throw new IllegalArgumentException("Id \"" + intermediateEvent.id() + "\" is not unique");
-        }
-
+    public String addIntermediateEvent(BpmnIntermediateEvent intermediateEvent) {
         Process process = modelInstance.getModelElementById(intermediateEvent.processId());
+        String id = generateUniqueId();
         if (intermediateEvent.catchEvent()) {
-            CatchEvent catchEventElement = createElementWithParent(process, intermediateEvent.id(), IntermediateCatchEvent.class);
+            CatchEvent catchEventElement = createElementWithParent(process, id, IntermediateCatchEvent.class);
             catchEventElement.setAttributeValue("name", intermediateEvent.name());
         } else {
-            ThrowEvent throwEventElement = createElementWithParent(process, intermediateEvent.id(), IntermediateThrowEvent.class);
+            ThrowEvent throwEventElement = createElementWithParent(process, id, IntermediateThrowEvent.class);
             throwEventElement.setAttributeValue("name", intermediateEvent.name());
         }
+
+        return id;
     }
 
-    public void addMessageEvent(BpmnMessageEvent messageEvent) {
-        if (doesIdExist(messageEvent.eventId())) {
-            throw new IllegalArgumentException("Id \"" + messageEvent.eventId() + "\" is not unique");
-        } else if (doesIdExist(messageEvent.messageId())) {
-            throw new IllegalArgumentException("Id \"" + messageEvent.messageId() + "\" is not unique");
-        }
+    public String addMessage(String messageName) {
+        String messageId = generateUniqueId();
+        Message message = createElementWithParent(modelInstance.getDefinitions(), messageId, Message.class);
+        message.setName(messageName);
+        return messageId;
+    }
 
-        Message message = createElementWithParent(modelInstance.getDefinitions(), messageEvent.messageId(), Message.class);
-        message.setName(messageEvent.messageName());
-        MessageEventDefinition messageEventDefinition = createElementWithParent(modelInstance.getModelElementById(messageEvent.parentElementId()), messageEvent.eventId(), MessageEventDefinition.class);
+    public String addMessageEvent(String parentElementId, String messageId) {
+        String eventId = generateUniqueId();
+        BpmnModelElementInstance parentElement = modelInstance.getModelElementById(parentElementId);
+        MessageEventDefinition messageEventDefinition = createElementWithParent(parentElement, eventId, MessageEventDefinition.class);
+        Message message = modelInstance.getModelElementById(messageId);
         messageEventDefinition.setMessage(message);
+        return eventId;
     }
 
-    public void addSignalEvent(BpmnSignalEvent signalEvent) {
-        if (doesIdExist(signalEvent.signalEventId())) {
-            throw new IllegalArgumentException("Id \"" + signalEvent.signalId() + "\" is not unique");
-        }
+    public String addSignal(String signalName) {
+        String id = generateUniqueId();
+        Signal signal = createElementWithParent(modelInstance.getDefinitions(), id, Signal.class);
+        signal.setName(signalName);
+        return id;
+    }
 
-        if (doesIdExist(signalEvent.signalEventId())) {
-            throw new IllegalArgumentException("Id \"" + signalEvent.signalEventId() + "\" is not unique");
-        }
-
-        Signal signal = createElementWithParent(modelInstance.getDefinitions(), signalEvent.signalId(), Signal.class);
-        signal.setName(signalEvent.signalName());
-        SignalEventDefinition signalEventDefinition = createElementWithParent(modelInstance.getModelElementById(signalEvent.parentElementId()), signalEvent.signalEventId(), SignalEventDefinition.class);
+    public String addSignalEvent(String parentElementId, String signalId) {
+        Signal signal = modelInstance.getModelElementById(signalId);
+        String id = generateUniqueId();
+        SignalEventDefinition signalEventDefinition = createElementWithParent(modelInstance.getModelElementById(parentElementId), id, SignalEventDefinition.class);
         signalEventDefinition.setSignal(signal);
+        return id;
     }
 
-    public void addSequenceFlow(BpmnSequenceFlow sequenceFlow) {
-        if (doesIdExist(sequenceFlow.id())) {
-            throw new IllegalArgumentException("Id \"" + sequenceFlow.id() + "\" is not unique");
-        }
-
+    public String addSequenceFlow(BpmnSequenceFlow sequenceFlow) {
         if (!doesIdExist(sequenceFlow.sourceElementId())) {
             throw new IllegalArgumentException("Element with id \"" + sequenceFlow.sourceElementId() + "\" does not exist");
         }
@@ -167,7 +154,7 @@ public final class BpmnModel {
             throw new IllegalArgumentException("Element with id \"" + sequenceFlow.targetElementId() + "\" does not exist");
         }
 
-        Process process = modelInstance.getModelElementById(sequenceFlow.parentElementId());
+        Process process = modelInstance.getModelElementById(sequenceFlow.processId());
 
         FlowNode sourceElement;
         if (sequenceFlow.sourceElementId() == null) {
@@ -177,8 +164,10 @@ public final class BpmnModel {
         }
 
         FlowNode targetElement = modelInstance.getModelElementById(sequenceFlow.targetElementId());
-        SequenceFlow sequenceFlowElement = createSequenceFlow(process, sequenceFlow.id(), sourceElement, targetElement);
+        String id = generateUniqueId();
+        SequenceFlow sequenceFlowElement = createSequenceFlow(process, id, sourceElement, targetElement);
         sequenceFlowElement.setAttributeValue("name", sequenceFlow.name());
+        return id;
     }
 
     public void removeElement(ElementToRemove elementToRemove) {
@@ -186,11 +175,11 @@ public final class BpmnModel {
             throw new IllegalArgumentException("Element with id \"" + elementToRemove.id() + "\" does not exist");
         }
 
-        if (!doesIdExist(elementToRemove.parentId())) {
-            throw new IllegalArgumentException("Element with id \"" + elementToRemove.parentId() + "\" does not exist");
+        if (!doesIdExist(elementToRemove.processId())) {
+            throw new IllegalArgumentException("Element with id \"" + elementToRemove.processId() + "\" does not exist");
         }
 
-        ModelElementInstance parentElement = modelInstance.getModelElementById(elementToRemove.parentId());
+        ModelElementInstance parentElement = modelInstance.getModelElementById(elementToRemove.processId());
         parentElement.removeChildElement(modelInstance.getModelElementById(elementToRemove.id()));
     }
 
@@ -219,5 +208,21 @@ public final class BpmnModel {
 
     public BpmnModel getCopy() {
         return new BpmnModel(modelInstance);
+    }
+
+    private String generateUniqueId() {
+        boolean generatedUniqueId = false;
+        String generatedId = null;
+        while (!generatedUniqueId) {
+            UUID uuid = UUID.randomUUID();
+            // For some reason, id's in bpmn.io (the library currently used in the frontend) have to start with a letter,
+            // so we ensure that by concatenating a string to the beginning of the UUID
+            generatedId = "id-" + uuid;
+            if (!doesIdExist(generatedId)) {
+                generatedUniqueId = true;
+            }
+        }
+
+        return generatedId;
     }
 }

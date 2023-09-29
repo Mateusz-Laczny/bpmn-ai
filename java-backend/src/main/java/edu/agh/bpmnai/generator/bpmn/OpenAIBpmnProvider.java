@@ -49,12 +49,15 @@ public class OpenAIBpmnProvider implements BpmnProvider {
         chatSession.generateResponseFromPrompt(prompt);
 
         chatSession.addMessage(ChatMessage.systemMessage("""
-                Create the model based on your description by calling the provided functions. When creating and manipulating the model only use the provided functions, do not provide the model source in your responses. Follow BPMN best practices:
+                Create the model based on your description by calling the provided functions. When creating and manipulating the model only use the provided functions, do not provide the model source in your responses.
+                                
+                Start by defining required processes.
+                                
+                Follow BPMN best practices:
                 - Different outcomes of the process should be modelled with different end states.
                 - End states with different meaning should be modeled as separate and described.
                 - Two end events in the same process should not have the same name.
                 - Don’t use XOR gateways to merge alternative paths.
-                - Don’t use gateway join into None end event.
                 - A sequence flow may not connect to another sequence flow, only to an activity, gateway or event.
                 """));
 

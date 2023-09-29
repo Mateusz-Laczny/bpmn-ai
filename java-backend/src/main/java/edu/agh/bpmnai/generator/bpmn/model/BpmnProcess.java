@@ -1,7 +1,4 @@
 package edu.agh.bpmnai.generator.bpmn.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public record BpmnProcess(String name, String id) {
+public record BpmnProcess(String name) {
 }
