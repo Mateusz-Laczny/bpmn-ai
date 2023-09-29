@@ -62,7 +62,7 @@ public class OpenAIChatCompletionApi {
     }
 
     private ChatCompletionResponse sendRequest(OpenAI.OpenAIModel usedModel, ChatCompletionRequest requestBody) {
-        Logging.logDebugMessage("Sending request", new Logging.ObjectToLog("requestBody", requestBody));
+        Logging.logDebugMessage("Sending request to the OpenAI chat completion APU");
         HttpEntity<ChatCompletionRequest> requestHttpEntity = prepareRequestHttpEntity(requestBody);
         try {
             int usedTokens = calculateTokensUsed(requestBody, usedModel);
@@ -73,7 +73,7 @@ public class OpenAIChatCompletionApi {
                     ChatCompletionResponse.class
             );
 
-            Logging.logDebugMessage("Request was successful", new Logging.ObjectToLog("requestBody", response.getBody()));
+            Logging.logDebugMessage("Request was successful", new Logging.ObjectToLog("usedTokens", response.getBody().usage().total_tokens()));
             return response.getBody();
         } catch (HttpStatusCodeException e) {
             throw new FailedRequestException(e);
