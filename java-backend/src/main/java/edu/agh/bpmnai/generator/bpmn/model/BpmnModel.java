@@ -100,48 +100,41 @@ public final class BpmnModel {
         return id;
     }
 
-    public String addIntermediateEvent(BpmnIntermediateEvent intermediateEvent) {
-        Process process = modelInstance.getModelElementById(intermediateEvent.processId());
+    public String addIntermediateCatchEvent(BpmnIntermediateCatchEvent intermediateCatchEvent) {
+        Process process = modelInstance.getModelElementById(intermediateCatchEvent.processId());
         String id = generateUniqueId();
-        if (intermediateEvent.catchEvent()) {
-            CatchEvent catchEventElement = createElementWithParent(process, id, IntermediateCatchEvent.class);
-            catchEventElement.setAttributeValue("name", intermediateEvent.name());
-        } else {
-            ThrowEvent throwEventElement = createElementWithParent(process, id, IntermediateThrowEvent.class);
-            throwEventElement.setAttributeValue("name", intermediateEvent.name());
+        IntermediateCatchEvent catchEventElement = createElementWithParent(process, id, IntermediateCatchEvent.class);
+        catchEventElement.setAttributeValue("name", intermediateCatchEvent.name());
+
+        String eventId = generateUniqueId();
+        switch (intermediateCatchEvent.eventType()) {
+            case MESSAGE -> createElementWithParent(catchEventElement, eventId, MessageEventDefinition.class);
+            case TIMER -> createElementWithParent(catchEventElement, eventId, TimerEventDefinition.class);
+            case CONDITIONAL -> createElementWithParent(catchEventElement, eventId, ConditionalEventDefinition.class);
+            case LINK -> createElementWithParent(catchEventElement, eventId, LinkEventDefinition.class);
+            case SIGNAL -> createElementWithParent(catchEventElement, eventId, SignalEventDefinition.class);
         }
 
         return id;
     }
 
-    public String addMessage(String messageName) {
-        String messageId = generateUniqueId();
-        Message message = createElementWithParent(modelInstance.getDefinitions(), messageId, Message.class);
-        message.setName(messageName);
-        return messageId;
-    }
+    public String addIntermediateThrowEvent(BpmnIntermediateThrowEvent intermediateThrowEvent) {
+        Process process = modelInstance.getModelElementById(intermediateThrowEvent.processId());
+        String id = generateUniqueId();
+        IntermediateThrowEvent catchEventElement = createElementWithParent(process, id, IntermediateThrowEvent.class);
+        catchEventElement.setAttributeValue("name", intermediateThrowEvent.name());
 
-    public String addMessageEvent(String parentElementId, String messageId) {
         String eventId = generateUniqueId();
-        BpmnModelElementInstance parentElement = modelInstance.getModelElementById(parentElementId);
-        MessageEventDefinition messageEventDefinition = createElementWithParent(parentElement, eventId, MessageEventDefinition.class);
-        Message message = modelInstance.getModelElementById(messageId);
-        messageEventDefinition.setMessage(message);
-        return eventId;
-    }
+        switch (intermediateThrowEvent.eventType()) {
+            case EMPTY -> {
+            }
+            case MESSAGE -> createElementWithParent(catchEventElement, eventId, MessageEventDefinition.class);
+            case ESCALATION -> createElementWithParent(catchEventElement, eventId, EscalationEventDefinition.class);
+            case LINK -> createElementWithParent(catchEventElement, eventId, LinkEventDefinition.class);
+            case COMPENSATION -> createElementWithParent(catchEventElement, eventId, CompensateEventDefinition.class);
+            case SIGNAL -> createElementWithParent(catchEventElement, eventId, SignalEventDefinition.class);
+        }
 
-    public String addSignal(String signalName) {
-        String id = generateUniqueId();
-        Signal signal = createElementWithParent(modelInstance.getDefinitions(), id, Signal.class);
-        signal.setName(signalName);
-        return id;
-    }
-
-    public String addSignalEvent(String parentElementId, String signalId) {
-        Signal signal = modelInstance.getModelElementById(signalId);
-        String id = generateUniqueId();
-        SignalEventDefinition signalEventDefinition = createElementWithParent(modelInstance.getModelElementById(parentElementId), id, SignalEventDefinition.class);
-        signalEventDefinition.setSignal(signal);
         return id;
     }
 

@@ -50,29 +50,19 @@ public class BpmnModelChatModificationWrapper {
         }
     };
 
-    private final Function<JsonNode, Optional<ChatMessage>> addIntermediateEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnIntermediateEvent.class) {
+    private final Function<JsonNode, Optional<ChatMessage>> addIntermediateCatchEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnIntermediateCatchEvent.class) {
         @Override
-        protected Optional<ChatMessage> executeFunctionCall(BpmnIntermediateEvent callArgumentsPojo) {
-            String intermediateEventId = modifiedModel.addIntermediateEvent(callArgumentsPojo);
-            return Optional.of(ChatMessage.userMessage("Added intermediate event with id: \"" + intermediateEventId + "\""));
+        protected Optional<ChatMessage> executeFunctionCall(BpmnIntermediateCatchEvent callArgumentsPojo) {
+            String intermediateEventId = modifiedModel.addIntermediateCatchEvent(callArgumentsPojo);
+            return Optional.of(ChatMessage.userMessage("Added intermediate catch event with id: \"" + intermediateEventId + "\""));
         }
     };
 
-    private final Function<JsonNode, Optional<ChatMessage>> addMessageEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnMessageEvent.class) {
+    private final Function<JsonNode, Optional<ChatMessage>> addIntermediateThrowEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnIntermediateThrowEvent.class) {
         @Override
-        protected Optional<ChatMessage> executeFunctionCall(BpmnMessageEvent callArgumentsPojo) {
-            String messageId = modifiedModel.addMessage(callArgumentsPojo.messageName());
-            String messageEventId = modifiedModel.addMessageEvent(callArgumentsPojo.processId(), messageId);
-            return Optional.of(ChatMessage.userMessage("Added message with id: \"" + messageId + "\", and message event with id: \"" + messageEventId + "\""));
-        }
-    };
-
-    private final Function<JsonNode, Optional<ChatMessage>> addSignalEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnSignalEvent.class) {
-        @Override
-        protected Optional<ChatMessage> executeFunctionCall(BpmnSignalEvent callArgumentsPojo) {
-            String signalId = modifiedModel.addSignal(callArgumentsPojo.signalName());
-            String signalEventId = modifiedModel.addSignalEvent(callArgumentsPojo.processId(), signalId);
-            return Optional.of(ChatMessage.userMessage("Added signal with id: \"" + signalId + "\", and signal event with id: \"" + signalEventId + "\""));
+        protected Optional<ChatMessage> executeFunctionCall(BpmnIntermediateThrowEvent callArgumentsPojo) {
+            String intermediateEventId = modifiedModel.addIntermediateThrowEvent(callArgumentsPojo);
+            return Optional.of(ChatMessage.userMessage("Added intermediate throw event with id: \"" + intermediateEventId + "\""));
         }
     };
 
@@ -150,37 +140,26 @@ public class BpmnModelChatModificationWrapper {
                     ).executor(addEndEvent)
                     .build(),
             ChatFunction.builder()
-                    .name("addIntermediateEvent")
-                    .description("Add an intermediate event to the model")
+                    .name("addIntermediateCatchEvent")
+                    .description("Add an intermediate catch event to the model")
                     .parameters(buildFunctionParameters(
                             new FunctionParameters()
                                     .addRequiredArgument("processId", "string", "Id of the process that this element is the member of")
                                             .addRequiredArgument("name", "string", "Name of this element")
-                                            .addRequiredArgument("isCatchEvent", "boolean", "Is it a catch event?")
+                                    .addRequiredArgument("eventType", "string", "Event type", List.of("message", "timer", "conditional", "link", "signal"))
                             )
-                    ).executor(addIntermediateEvent)
+                    ).executor(addIntermediateCatchEvent)
                     .build(),
             ChatFunction.builder()
-                    .name("addMessageEvent")
-                    .description("Add a message event to the model")
+                    .name("addIntermediateEvent")
+                    .description("Add an intermediate throw event to the model")
                     .parameters(buildFunctionParameters(
                             new FunctionParameters()
                                     .addRequiredArgument("processId", "string", "Id of the process that this element is the member of")
-                                            .addRequiredArgument("messageId", "string", "Id of the message element")
-                                            .addRequiredArgument("messageName", "string", "Name of the message element element")
+                                    .addRequiredArgument("name", "string", "Name of this element")
+                                    .addRequiredArgument("eventType", "string", "Event type", List.of("empty", "message", "escalation", "link", "compensation", "signal"))
                             )
-                    ).executor(addMessageEvent)
-                    .build(),
-            ChatFunction.builder()
-                    .name("addSignalEvent")
-                    .description("Add a signal event to the model")
-                    .parameters(buildFunctionParameters(
-                            new FunctionParameters()
-                                    .addRequiredArgument("processId", "string", "Id of the process that this element is the member of")
-                                            .addRequiredArgument("messageId", "string", "Id of the message element")
-                                            .addRequiredArgument("messageName", "string", "Name of the message element element")
-                            )
-                    ).executor(addSignalEvent)
+                    ).executor(addIntermediateThrowEvent)
                     .build(),
             ChatFunction.builder()
                     .name("addUserTask")
