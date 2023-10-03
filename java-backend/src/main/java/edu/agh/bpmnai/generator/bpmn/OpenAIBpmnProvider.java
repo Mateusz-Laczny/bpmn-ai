@@ -60,6 +60,29 @@ public class OpenAIBpmnProvider implements BpmnProvider {
                 - Don’t use XOR gateways to merge alternative paths.
                 - A sequence flow may not connect to another sequence flow, only to an activity, gateway or event.
                 """));
+        chatSession.addMessage(ChatMessage.systemMessage("""
+                Pool - Represents a collection of processes and their coordination. Consists of one or more lanes.
+                Collapsed pool - Hides a process whose details are unknown or unimportant.
+                Lane - Indicates the responsibility for a task. Named after the person or entity responsible.
+                Subprocess - Encapsulates a complex process. Must have its own start and end events. No sequence flows can cross its boundaries.
+                Activities:
+                Task - A process activity.
+                Manual task - A task performed manually without software.
+                User task - A semi-automated task performed using software.
+                Service task - A task completely automated.
+                Message task - Involves sending or receiving a message, and can be interrupted.
+                Gateways - Indicate possible flows in the process. Not decisions; the decision is made by the activity preceding the gateway.
+                XOR gateway - Exclusive choice where only one path can be taken.
+                AND gateway - Represents tasks that can be done in parallel.
+                Flows - Indicate the process flow.
+                Sequence flows - Show the order of activities in a process. Cannot cross sub-process or pool boundaries.
+                Message flow - Show communication between participants. Cannot connect objects within the same pool.
+                Events - Something that can happen during a process.
+                Start event - Marks the beginning of a process.
+                End event - Marks a possible end result of a process.
+                Catch event - Triggered after a defined trigger event and influences the process flow.
+                Throw event - Self-triggered event.
+                Boundary events - Connect tasks. Cancels the attached task when it occurs, and executes the connected task instead. Must have one outgoing sequence flow with no incoming flows"""));
 
         chatSession.generateResponseFromPrompt(prompt, bpmnModelChatModificationWrapper.getCallableInterface());
 
