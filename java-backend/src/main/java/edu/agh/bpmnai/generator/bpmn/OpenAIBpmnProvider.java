@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.bpmn;
 
+import edu.agh.bpmnai.generator.Logging;
 import edu.agh.bpmnai.generator.TextPrompt;
 import edu.agh.bpmnai.generator.bpmn.layouting.BpmnSemanticLayouting;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnFile;
@@ -85,6 +86,8 @@ public class OpenAIBpmnProvider implements BpmnProvider {
                 Boundary events - Connect tasks. Cancels the attached task when it occurs, and executes the connected task instead. Must have one outgoing sequence flow with no incoming flows"""));
 
         chatSession.generateResponseFromPrompt(prompt, chatModifiableBpmnModel.getChatCallableInterface());
+
+        Logging.logInfoMessage("Finished model generation");
 
         BpmnModel bpmnModel = chatModifiableBpmnModel.getObjectInstance();
         layouting.layoutModel(bpmnModel);
