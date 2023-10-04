@@ -1,21 +1,18 @@
 package edu.agh.bpmnai.generator.bpmn;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.agh.bpmnai.generator.Logging;
 import edu.agh.bpmnai.generator.bpmn.model.*;
 import edu.agh.bpmnai.generator.openai.ChatCallableInterface;
 import edu.agh.bpmnai.generator.openai.OpenAIFunctionParametersSchemaFactory;
 import edu.agh.bpmnai.generator.openai.model.ChatFunction;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
+import lombok.Getter;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-public class BpmnModelChatModificationWrapper {
-    private static final ObjectMapper mapper = new ObjectMapper();
+public class ChatModifiableBpmnModel implements ChatModifiableObject<BpmnModel> {
     private final BpmnModel modifiedModel;
 
     private final Function<JsonNode, Optional<ChatMessage>> addProcess = new BpmnModelFunctionCallExecutorTemplate<>(BpmnProcess.class) {
@@ -97,7 +94,8 @@ public class BpmnModelChatModificationWrapper {
         }
     };
 
-    private final ChatCallableInterface callableInterface = new ChatCallableInterface(Set.of(
+    @Getter
+    private final ChatCallableInterface chatCallableInterface = new ChatCallableInterface(Set.of(
             ChatFunction.builder()
                     .name("addProcess")
                     .description("Add a process to the model")
@@ -160,60 +158,12 @@ public class BpmnModelChatModificationWrapper {
                     .build()
     ));
 
-    public BpmnModelChatModificationWrapper() {
+    public ChatModifiableBpmnModel() {
         this.modifiedModel = new BpmnModel();
     }
 
-    public ChatCallableInterface getCallableInterface() {
-        return callableInterface;
-    }
-
-    public BpmnModel getModel() {
+    @Override
+    public BpmnModel getObjectInstance() {
         return modifiedModel.getCopy();
-    }
-
-    private static abstract class BpmnModelFunctionCallExecutorTemplate<T> implements Function<JsonNode, Optional<ChatMessage>> {
-
-        private final Class<T> callArgumentsClass;
-
-        public BpmnModelFunctionCallExecutorTemplate(Class<T> callArgumentsClass) {
-            this.callArgumentsClass = callArgumentsClass;
-        }
-
-        @Override
-        public final Optional<ChatMessage> apply(JsonNode callArguments) {
-            T callArgumentsPojo;
-            try {
-                callArgumentsPojo = parseCallArguments(callArguments);
-            } catch (JsonProcessingException e) {
-                Logging.logThrowable("Error when parsing function call arguments", e);
-                ChatMessage errorMessage = ChatMessage.userMessage("The last function call parameters were invalid. Call the function again with proper arguments. Error: " + e.getMessage());
-                return Optional.of(errorMessage);
-            }
-
-            Optional<ChatMessage> optionalArgumentVerificationError = verifyCallArguments(callArgumentsPojo);
-            if (optionalArgumentVerificationError.isPresent()) {
-                return optionalArgumentVerificationError;
-            }
-
-            Optional<ChatMessage> messageAfterCallExecution;
-            try {
-                messageAfterCallExecution = executeFunctionCall(callArgumentsPojo);
-            } catch (IllegalArgumentException e) {
-                Logging.logThrowable("Error when executing function call", e);
-                return Optional.of(ChatMessage.userMessage(e.getMessage()));
-            }
-            return messageAfterCallExecution;
-        }
-
-        protected abstract Optional<ChatMessage> executeFunctionCall(T callArgumentsPojo);
-
-        protected Optional<ChatMessage> verifyCallArguments(T callArgumentsPojo) {
-            return Optional.empty();
-        }
-
-        protected T parseCallArguments(JsonNode callArguments) throws JsonProcessingException {
-            return mapper.readValue(callArguments.asText(), callArgumentsClass);
-        }
     }
 }

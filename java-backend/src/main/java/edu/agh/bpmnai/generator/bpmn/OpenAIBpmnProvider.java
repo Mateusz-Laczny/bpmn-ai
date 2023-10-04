@@ -31,7 +31,7 @@ public class OpenAIBpmnProvider implements BpmnProvider {
 
     @Override
     public BpmnFile provideForTextPrompt(TextPrompt userDescription) {
-        BpmnModelChatModificationWrapper bpmnModelChatModificationWrapper = new BpmnModelChatModificationWrapper();
+        ChatModifiableObject<BpmnModel> chatModifiableBpmnModel = new ChatModifiableBpmnModel();
         OpenAIChatSession chatSession = chatSessionFactory.createNewSession(aiModel, temperature);
         List<ChatMessage> prompt = List.of(
                 ChatMessage.systemMessage("You will be provided a business process description. First work out your own business process description based on the one provided by the user. Think about all relevant specifics and details. Focus on the happy path in this step. Enclose all your work for this step within triple quotes (\"\"\""),
@@ -84,9 +84,9 @@ public class OpenAIBpmnProvider implements BpmnProvider {
                 Throw event - Self-triggered event.
                 Boundary events - Connect tasks. Cancels the attached task when it occurs, and executes the connected task instead. Must have one outgoing sequence flow with no incoming flows"""));
 
-        chatSession.generateResponseFromPrompt(prompt, bpmnModelChatModificationWrapper.getCallableInterface());
+        chatSession.generateResponseFromPrompt(prompt, chatModifiableBpmnModel.getChatCallableInterface());
 
-        BpmnModel bpmnModel = bpmnModelChatModificationWrapper.getModel();
+        BpmnModel bpmnModel = chatModifiableBpmnModel.getObjectInstance();
         layouting.layoutModel(bpmnModel);
 
         return BpmnFile.fromModel(bpmnModel);
