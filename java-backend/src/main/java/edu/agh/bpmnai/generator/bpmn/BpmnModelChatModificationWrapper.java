@@ -6,11 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.Logging;
 import edu.agh.bpmnai.generator.bpmn.model.*;
 import edu.agh.bpmnai.generator.openai.ChatCallableInterface;
+import edu.agh.bpmnai.generator.openai.OpenAIFunctionParametersSchemaFactory;
 import edu.agh.bpmnai.generator.openai.model.ChatFunction;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
-import edu.agh.bpmnai.generator.openai.model.FunctionParameters;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -102,114 +101,67 @@ public class BpmnModelChatModificationWrapper {
             ChatFunction.builder()
                     .name("addProcess")
                     .description("Add a process to the model")
-                    .parameters(buildFunctionParameters(
-                            new FunctionParameters()
-                                    .addRequiredArgument("name", "string", "Name of this element")
-                    ))
+                    .parameters(OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(BpmnProcess.class))
                     .executor(addProcess)
                     .build(),
             ChatFunction.builder()
                     .name("addGateway")
                     .description("Add an inclusive or exclusive gateway to the model")
-                    .parameters(buildFunctionParameters(
-                            new FunctionParameters()
-                                    .addRequiredArgument("processId", "string", "Id of the process that this element is the member of")
-                                    .addRequiredArgument("name", "string", "Name of this element")
-                                    .addRequiredArgument("type", "string", "Id of the parent element of this element", List.of("exclusive", "inclusive"))
-                    ))
+                    .parameters(OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(BpmnGateway.class))
                     .executor(addGateway)
                     .build(),
             ChatFunction.builder()
                     .name("addStartEvent")
                     .description("Add a start event to the model")
-                    .parameters(buildFunctionParameters(
-                            new FunctionParameters()
-                                    .addRequiredArgument("processId", "string", "Id of the process that this element is the member of")
-                                            .addOptionalArgument("name", "string", "Name of this element")
-                            )
-                    ).executor(addStartEvent)
+                    .parameters(OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(BpmnStartEvent.class))
+                    .executor(addStartEvent)
                     .build(),
             ChatFunction.builder()
                     .name("addEndEvent")
                     .description("Add an end event to the model")
-                    .parameters(buildFunctionParameters(
-                            new FunctionParameters()
-                                    .addRequiredArgument("processId", "string", "Id of the process that this element is the member of")
-                                            .addRequiredArgument("name", "string", "Name of this element")
-                            )
-                    ).executor(addEndEvent)
+                    .parameters(OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(BpmnEndEvent.class))
+                    .executor(addEndEvent)
                     .build(),
             ChatFunction.builder()
                     .name("addIntermediateCatchEvent")
                     .description("Add an intermediate catch event to the model")
-                    .parameters(buildFunctionParameters(
-                            new FunctionParameters()
-                                    .addRequiredArgument("processId", "string", "Id of the process that this element is the member of")
-                                            .addRequiredArgument("name", "string", "Name of this element")
-                                    .addRequiredArgument("eventType", "string", "Event type", List.of("message", "timer", "conditional", "link", "signal"))
-                            )
-                    ).executor(addIntermediateCatchEvent)
+                    .parameters(OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(BpmnIntermediateCatchEvent.class))
+                    .executor(addIntermediateCatchEvent)
                     .build(),
             ChatFunction.builder()
-                    .name("addIntermediateEvent")
+                    .name("addIntermediateThrowEvent")
                     .description("Add an intermediate throw event to the model")
-                    .parameters(buildFunctionParameters(
-                            new FunctionParameters()
-                                    .addRequiredArgument("processId", "string", "Id of the process that this element is the member of")
-                                    .addRequiredArgument("name", "string", "Name of this element")
-                                    .addRequiredArgument("eventType", "string", "Event type", List.of("empty", "message", "escalation", "link", "compensation", "signal"))
-                            )
-                    ).executor(addIntermediateThrowEvent)
+                    .parameters(OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(BpmnIntermediateThrowEvent.class))
+                    .executor(addIntermediateThrowEvent)
                     .build(),
             ChatFunction.builder()
                     .name("addUserTask")
                     .description("Add a user task to the model")
-                    .parameters(buildFunctionParameters(
-                            new FunctionParameters()
-                                    .addRequiredArgument("processId", "string", "Id of the process that this element is the member of")
-                                            .addRequiredArgument("name", "string", "Name of this element")
-                                            .addOptionalArgument("assignee", "string", "Assignee to the user task")
-                            )
-                    ).executor(addUserTask)
+                    .parameters(OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(BpmnUserTask.class))
+                    .executor(addUserTask)
                     .build(),
             ChatFunction.builder()
                     .name("addServiceTask")
                     .description("Add a service task to the model")
-                    .parameters(buildFunctionParameters(
-                            new FunctionParameters()
-                                    .addRequiredArgument("processId", "string", "Id of the process that this element is the member of")
-                                    .addRequiredArgument("name", "string", "Name of this element")
-                    )).executor(addServiceTask)
+                    .parameters(OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(BpmnServiceTask.class))
+                    .executor(addServiceTask)
                     .build(),
             ChatFunction.builder()
                     .name("addSequenceFlow")
                     .description("Add a sequence flow between two elements of the model")
-                    .parameters(buildFunctionParameters(
-                            new FunctionParameters()
-                                    .addRequiredArgument("processId", "string", "Id of the process that this element is the member of")
-                                    .addRequiredArgument("sourceElementId", "string", "Id of the source element of this sequence flow")
-                                    .addRequiredArgument("targetElementId", "string", "Id of the source element of this sequence flow")
-                                    .addOptionalArgument("label", "string", "Sequence flow label")
-
-                    )).executor(addSequenceFlow)
+                    .parameters(OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(BpmnSequenceFlow.class))
+                    .executor(addSequenceFlow)
                     .build(),
             ChatFunction.builder()
                     .name("removeElement")
                     .description("Removes an element with a given id from the model")
-                    .parameters(buildFunctionParameters(
-                            new FunctionParameters()
-                                    .addRequiredArgument("id", "string", "Id of the element to remove. Must exist in the model")
-                                    .addRequiredArgument("processId", "string", "Id of the parent element of this element")
-                    )).executor(removeElement)
+                    .parameters(OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(ElementToRemove.class))
+                    .executor(removeElement)
                     .build()
     ));
 
     public BpmnModelChatModificationWrapper() {
         this.modifiedModel = new BpmnModel();
-    }
-
-    private static JsonNode buildFunctionParameters(FunctionParameters functionParameters) {
-        return mapper.valueToTree(functionParameters);
     }
 
     public ChatCallableInterface getCallableInterface() {
