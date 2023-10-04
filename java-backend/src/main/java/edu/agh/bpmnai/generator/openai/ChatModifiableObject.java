@@ -1,6 +1,4 @@
-package edu.agh.bpmnai.generator.bpmn;
-
-import edu.agh.bpmnai.generator.openai.ChatCallableInterface;
+package edu.agh.bpmnai.generator.openai;
 
 public interface ChatModifiableObject<T> {
 

@@ -3,6 +3,7 @@ package edu.agh.bpmnai.generator.bpmn;
 import com.fasterxml.jackson.databind.JsonNode;
 import edu.agh.bpmnai.generator.bpmn.model.*;
 import edu.agh.bpmnai.generator.openai.ChatCallableInterface;
+import edu.agh.bpmnai.generator.openai.ChatModifiableObject;
 import edu.agh.bpmnai.generator.openai.OpenAIFunctionParametersSchemaFactory;
 import edu.agh.bpmnai.generator.openai.model.ChatFunction;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
