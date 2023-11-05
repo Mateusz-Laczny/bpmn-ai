@@ -7,5 +7,7 @@ public interface ProcessTreeVisitor<T> {
 
     T visit(ProcessTreeXorNode processTreeXorNode);
 
+    T visit(ProcessTreeAndNode processTreeAndNode);
+
     void afterVisit();
 }

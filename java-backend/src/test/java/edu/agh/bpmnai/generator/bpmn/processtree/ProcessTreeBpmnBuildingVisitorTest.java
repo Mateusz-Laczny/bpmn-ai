@@ -60,4 +60,21 @@ class ProcessTreeBpmnBuildingVisitorTest {
 
         System.out.println(model.asXmlString());
     }
+
+    @Test
+    void shouldBuildSimpleAndModel() {
+        var processTree = new ProcessTree();
+        var treeRoot = new ProcessTreeAndNode();
+        processTree.setRootNode(treeRoot);
+        treeRoot.addChild(new ProcessTreeActivityNode("Activity A"));
+        treeRoot.addChild(new ProcessTreeActivityNode("Activity B"));
+
+        var visitor = new ProcessTreeBpmnBuildingVisitor();
+
+        processTree.visitRoot(visitor);
+        visitor.afterVisit();
+        BpmnModel model = visitor.getModel();
+
+        System.out.println(model.asXmlString());
+    }
 }

@@ -43,9 +43,19 @@ public class ProcessTreeBpmnBuildingVisitor implements ProcessTreeVisitor<String
 
     @Override
     public String visit(ProcessTreeXorNode processTreeXorNode) {
-        previousElement = model.addGateway(new BpmnGateway(processId, "", BpmnGatewayType.EXCLUSIVE));
-        Set<String> elementsToConnectToClosingGateway = visitNodeChildren(processTreeXorNode);
-        String closingGatewayId = model.addGateway(new BpmnGateway(processId, "", BpmnGatewayType.EXCLUSIVE));
+        return processGatewayNode(BpmnGatewayType.EXCLUSIVE, processTreeXorNode);
+    }
+
+    @Override
+    public String visit(ProcessTreeAndNode processTreeAndNode) {
+        return processGatewayNode(BpmnGatewayType.INCLUSIVE, processTreeAndNode);
+
+    }
+
+    private String processGatewayNode(BpmnGatewayType gatewayType, ProcessTreeNode gatewayNode) {
+        previousElement = model.addGateway(new BpmnGateway(processId, "", gatewayType));
+        Set<String> elementsToConnectToClosingGateway = visitNodeChildren(gatewayNode);
+        String closingGatewayId = model.addGateway(new BpmnGateway(processId, "", gatewayType));
         for (String elementId : elementsToConnectToClosingGateway) {
             model.addSequenceFlow(new BpmnSequenceFlow(processId, elementId, closingGatewayId, ""));
         }
