@@ -19,7 +19,7 @@ public class ProcessTreeBpmnBuildingVisitor implements ProcessTreeVisitor {
 
     @Override
     public void visit(ProcessTreeSequentialNode processTreeSequentialNode) {
-
+        visitNodeChildren(processTreeSequentialNode);
     }
 
     @Override
@@ -27,11 +27,18 @@ public class ProcessTreeBpmnBuildingVisitor implements ProcessTreeVisitor {
         String nextPreviousElement = model.addServiceTask(new BpmnServiceTask(processId, processTreeActivityNode.getActivityName()));
         model.addSequenceFlow(new BpmnSequenceFlow(processId, previousElement, nextPreviousElement, ""));
         previousElement = nextPreviousElement;
+        visitNodeChildren(processTreeActivityNode);
     }
 
     @Override
     public void afterVisit() {
         String endEventId = model.addEndEvent(new BpmnEndEvent(processId, ""));
         model.addSequenceFlow(new BpmnSequenceFlow(processId, previousElement, endEventId, ""));
+    }
+
+    private void visitNodeChildren(ProcessTreeNode node) {
+        for (ProcessTreeNode nodeChild : node.getChildren()) {
+            nodeChild.accept(this);
+        }
     }
 }

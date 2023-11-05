@@ -13,15 +13,7 @@ public class ProcessTree {
 
     Map<String, ProcessTreeNode> idToNodeMap = new HashMap<>();
 
-    public void visitTree(ProcessTreeVisitor visitor) {
-        visitNode(rootNode, visitor);
-        visitor.afterVisit();
-    }
-
-    private void visitNode(ProcessTreeNode node, ProcessTreeVisitor visitor) {
-        node.accept(visitor);
-        for (ProcessTreeNode childNode : node.getChildren()) {
-            visitNode(childNode, visitor);
-        }
+    public void visitRoot(ProcessTreeVisitor visitor) {
+        rootNode.accept(visitor);
     }
 }

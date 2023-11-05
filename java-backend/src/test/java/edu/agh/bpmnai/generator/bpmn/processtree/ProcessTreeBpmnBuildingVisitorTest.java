@@ -15,7 +15,8 @@ class ProcessTreeBpmnBuildingVisitorTest {
         treeRoot.addChild(new ProcessTreeActivityNode("Activity C"));
         var visitor = new ProcessTreeBpmnBuildingVisitor();
 
-        processTree.visitTree(visitor);
+        processTree.visitRoot(visitor);
+        visitor.afterVisit();
         BpmnModel model = visitor.getModel();
 
         System.out.println(model.asXmlString());
@@ -36,7 +37,8 @@ class ProcessTreeBpmnBuildingVisitorTest {
 
         var visitor = new ProcessTreeBpmnBuildingVisitor();
 
-        processTree.visitTree(visitor);
+        processTree.visitRoot(visitor);
+        visitor.afterVisit();
         BpmnModel model = visitor.getModel();
 
         System.out.println(model.asXmlString());
