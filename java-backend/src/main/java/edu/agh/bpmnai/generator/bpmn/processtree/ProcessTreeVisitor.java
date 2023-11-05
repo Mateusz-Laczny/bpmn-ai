@@ -1,9 +1,11 @@
 package edu.agh.bpmnai.generator.bpmn.processtree;
 
-public interface ProcessTreeVisitor {
-    void visit(ProcessTreeSequentialNode processTreeSequentialNode);
+public interface ProcessTreeVisitor<T> {
+    T visit(ProcessTreeSequentialNode processTreeSequentialNode);
 
-    void visit(ProcessTreeActivityNode processTreeActivityNode);
+    T visit(ProcessTreeActivityNode processTreeActivityNode);
+
+    T visit(ProcessTreeXorNode processTreeXorNode);
 
     void afterVisit();
 }

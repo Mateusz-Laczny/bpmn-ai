@@ -25,6 +25,11 @@ public abstract class ProcessTreeBaseNode implements ProcessTreeNode {
         newChild.setParent(this);
     }
 
+    @Override
+    public boolean hasChildren() {
+        return !children.isEmpty();
+    }
+
     public void addChildren(Collection<ProcessTreeNode> newChildren) {
         for (ProcessTreeNode newChild : newChildren) {
             addChild(newChild);

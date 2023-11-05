@@ -12,7 +12,7 @@ public class ProcessTreeActivityNode extends ProcessTreeBaseNode {
     }
 
     @Override
-    public void accept(ProcessTreeVisitor visitor) {
-        visitor.visit(this);
+    public <T> T accept(ProcessTreeVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }
