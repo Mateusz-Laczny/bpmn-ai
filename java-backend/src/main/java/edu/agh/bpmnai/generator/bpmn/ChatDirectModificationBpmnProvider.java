@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class OpenAIBpmnProvider implements BpmnProvider {
+public class ChatDirectModificationBpmnProvider implements BpmnProvider {
 
     private static final float temperature = 0.4f;
     private static final OpenAI.OpenAIModel aiModel = OpenAI.OpenAIModel.GPT_3_5_TURBO_16K;
@@ -23,7 +23,7 @@ public class OpenAIBpmnProvider implements BpmnProvider {
     private final BpmnSemanticLayouting layouting;
 
     @Autowired
-    public OpenAIBpmnProvider(OpenAIChatSessionFactory chatSessionFactory, BpmnSemanticLayouting layouting) {
+    public ChatDirectModificationBpmnProvider(OpenAIChatSessionFactory chatSessionFactory, BpmnSemanticLayouting layouting) {
         this.chatSessionFactory = chatSessionFactory;
         this.layouting = layouting;
     }

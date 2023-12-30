@@ -1,7 +1,7 @@
 package edu.agh.bpmnai.generator;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnProvider;
-import edu.agh.bpmnai.generator.bpmn.OpenAIBpmnProvider;
+import edu.agh.bpmnai.generator.bpmn.ChatDirectModificationBpmnProvider;
 import edu.agh.bpmnai.generator.bpmn.layouting.BpmnSemanticLayouting;
 import edu.agh.bpmnai.generator.openai.OpenAIChatSessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ public class MainConfiguration {
 
     @Bean
     public BpmnProvider bpmnProvider(@Autowired OpenAIChatSessionFactory chatSessionFactory, @Autowired BpmnSemanticLayouting bpmnSemanticLayouting) {
-        return new OpenAIBpmnProvider(chatSessionFactory, bpmnSemanticLayouting);
+        return new ChatDirectModificationBpmnProvider(chatSessionFactory, bpmnSemanticLayouting);
     }
 
     @Bean
