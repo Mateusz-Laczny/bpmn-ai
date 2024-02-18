@@ -21,7 +21,7 @@ public final class ChatMessage {
     private String name;
     @JsonProperty("function_call")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private FunctionCall functionCall;
+    private FunctionCallDto functionCall;
 
     public static ChatMessage systemMessage(String content) {
         return new ChatMessage(MessageRole.SYSTEM, content, null, null);

@@ -2,7 +2,7 @@ package edu.agh.bpmnai.generator.openai;
 
 import edu.agh.bpmnai.generator.openai.model.ChatFunction;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
-import edu.agh.bpmnai.generator.openai.model.FunctionCall;
+import edu.agh.bpmnai.generator.openai.model.FunctionCallDto;
 
 import java.util.*;
 
@@ -23,7 +23,7 @@ public class ChatCallableInterface {
         return Collections.unmodifiableSet(callableFunctions);
     }
 
-    public Optional<ChatMessage> executeFunctionCall(FunctionCall functionCall) {
+    public Optional<ChatMessage> executeFunctionCall(FunctionCallDto functionCall) {
         if (!nameToFunctionMap.containsKey(functionCall.name())) {
             return Optional.of(ChatMessage.userMessage("The function \"" + functionCall.name() + "\n does not exist."));
         }

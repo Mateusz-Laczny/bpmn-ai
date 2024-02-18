@@ -3,12 +3,16 @@ package edu.agh.bpmnai.generator.openai;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.Logging;
+import edu.agh.bpmnai.generator.openai.OpenAI.OpenAIModel;
 import edu.agh.bpmnai.generator.openai.model.ChatCompletionRequest;
 import edu.agh.bpmnai.generator.openai.model.ChatCompletionResponse;
 import edu.agh.bpmnai.generator.openai.model.ChatFunction;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
+import edu.agh.bpmnai.generator.v2.ChatCompletionDto;
+import edu.agh.bpmnai.generator.v2.ChatCompletionResponseDto;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,15 +20,19 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 import java.util.List;
 
 @Service
+@Slf4j
 public class OpenAIChatCompletionApi {
 
     private static final Bucket bucket;
+
+    private final ObjectMapper objectMapper;
 
     static {
         Bandwidth limit = Bandwidth.simple(OpenAI.openAIApiTokenPerMinuteRateLimit, Duration.ofMinutes(1));
@@ -34,12 +42,13 @@ public class OpenAIChatCompletionApi {
     private final RestTemplate restTemplate;
 
     @Autowired
-    public OpenAIChatCompletionApi(RestTemplate restTemplate) {
+    public OpenAIChatCompletionApi(ObjectMapper objectMapper, RestTemplate restTemplate) {
+        this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
     }
 
     public ChatCompletionResponse getChatCompletion(OpenAIChatSession conversation) throws FailedRequestException {
-        OpenAI.OpenAIModel usedModel = conversation.getUsedModel();
+        OpenAIModel usedModel = conversation.getUsedModel();
         var requestBody = ChatCompletionRequest.builder()
                 .model(usedModel.getModelProperties().name())
                 .messages(conversation.getMessages())
@@ -50,7 +59,7 @@ public class OpenAIChatCompletionApi {
     }
 
     public ChatCompletionResponse getChatCompletion(OpenAIChatSession conversation, List<ChatFunction> callableFunctions) throws FailedRequestException {
-        OpenAI.OpenAIModel usedModel = conversation.getUsedModel();
+        OpenAIModel usedModel = conversation.getUsedModel();
         var requestBody = ChatCompletionRequest.builder()
                 .model(usedModel.getModelProperties().name())
                 .messages(conversation.getMessages())
@@ -61,7 +70,29 @@ public class OpenAIChatCompletionApi {
         return sendRequest(usedModel, requestBody);
     }
 
-    private ChatCompletionResponse sendRequest(OpenAI.OpenAIModel usedModel, ChatCompletionRequest requestBody) {
+    public ChatCompletionResponseDto getChatCompletion(ChatCompletionDto completionRequest) {
+        HttpEntity<ChatCompletionDto> requestHttpEntity = prepareRequestHttpEntity(completionRequest);
+        try {
+            ResponseEntity<ChatCompletionResponseDto> response = restTemplate.postForEntity(
+                    OpenAI.openAIApiUrl,
+                    requestHttpEntity,
+                    ChatCompletionResponseDto.class
+            );
+
+            return response.getBody();
+        } catch (RestClientException e) {
+            throw new FailedRequestException(e);
+        }
+    }
+
+    private HttpEntity<ChatCompletionDto> prepareRequestHttpEntity(ChatCompletionDto requestBody) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        headers.add("Authorization", "Bearer " + OpenAI.openAIApiKey);
+        return new HttpEntity<>(requestBody, headers);
+    }
+
+    private ChatCompletionResponse sendRequest(OpenAIModel usedModel, ChatCompletionRequest requestBody) {
         Logging.logDebugMessage("Sending request to the OpenAI chat completion APU");
         HttpEntity<ChatCompletionRequest> requestHttpEntity = prepareRequestHttpEntity(requestBody);
         try {
@@ -91,7 +122,7 @@ public class OpenAIChatCompletionApi {
         return new HttpEntity<>(requestBody, headers);
     }
 
-    private int calculateTokensUsed(ChatCompletionRequest request, OpenAI.OpenAIModel usedModel) {
+    private int calculateTokensUsed(ChatCompletionRequest request, OpenAIModel usedModel) {
         int numberOfTokensInMessages = 0;
         for (ChatMessage chatMessage : request.messages()) {
             numberOfTokensInMessages += calculateTokensUsedByMessage(chatMessage, usedModel);
@@ -107,7 +138,7 @@ public class OpenAIChatCompletionApi {
         return usedModel.getModelProperties().maxNumberOfTokens() - numberOfTokensInMessages - numberOfTokensInFunctionDescriptions;
     }
 
-    private int calculateTokensUsedByMessage(ChatMessage message, OpenAI.OpenAIModel usedModel) {
+    private int calculateTokensUsedByMessage(ChatMessage message, OpenAIModel usedModel) {
         int tokensUsedByMessage = usedModel.getModelProperties().tokensPerMessage();
 
         tokensUsedByMessage += OpenAI.getNumberOfTokens(message.getRole().getRoleName(), usedModel);

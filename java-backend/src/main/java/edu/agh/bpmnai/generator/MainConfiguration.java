@@ -13,10 +13,6 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 @Profile("paid-api")
 public class MainConfiguration {
-    @Bean
-    BpmnSemanticLayouting bpmnSemanticLayouting() {
-        return new BpmnSemanticLayouting();
-    }
 
     @Bean
     public BpmnProvider bpmnProvider(@Autowired OpenAIChatSessionFactory chatSessionFactory, @Autowired BpmnSemanticLayouting bpmnSemanticLayouting) {

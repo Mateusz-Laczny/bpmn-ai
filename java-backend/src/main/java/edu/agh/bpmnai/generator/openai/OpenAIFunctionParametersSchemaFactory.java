@@ -3,6 +3,7 @@ package edu.agh.bpmnai.generator.openai;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.generator.impl.PropertySortUtils;
+import edu.agh.bpmnai.generator.v2.Description;
 import jakarta.annotation.Nullable;
 
 public class OpenAIFunctionParametersSchemaFactory {
@@ -16,7 +17,8 @@ public class OpenAIFunctionParametersSchemaFactory {
                 .build();
 
         configBuilder.forFields()
-                .withRequiredCheck(field -> field.getAnnotationConsideringFieldAndGetter(Nullable.class) == null);
+                .withRequiredCheck(field -> field.getAnnotationConsideringFieldAndGetter(Nullable.class) == null)
+                .withDescriptionResolver(field -> field.getAnnotation(Description.class).value());
 
         configBuilder.forTypesInGeneral()
                 .withPropertySorter(PropertySortUtils.SORT_PROPERTIES_FIELDS_BEFORE_METHODS);
