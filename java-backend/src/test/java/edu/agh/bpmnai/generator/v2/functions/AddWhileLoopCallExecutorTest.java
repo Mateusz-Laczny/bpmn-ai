@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.WhileLoopDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,6 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AddWhileLoopCallExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
+    private AddWhileLoopCallExecutor executor;
+
+    @BeforeEach
+    void setUp() {
+        executor = new AddWhileLoopCallExecutor(new ToolCallArgumentsParser(mapper));
+    }
 
     @Test
     void should_work_as_expected_for_existing_check_activity() {
@@ -25,7 +32,6 @@ class AddWhileLoopCallExecutorTest {
         String checkTaskId = model.addTask("task");
         WhileLoopDto callArguments = new WhileLoopDto("", "task", null, List.of("task1", "task2"));
         JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
-        var executor = new AddWhileLoopCallExecutor(mapper);
 
         executor.executeCall(sessionState, "id", callArgumentsJson);
 
@@ -54,7 +60,6 @@ class AddWhileLoopCallExecutorTest {
 
         WhileLoopDto callArguments = new WhileLoopDto("", "checkTask", "task", List.of("task1", "task2"));
         JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
-        var executor = new AddWhileLoopCallExecutor(mapper);
 
         executor.executeCall(sessionState, "id", callArgumentsJson);
 

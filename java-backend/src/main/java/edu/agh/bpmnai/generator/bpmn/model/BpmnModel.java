@@ -49,7 +49,8 @@ public final class BpmnModel {
         diagramPlane = createElementWithParent(diagram, "id", BpmnPlane.class);
         diagram.setBpmnPlane(diagramPlane);
 
-        addStartEvent(new BpmnStartEvent(idOfDefaultProcess, ""));
+        String startEventId = addStartEvent(new BpmnStartEvent(idOfDefaultProcess, ""));
+        aliases.put("Start", startEventId);
 
         Bpmn.validateModel(modelInstance);
     }

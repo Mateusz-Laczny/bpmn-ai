@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.IfElseBranchingDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -18,6 +19,13 @@ class AddIfElseBranchingCallExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    AddIfElseBranchingCallExecutor executor;
+
+    @BeforeEach
+    void setUp() {
+        executor = new AddIfElseBranchingCallExecutor(new ToolCallArgumentsParser(mapper));
+    }
+
     @Test
     void should_work_as_expected_for_existing_check_activity() {
         SessionState sessionState = new SessionState(List.of());
@@ -25,7 +33,6 @@ class AddIfElseBranchingCallExecutorTest {
         String checkTaskId = model.addTask("task");
         IfElseBranchingDto callArguments = new IfElseBranchingDto("", "task", null, "trueBranch", "falseBranch");
         JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
-        var executor = new AddIfElseBranchingCallExecutor(mapper);
 
         executor.executeCall(sessionState, "id", callArgumentsJson);
 
@@ -50,7 +57,6 @@ class AddIfElseBranchingCallExecutorTest {
 
         IfElseBranchingDto callArguments = new IfElseBranchingDto("", "checkTask", "task", "trueBranch", "falseBranch");
         JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
-        var executor = new AddIfElseBranchingCallExecutor(mapper);
 
         executor.executeCall(sessionState, "id", callArgumentsJson);
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.SingleChoiceForkDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,15 +18,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AddSingleChoiceForkFunctionCallExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
+    private AddSingleChoiceForkFunctionCallExecutor executor;
+
+    @BeforeEach
+    void setUp() {
+        executor = new AddSingleChoiceForkFunctionCallExecutor(new ToolCallArgumentsParser(mapper));
+    }
 
     @Test
     void should_work_as_expected_for_existing_check_activity() {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         String checkTaskId = model.addTask("task");
-        SingleChoiceForkDto callArguments = new SingleChoiceForkDto("", "task", null, List.of("task1", "task2"));
+        SingleChoiceForkDto callArguments = new SingleChoiceForkDto("", "elementName", "task", null, List.of("task1", "task2"));
         JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
-        var executor = new AddSingleChoiceForkFunctionCallExecutor(mapper);
 
         executor.executeCall(sessionState, "id", callArgumentsJson);
 
@@ -58,9 +64,8 @@ class AddSingleChoiceForkFunctionCallExecutorTest {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         model.addTask("task");
-        SingleChoiceForkDto callArguments = new SingleChoiceForkDto("", "checkTask", "task", List.of("task1", "task2"));
+        SingleChoiceForkDto callArguments = new SingleChoiceForkDto("", "elementName", "checkTask", "task", List.of("task1", "task2"));
         JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
-        var executor = new AddSingleChoiceForkFunctionCallExecutor(mapper);
 
         executor.executeCall(sessionState, "id", callArgumentsJson);
 

@@ -1,7 +1,10 @@
 package edu.agh.bpmnai.generator.v2.session;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.ChatMessageDto;
+import edu.agh.bpmnai.generator.v2.FunctionCallResponseDto;
 import jakarta.annotation.Nullable;
 import lombok.Setter;
 import lombok.ToString;
@@ -22,6 +25,8 @@ public class SessionState {
 
     private final BpmnModel model;
 
+    private final ObjectMapper objectMapper;
+
     @Setter
     private SessionStatus sessionStatus;
 
@@ -30,6 +35,7 @@ public class SessionState {
 
     public SessionState(List<String> systemMessages) {
         this.systemMessages = new ArrayList<>(systemMessages);
+        this.objectMapper = new ObjectMapper();
         messages = new ArrayList<>();
         model = new BpmnModel();
         sessionStatus = NEW;
@@ -41,6 +47,10 @@ public class SessionState {
 
     public List<ChatMessageDto> messages() {
         return unmodifiableList(messages);
+    }
+
+    public ChatMessageDto getLastMessage() {
+        return messages.get(messages.size() - 1);
     }
 
     public SessionStatus sessionStatus() {
@@ -80,5 +90,14 @@ public class SessionState {
 
     public void onMessageReceivedOneTime(BiConsumer<ChatMessageDto, SessionState> handler) {
         this.onMessageReceivedOneTimeHandler = handler;
+    }
+
+    public void appendToolResponse(String callId, FunctionCallResponseDto response) {
+        try {
+            String contentAsString = objectMapper.writeValueAsString(response);
+            this.messages.add(new ChatMessageDto("tool", contentAsString, callId));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

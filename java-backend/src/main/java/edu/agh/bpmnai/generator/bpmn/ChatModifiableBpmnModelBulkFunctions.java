@@ -1,6 +1,5 @@
 package edu.agh.bpmnai.generator.bpmn;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import edu.agh.bpmnai.generator.bpmn.model.*;
 import edu.agh.bpmnai.generator.openai.ChatCallableInterface;
 import edu.agh.bpmnai.generator.openai.ChatModifiableObject;
@@ -17,7 +16,7 @@ import java.util.function.Function;
 public class ChatModifiableBpmnModelBulkFunctions implements ChatModifiableObject<BpmnModel> {
     private final BpmnModel modifiedModel;
 
-    private final Function<JsonNode, Optional<ChatMessage>> addProcesses = new BpmnModelFunctionCallExecutorTemplate<>(Processes.class) {
+    private final Function<String, Optional<ChatMessage>> addProcesses = new BpmnModelFunctionCallExecutorTemplate<>(Processes.class) {
         @Override
         protected Optional<ChatMessage> executeFunctionCall(Processes callArgumentsPojo) {
             StringBuilder builder = new StringBuilder();
@@ -30,7 +29,7 @@ public class ChatModifiableBpmnModelBulkFunctions implements ChatModifiableObjec
             return Optional.of(ChatMessage.userMessage(builder.toString()));
         }
     };
-    private final Function<JsonNode, Optional<ChatMessage>> addGateways = new BpmnModelFunctionCallExecutorTemplate<>(Gateways.class) {
+    private final Function<String, Optional<ChatMessage>> addGateways = new BpmnModelFunctionCallExecutorTemplate<>(Gateways.class) {
         @Override
         protected Optional<ChatMessage> executeFunctionCall(Gateways callArgumentsPojo) {
             StringBuilder builder = new StringBuilder();
@@ -44,7 +43,7 @@ public class ChatModifiableBpmnModelBulkFunctions implements ChatModifiableObjec
         }
     };
 
-    private final Function<JsonNode, Optional<ChatMessage>> addStartEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnStartEvent.class) {
+    private final Function<String, Optional<ChatMessage>> addStartEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnStartEvent.class) {
         @Override
         protected Optional<ChatMessage> executeFunctionCall(BpmnStartEvent callArgumentsPojo) {
             String startEventId = modifiedModel.addStartEvent(callArgumentsPojo);
@@ -52,7 +51,7 @@ public class ChatModifiableBpmnModelBulkFunctions implements ChatModifiableObjec
         }
     };
 
-    private final Function<JsonNode, Optional<ChatMessage>> addEndEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnEndEvent.class) {
+    private final Function<String, Optional<ChatMessage>> addEndEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnEndEvent.class) {
         @Override
         protected Optional<ChatMessage> executeFunctionCall(BpmnEndEvent callArgumentsPojo) {
             String endEventId = modifiedModel.addEndEvent(callArgumentsPojo);
@@ -60,7 +59,7 @@ public class ChatModifiableBpmnModelBulkFunctions implements ChatModifiableObjec
         }
     };
 
-    private final Function<JsonNode, Optional<ChatMessage>> addIntermediateCatchEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnIntermediateCatchEvent.class) {
+    private final Function<String, Optional<ChatMessage>> addIntermediateCatchEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnIntermediateCatchEvent.class) {
         @Override
         protected Optional<ChatMessage> executeFunctionCall(BpmnIntermediateCatchEvent callArgumentsPojo) {
             String intermediateEventId = modifiedModel.addIntermediateCatchEvent(callArgumentsPojo);
@@ -68,7 +67,7 @@ public class ChatModifiableBpmnModelBulkFunctions implements ChatModifiableObjec
         }
     };
 
-    private final Function<JsonNode, Optional<ChatMessage>> addIntermediateThrowEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnIntermediateThrowEvent.class) {
+    private final Function<String, Optional<ChatMessage>> addIntermediateThrowEvent = new BpmnModelFunctionCallExecutorTemplate<>(BpmnIntermediateThrowEvent.class) {
         @Override
         protected Optional<ChatMessage> executeFunctionCall(BpmnIntermediateThrowEvent callArgumentsPojo) {
             String intermediateEventId = modifiedModel.addIntermediateThrowEvent(callArgumentsPojo);
@@ -76,7 +75,7 @@ public class ChatModifiableBpmnModelBulkFunctions implements ChatModifiableObjec
         }
     };
 
-    private final Function<JsonNode, Optional<ChatMessage>> addUserTasks = new BpmnModelFunctionCallExecutorTemplate<>(UserTasks.class) {
+    private final Function<String, Optional<ChatMessage>> addUserTasks = new BpmnModelFunctionCallExecutorTemplate<>(UserTasks.class) {
         @Override
         protected Optional<ChatMessage> executeFunctionCall(UserTasks callArgumentsPojo) {
             StringBuilder builder = new StringBuilder();
@@ -90,7 +89,7 @@ public class ChatModifiableBpmnModelBulkFunctions implements ChatModifiableObjec
         }
     };
 
-    private final Function<JsonNode, Optional<ChatMessage>> addServiceTasks = new BpmnModelFunctionCallExecutorTemplate<>(ServiceTasks.class) {
+    private final Function<String, Optional<ChatMessage>> addServiceTasks = new BpmnModelFunctionCallExecutorTemplate<>(ServiceTasks.class) {
         @Override
         protected Optional<ChatMessage> executeFunctionCall(ServiceTasks callArgumentsPojo) {
             StringBuilder builder = new StringBuilder();
@@ -104,7 +103,7 @@ public class ChatModifiableBpmnModelBulkFunctions implements ChatModifiableObjec
         }
     };
 
-    private final Function<JsonNode, Optional<ChatMessage>> addSequenceFlows = new BpmnModelFunctionCallExecutorTemplate<>(SequenceFlows.class) {
+    private final Function<String, Optional<ChatMessage>> addSequenceFlows = new BpmnModelFunctionCallExecutorTemplate<>(SequenceFlows.class) {
         @Override
         protected Optional<ChatMessage> executeFunctionCall(SequenceFlows callArgumentsPojo) {
             StringBuilder builder = new StringBuilder();
@@ -131,7 +130,7 @@ public class ChatModifiableBpmnModelBulkFunctions implements ChatModifiableObjec
         }
     };
 
-    private final Function<JsonNode, Optional<ChatMessage>> removeElement = new BpmnModelFunctionCallExecutorTemplate<>(ElementToRemove.class) {
+    private final Function<String, Optional<ChatMessage>> removeElement = new BpmnModelFunctionCallExecutorTemplate<>(ElementToRemove.class) {
         @Override
         protected Optional<ChatMessage> executeFunctionCall(ElementToRemove callArgumentsPojo) {
             modifiedModel.removeElement(callArgumentsPojo);

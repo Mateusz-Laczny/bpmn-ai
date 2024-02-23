@@ -9,7 +9,7 @@ import java.util.Map;
 public record FunctionCallResponseDto(@JsonProperty("call_successful") boolean callsSuccessful,
                                       @JsonInclude(JsonInclude.Include.NON_EMPTY)
                                       @JsonSerialize(using = MapElementsToFieldsSerializer.class)
-                                      Map<String, String> additionalFields) {
+                                      Map<String, Object> additionalFields) {
     public FunctionCallResponseDto(boolean callsSuccessful) {
         this(callsSuccessful, Map.of());
     }

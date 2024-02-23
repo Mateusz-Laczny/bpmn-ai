@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.SequenceOfActivitiesDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,6 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AddSequenceOfTasksCallExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
+    private AddSequenceOfTasksCallExecutor executor;
+
+    @BeforeEach
+    void setUp() {
+        executor = new AddSequenceOfTasksCallExecutor(new ToolCallArgumentsParser(mapper));
+    }
 
     @Test
     void works_as_expected() {
@@ -25,7 +32,6 @@ class AddSequenceOfTasksCallExecutorTest {
         String predecessorTaskId = model.addTask("task");
         SequenceOfActivitiesDto callArguments = new SequenceOfActivitiesDto("", "task", List.of("activity1", "activity2"));
         JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
-        var executor = new AddSequenceOfTasksCallExecutor(mapper);
 
         executor.executeCall(sessionState, "id", callArgumentsJson);
 

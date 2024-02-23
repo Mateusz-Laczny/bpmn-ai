@@ -1,17 +1,14 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.ChatMessageDto;
-import edu.agh.bpmnai.generator.v2.FunctionCallResponseDto;
 import edu.agh.bpmnai.generator.v2.ParallelForkDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.INCLUSIVE;
@@ -20,11 +17,11 @@ import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.INCLUSIVE;
 @Slf4j
 public class AddParallelActivitiesForkCallExecutor implements FunctionCallExecutor {
 
-    private final ObjectMapper objectMapper;
+    private final ToolCallArgumentsParser callArgumentsParser;
 
     @Autowired
-    public AddParallelActivitiesForkCallExecutor(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public AddParallelActivitiesForkCallExecutor(ToolCallArgumentsParser callArgumentsParser) {
+        this.callArgumentsParser = callArgumentsParser;
     }
 
     @Override
@@ -33,27 +30,30 @@ public class AddParallelActivitiesForkCallExecutor implements FunctionCallExecut
     }
 
     @Override
-    public FunctionCallResult executeCall(SessionState sessionState, String functionId, JsonNode callArguments) {
-        ParallelForkDto arguments;
-        try {
-            arguments = objectMapper.readValue(callArguments.asText(), ParallelForkDto.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+    public FunctionCallResult executeCall(SessionState sessionState, String functionId, String callArgumentsJson) {
+        ArgumentsParsingResult<ParallelForkDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, ParallelForkDto.class);
+        if (argumentsParsingResult.isError()) {
+            return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
         }
+
+        ParallelForkDto callArguments = argumentsParsingResult.result();
+
         BpmnModel model = sessionState.model();
-        String predecessorElementId;
-        if (arguments.predecessorElement().equals("Start")) {
-            predecessorElementId = model.findStartEvents().iterator().next();
-        } else {
-            predecessorElementId = model.findTaskIdByName(arguments.predecessorElement()).get();
+        Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());
+        if (optionalPredecessorElementId.isEmpty()) {
+            log.info("Predecessor element does not exist in the model");
+            return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
         }
+
+        String predecessorElementId = optionalPredecessorElementId.get();
+
         Set<String> predecessorElementSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
         model.clearSuccessors(predecessorElementId);
 
         String openingGatewayId = model.addGateway(INCLUSIVE);
         String closingGatewayId = model.addGateway(INCLUSIVE);
         model.addUnlabelledSequenceFlow(predecessorElementId, openingGatewayId);
-        for (String taskToExecute : arguments.activitiesToExecute()) {
+        for (String taskToExecute : callArguments.activitiesToExecute()) {
             String taskId = model.addTask(taskToExecute);
             model.addUnlabelledSequenceFlow(openingGatewayId, taskId);
             model.addUnlabelledSequenceFlow(taskId, closingGatewayId);
@@ -61,19 +61,14 @@ public class AddParallelActivitiesForkCallExecutor implements FunctionCallExecut
 
         if (!predecessorElementSuccessorsBeforeModification.isEmpty()) {
             if (predecessorElementSuccessorsBeforeModification.size() > 1) {
-                log.warn("Predecessor element has more than one successor, choosing the first one; activityName: {}", arguments.predecessorElement());
+                log.warn("Predecessor element has more than one successor, choosing the first one; activityName: {}", callArguments.predecessorElement());
             }
 
             String endOfChainElementId = predecessorElementSuccessorsBeforeModification.iterator().next();
             model.addUnlabelledSequenceFlow(closingGatewayId, endOfChainElementId);
         }
 
-        model.setAlias(closingGatewayId, arguments.elementName());
-        try {
-            String responseContent = objectMapper.writeValueAsString(new FunctionCallResponseDto(true));
-            return FunctionCallResult.withResponse(new ChatMessageDto("tool", responseContent, functionId));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        model.setAlias(closingGatewayId, callArguments.elementName());
+        return FunctionCallResult.successfulCall();
     }
 }

@@ -1,17 +1,13 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.ChatMessageDto;
-import edu.agh.bpmnai.generator.v2.FunctionCallResponseDto;
 import edu.agh.bpmnai.generator.v2.SingleChoiceForkDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -21,11 +17,11 @@ import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
 @Slf4j
 public class AddSingleChoiceForkFunctionCallExecutor implements FunctionCallExecutor {
 
-    private final ObjectMapper objectMapper;
+    private final ToolCallArgumentsParser callArgumentsParser;
 
     @Autowired
-    public AddSingleChoiceForkFunctionCallExecutor(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public AddSingleChoiceForkFunctionCallExecutor(ToolCallArgumentsParser callArgumentsParser) {
+        this.callArgumentsParser = callArgumentsParser;
     }
 
     @Override
@@ -34,29 +30,29 @@ public class AddSingleChoiceForkFunctionCallExecutor implements FunctionCallExec
     }
 
     @Override
-    public FunctionCallResult executeCall(SessionState sessionState, String functionId, JsonNode callArguments) {
-        SingleChoiceForkDto arguments;
-        try {
-            arguments = objectMapper.readValue(callArguments.asText(), SingleChoiceForkDto.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+    public FunctionCallResult executeCall(SessionState sessionState, String functionId, String callArgumentsJson) {
+        ArgumentsParsingResult<SingleChoiceForkDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, SingleChoiceForkDto.class);
+        if (argumentsParsingResult.isError()) {
+            return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
         }
+
+        SingleChoiceForkDto callArguments = argumentsParsingResult.result();
         BpmnModel model = sessionState.model();
-        String checkActivityName = arguments.checkActivity();
-        Optional<String> optionalCheckActivityElementId = model.findTaskIdByName(checkActivityName);
+        String checkTaskName = callArguments.checkActivity();
+        Optional<String> optionalTaskElementId = model.findTaskIdByName(checkTaskName);
         String checkTaskId;
         Set<String> predecessorTaskSuccessorsBeforeModification;
-        if (optionalCheckActivityElementId.isPresent()) {
-            checkTaskId = optionalCheckActivityElementId.get();
+        if (optionalTaskElementId.isPresent()) {
+            checkTaskId = optionalTaskElementId.get();
             predecessorTaskSuccessorsBeforeModification = model.findSuccessors(checkTaskId);
         } else {
-            String predecessorElementId;
-            if (arguments.predecessorElement() == null || arguments.predecessorElement().equals("Start")) {
-                predecessorElementId = model.findStartEvents().iterator().next();
-            } else {
-                predecessorElementId = model.findTaskIdByName(arguments.predecessorElement()).get();
+            Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());
+            if (optionalPredecessorElementId.isEmpty()) {
+                log.info("Predecessor element does not exist in the model");
+                return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
             }
-            checkTaskId = model.addTask(checkActivityName);
+            String predecessorElementId = optionalPredecessorElementId.get();
+            checkTaskId = model.addTask(checkTaskName);
             model.addUnlabelledSequenceFlow(predecessorElementId, checkTaskId);
             predecessorTaskSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
         }
@@ -67,7 +63,7 @@ public class AddSingleChoiceForkFunctionCallExecutor implements FunctionCallExec
         String closingGatewayId = model.addGateway(EXCLUSIVE);
         model.addUnlabelledSequenceFlow(checkTaskId, openingGatewayId);
 
-        for (String nextTaskPossibleChoice : arguments.activitiesToChooseFrom()) {
+        for (String nextTaskPossibleChoice : callArguments.activitiesToChooseFrom()) {
             String newTaskId = model.addTask(nextTaskPossibleChoice);
             model.addUnlabelledSequenceFlow(openingGatewayId, newTaskId);
             model.addUnlabelledSequenceFlow(newTaskId, closingGatewayId);
@@ -82,12 +78,7 @@ public class AddSingleChoiceForkFunctionCallExecutor implements FunctionCallExec
             model.addUnlabelledSequenceFlow(closingGatewayId, endOfChainElementId);
         }
 
-        model.setAlias(closingGatewayId, arguments.elementName());
-        try {
-            String responseContent = objectMapper.writeValueAsString(new FunctionCallResponseDto(true));
-            return FunctionCallResult.withResponse(new ChatMessageDto("tool", responseContent, functionId));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        model.setAlias(closingGatewayId, callArguments.elementName());
+        return FunctionCallResult.successfulCall();
     }
 }

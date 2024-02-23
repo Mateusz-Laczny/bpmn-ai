@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.ParallelForkDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -18,15 +19,20 @@ class AddParallelActivitiesForkCallExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    AddParallelActivitiesForkCallExecutor executor;
+
+    @BeforeEach
+    void setUp() {
+        executor = new AddParallelActivitiesForkCallExecutor(new ToolCallArgumentsParser(mapper));
+    }
 
     @Test
     void works_as_expected() {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         String predecessorTaskId = model.addTask("task");
-        ParallelForkDto callArguments = new ParallelForkDto("", "task", List.of("activity1", "activity2"));
+        ParallelForkDto callArguments = new ParallelForkDto("", "elementName", "task", List.of("activity1", "activity2"));
         JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
-        var executor = new AddParallelActivitiesForkCallExecutor(mapper);
 
         executor.executeCall(sessionState, "id", callArgumentsJson);
 

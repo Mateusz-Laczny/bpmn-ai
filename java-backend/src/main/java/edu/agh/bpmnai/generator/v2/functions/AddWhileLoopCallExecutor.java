@@ -1,17 +1,13 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.ChatMessageDto;
-import edu.agh.bpmnai.generator.v2.FunctionCallResponseDto;
 import edu.agh.bpmnai.generator.v2.WhileLoopDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -21,11 +17,11 @@ import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
 @Slf4j
 public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
-    private final ObjectMapper objectMapper;
+    private final ToolCallArgumentsParser callArgumentsParser;
 
     @Autowired
-    public AddWhileLoopCallExecutor(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public AddWhileLoopCallExecutor(ToolCallArgumentsParser callArgumentsParser) {
+        this.callArgumentsParser = callArgumentsParser;
     }
 
     @Override
@@ -34,60 +30,54 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public FunctionCallResult executeCall(SessionState sessionState, String functionId, JsonNode callArguments) {
-        WhileLoopDto arguments;
-        try {
-            arguments = objectMapper.readValue(callArguments.asText(), WhileLoopDto.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+    public FunctionCallResult executeCall(SessionState sessionState, String functionId, String callArgumentsJson) {
+        ArgumentsParsingResult<WhileLoopDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, WhileLoopDto.class);
+        if (argumentsParsingResult.isError()) {
+            return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
         }
+
+        WhileLoopDto callArguments = argumentsParsingResult.result();
 
         BpmnModel model = sessionState.model();
-        String checkActivityName = arguments.checkActivity();
-        Optional<String> optionalCheckActivityElementId = model.findTaskIdByName(checkActivityName);
-        String checkActivityElementId;
-        Set<String> predecessorSuccessorsBeforeModification;
-        if (optionalCheckActivityElementId.isPresent()) {
-            checkActivityElementId = optionalCheckActivityElementId.get();
-            predecessorSuccessorsBeforeModification = model.findSuccessors(checkActivityElementId);
+        String checkTaskName = callArguments.checkActivity();
+        Optional<String> optionalCheckTaskElementId = model.findTaskIdByName(checkTaskName);
+        String checkTaskId;
+        Set<String> predecessorTaskSuccessorsBeforeModification;
+        if (optionalCheckTaskElementId.isPresent()) {
+            checkTaskId = optionalCheckTaskElementId.get();
+            predecessorTaskSuccessorsBeforeModification = model.findSuccessors(checkTaskId);
         } else {
-            String checkTaskId = model.addTask(checkActivityName);
-            String previousElementId;
-            if (arguments.predecessorElement().equals("Start")) {
-                previousElementId = model.findStartEvents().iterator().next();
-            } else {
-                previousElementId = model.findTaskIdByName(arguments.predecessorElement()).get();
+            Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());
+            if (optionalPredecessorElementId.isEmpty()) {
+                log.info("Predecessor element does not exist in the model");
+                return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
             }
-            model.addUnlabelledSequenceFlow(previousElementId, checkTaskId);
-            predecessorSuccessorsBeforeModification = model.findPredecessors(previousElementId);
-            checkActivityElementId = checkTaskId;
+            String predecessorElementId = optionalPredecessorElementId.get();
+            predecessorTaskSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
+            checkTaskId = model.addTask(checkTaskName);
+            model.addUnlabelledSequenceFlow(predecessorElementId, checkTaskId);
         }
 
-        model.clearSuccessors(checkActivityElementId);
+        model.clearSuccessors(checkTaskId);
 
         String openingGatewayId = model.addGateway(EXCLUSIVE);
-        model.addUnlabelledSequenceFlow(checkActivityElementId, openingGatewayId);
-        if (!predecessorSuccessorsBeforeModification.isEmpty()) {
-            if (predecessorSuccessorsBeforeModification.size() > 1) {
+        model.addUnlabelledSequenceFlow(checkTaskId, openingGatewayId);
+        if (!predecessorTaskSuccessorsBeforeModification.isEmpty()) {
+            if (predecessorTaskSuccessorsBeforeModification.size() > 1) {
                 log.warn("Predecessor activity has more than on successor, choosing the first one");
             }
-            String nextTaskId = predecessorSuccessorsBeforeModification.iterator().next();
+            String nextTaskId = predecessorTaskSuccessorsBeforeModification.iterator().next();
             model.addLabelledSequenceFlow(openingGatewayId, nextTaskId, "false");
         }
 
         String previousElementInLoopId = openingGatewayId;
-        for (String taskInLoop : arguments.activitiesInLoop()) {
+        for (String taskInLoop : callArguments.activitiesInLoop()) {
             String newTaskId = model.addTask(taskInLoop);
             model.addUnlabelledSequenceFlow(previousElementInLoopId, newTaskId);
             previousElementInLoopId = newTaskId;
         }
 
-        model.addUnlabelledSequenceFlow(previousElementInLoopId, checkActivityElementId);
-        try {
-            String responseContent = objectMapper.writeValueAsString(new FunctionCallResponseDto(true));
-            return FunctionCallResult.withResponse(new ChatMessageDto("tool", responseContent, functionId));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        model.addUnlabelledSequenceFlow(previousElementInLoopId, checkTaskId);
+        return FunctionCallResult.successfulCall();
     }
 }

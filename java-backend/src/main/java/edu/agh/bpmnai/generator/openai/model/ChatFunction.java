@@ -15,6 +15,6 @@ public record ChatFunction(
         String description,
         JsonNode parameters,
         @JsonIgnore
-        Function<JsonNode, Optional<ChatMessage>> executor
+        Function<String, Optional<ChatMessage>> executor
 ) {
 }

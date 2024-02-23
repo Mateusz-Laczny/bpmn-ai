@@ -1,28 +1,25 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.ChatMessageDto;
-import edu.agh.bpmnai.generator.v2.FunctionCallResponseDto;
 import edu.agh.bpmnai.generator.v2.SequenceOfActivitiesDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
 @Slf4j
 public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
-    private final ObjectMapper objectMapper;
+    private final ToolCallArgumentsParser callArgumentsParser;
 
     @Autowired
-    public AddSequenceOfTasksCallExecutor(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public AddSequenceOfTasksCallExecutor(ToolCallArgumentsParser callArgumentsParser) {
+        this.callArgumentsParser = callArgumentsParser;
     }
 
     @Override
@@ -31,36 +28,37 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public FunctionCallResult executeCall(SessionState sessionState, String functionId, JsonNode callArgumentsJson) {
-        SequenceOfActivitiesDto callArguments;
-        try {
-            callArguments = objectMapper.readValue(callArgumentsJson.asText(), SequenceOfActivitiesDto.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+    public FunctionCallResult executeCall(SessionState sessionState, String functionId, String callArgumentsJson) {
+        ArgumentsParsingResult<SequenceOfActivitiesDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, SequenceOfActivitiesDto.class);
+        if (argumentsParsingResult.isError()) {
+            return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
         }
+
+        SequenceOfActivitiesDto callArguments = argumentsParsingResult.result();
         BpmnModel model = sessionState.model();
-        String previousElementId;
-        if (callArguments.predecessorElement().equals("Start")) {
-            previousElementId = model.findStartEvents().iterator().next();
-        } else {
-            previousElementId = model.findTaskIdByName(callArguments.predecessorElement()).get();
+        Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());
+        if (optionalPredecessorElementId.isEmpty()) {
+            log.info("Predecessor element does not exist in the model");
+            return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
         }
 
-        model.clearSuccessors(previousElementId);
+        String predecessorElementId = optionalPredecessorElementId.get();
 
-        Set<String> predecessorTaskSuccessorsBeforeModification = model.findSuccessors(previousElementId);
+        model.clearSuccessors(predecessorElementId);
+
+        Set<String> predecessorTaskSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
         if (predecessorTaskSuccessorsBeforeModification.size() > 1) {
             log.warn("Predecessor activity has more than one successor, choosing the first one; activityName: {}", callArguments.predecessorElement());
         }
 
         for (String newActivityName : callArguments.newActivities()) {
             String nextTaskId = model.findTaskIdByName(newActivityName).orElseGet(() -> model.addTask(newActivityName));
-            if (model.findSuccessors(previousElementId).contains(nextTaskId)) {
+            if (model.findSuccessors(predecessorElementId).contains(nextTaskId)) {
                 continue;
             }
 
-            model.addUnlabelledSequenceFlow(previousElementId, nextTaskId);
-            previousElementId = nextTaskId;
+            model.addUnlabelledSequenceFlow(predecessorElementId, nextTaskId);
+            predecessorElementId = nextTaskId;
         }
 
         if (!predecessorTaskSuccessorsBeforeModification.isEmpty()) {
@@ -69,13 +67,9 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
             }
 
             String endOfChainElementId = predecessorTaskSuccessorsBeforeModification.iterator().next();
-            model.addUnlabelledSequenceFlow(previousElementId, endOfChainElementId);
+            model.addUnlabelledSequenceFlow(predecessorElementId, endOfChainElementId);
         }
-        try {
-            String responseContent = objectMapper.writeValueAsString(new FunctionCallResponseDto(true));
-            return FunctionCallResult.withResponse(new ChatMessageDto("tool", responseContent, functionId));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+
+        return FunctionCallResult.successfulCall();
     }
 }

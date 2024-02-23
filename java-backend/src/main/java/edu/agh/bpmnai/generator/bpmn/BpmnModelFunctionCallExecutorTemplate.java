@@ -1,7 +1,6 @@
 package edu.agh.bpmnai.generator.bpmn;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.Logging;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
@@ -9,7 +8,7 @@ import edu.agh.bpmnai.generator.openai.model.ChatMessage;
 import java.util.Optional;
 import java.util.function.Function;
 
-abstract class BpmnModelFunctionCallExecutorTemplate<T> implements Function<JsonNode, Optional<ChatMessage>> {
+abstract class BpmnModelFunctionCallExecutorTemplate<T> implements Function<String, Optional<ChatMessage>> {
     private static final ObjectMapper mapper = new ObjectMapper();
     private final Class<T> callArgumentsClass;
 
@@ -18,7 +17,7 @@ abstract class BpmnModelFunctionCallExecutorTemplate<T> implements Function<Json
     }
 
     @Override
-    public final Optional<ChatMessage> apply(JsonNode callArguments) {
+    public final Optional<ChatMessage> apply(String callArguments) {
         T callArgumentsPojo;
         try {
             callArgumentsPojo = parseCallArguments(callArguments);
@@ -49,8 +48,8 @@ abstract class BpmnModelFunctionCallExecutorTemplate<T> implements Function<Json
         return Optional.empty();
     }
 
-    protected T parseCallArguments(JsonNode callArguments) throws JsonProcessingException {
-        return mapper.readValue(callArguments.asText(), callArgumentsClass);
+    protected T parseCallArguments(String callArguments) throws JsonProcessingException {
+        return mapper.readValue(callArguments, callArgumentsClass);
     }
 
 }

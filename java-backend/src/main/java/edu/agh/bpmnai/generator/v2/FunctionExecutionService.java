@@ -23,17 +23,12 @@ public class FunctionExecutionService {
         }
     }
 
-    public boolean executeFunctionCall(SessionState sessionState, ToolCallDto functionCall) throws NoExecutorException {
+    public FunctionCallResult executeFunctionCall(SessionState sessionState, ToolCallDto functionCall) throws NoExecutorException {
         String calledFunctionName = functionCall.functionCallProperties().name();
         if (!functionNameToExecutor.containsKey(calledFunctionName)) {
             throw new NoExecutorException(calledFunctionName);
         }
         FunctionCallExecutor executorFunction = functionNameToExecutor.get(calledFunctionName);
-        FunctionCallResult callResult = executorFunction.executeCall(sessionState, functionCall.id(), functionCall.functionCallProperties().arguments());
-        if (callResult.response().isPresent()) {
-            sessionState.appendMessage(callResult.response().get());
-        }
-
-        return callResult.needsResponseFromUser();
+        return executorFunction.executeCall(sessionState, functionCall.id(), functionCall.functionCallProperties().argumentsJson());
     }
 }

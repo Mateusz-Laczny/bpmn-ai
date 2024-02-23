@@ -29,6 +29,6 @@ public class ChatCallableInterface {
         }
 
         ChatFunction calledFunction = nameToFunctionMap.get(functionCall.name());
-        return calledFunction.executor().apply(functionCall.arguments());
+        return calledFunction.executor().apply(functionCall.argumentsJson());
     }
 }

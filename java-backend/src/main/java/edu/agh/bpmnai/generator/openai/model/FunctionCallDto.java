@@ -1,6 +1,6 @@
 package edu.agh.bpmnai.generator.openai.model;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record FunctionCallDto(String name, JsonNode arguments) {
+public record FunctionCallDto(String name, @JsonProperty("arguments") String argumentsJson) {
 }

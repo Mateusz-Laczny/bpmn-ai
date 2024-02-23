@@ -3,15 +3,11 @@ package edu.agh.bpmnai.generator;
 import edu.agh.bpmnai.generator.bpmn.BpmnProvider;
 import edu.agh.bpmnai.generator.bpmn.layouting.BpmnSemanticLayouting;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnFile;
-import edu.agh.bpmnai.generator.v2.ConversationMessage;
-import edu.agh.bpmnai.generator.v2.ConversationService;
-import edu.agh.bpmnai.generator.v2.session.SessionState;
-import edu.agh.bpmnai.generator.v2.session.SessionStateDto;
+import edu.agh.bpmnai.generator.v2.LlmService;
+import edu.agh.bpmnai.generator.v2.UserRequestResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import static java.util.stream.Collectors.toList;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -21,14 +17,14 @@ public class GenerationController {
 
     private final BpmnProvider bpmnProvider;
 
-    private final ConversationService conversationService;
+    private final LlmService llmService;
 
     private final BpmnSemanticLayouting bpmnSemanticLayouting;
 
     @Autowired
-    public GenerationController(BpmnProvider bpmnProvider, ConversationService conversationService, BpmnSemanticLayouting bpmnSemanticLayouting) {
+    public GenerationController(BpmnProvider bpmnProvider, LlmService llmService, BpmnSemanticLayouting bpmnSemanticLayouting) {
         this.bpmnProvider = bpmnProvider;
-        this.conversationService = conversationService;
+        this.llmService = llmService;
         this.bpmnSemanticLayouting = bpmnSemanticLayouting;
     }
 
@@ -38,15 +34,8 @@ public class GenerationController {
     }
 
     @PostMapping("v2/send/message")
-    public SessionStateDto sendMessage(@RequestBody TextPrompt newMessage) {
+    public UserRequestResponse sendMessage(@RequestBody TextPrompt newMessage) {
         log.info("Received request on endpoint 'v2/send/message': requestBody: {}", newMessage);
-        SessionState updatedSessionState = conversationService.newMessageReceived(newMessage);
-        return new SessionStateDto(
-                updatedSessionState.messages().stream()
-                        .filter(message -> (!message.role().equals("tool") && message.toolCalls() == null))
-                        .map(message -> new ConversationMessage(message.role(), message.content()))
-                        .collect(toList()),
-                bpmnSemanticLayouting.layoutModel(updatedSessionState.model()).asXmlString()
-        );
+        return llmService.getResponse(newMessage.content());
     }
 }
