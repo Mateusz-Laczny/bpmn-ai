@@ -1,6 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.WhileLoopDto;
@@ -26,14 +26,13 @@ class AddWhileLoopCallExecutorTest {
     }
 
     @Test
-    void should_work_as_expected_for_existing_check_activity() {
+    void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         String checkTaskId = model.addTask("task");
         WhileLoopDto callArguments = new WhileLoopDto("", "task", null, List.of("task1", "task2"));
-        JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
 
-        executor.executeCall(sessionState, "id", callArgumentsJson);
+        executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 
         Optional<String> firstTaskId = model.findTaskIdByName("task1");
         assertTrue(firstTaskId.isPresent());
@@ -53,15 +52,14 @@ class AddWhileLoopCallExecutorTest {
     }
 
     @Test
-    void should_work_as_expected_for_new_check_activity_task() {
+    void should_work_as_expected_for_new_check_activity_task() throws JsonProcessingException {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         model.addTask("task");
 
         WhileLoopDto callArguments = new WhileLoopDto("", "checkTask", "task", List.of("task1", "task2"));
-        JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
 
-        executor.executeCall(sessionState, "id", callArgumentsJson);
+        executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 
         Optional<String> checkTaskId = model.findTaskIdByName("checkTask");
         assertTrue(checkTaskId.isPresent());

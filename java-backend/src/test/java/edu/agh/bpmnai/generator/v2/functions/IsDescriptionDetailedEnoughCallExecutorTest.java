@@ -1,6 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.v2.UserDescriptionReasoningDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
@@ -23,13 +23,12 @@ class IsDescriptionDetailedEnoughCallExecutorTest {
     }
 
     @Test
-    void result_contains_message_to_the_user_if_parameters_contain_message() {
+    void result_contains_message_to_the_user_if_parameters_contain_message() throws JsonProcessingException {
         SessionState sessionState = new SessionState(List.of());
         String aMessage = "A message";
         UserDescriptionReasoningDto callArguments = new UserDescriptionReasoningDto("background", List.of(), aMessage);
-        JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
 
-        FunctionCallResult result = executor.executeCall(sessionState, "id", callArgumentsJson);
+        FunctionCallResult result = executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
         assertTrue(result.successful());
         assertEquals(aMessage, result.messageToUser());
     }

@@ -1,6 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.IfElseBranchingDto;
@@ -27,14 +27,13 @@ class AddIfElseBranchingCallExecutorTest {
     }
 
     @Test
-    void should_work_as_expected_for_existing_check_activity() {
+    void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         String checkTaskId = model.addTask("task");
         IfElseBranchingDto callArguments = new IfElseBranchingDto("", "task", null, "trueBranch", "falseBranch");
-        JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
 
-        executor.executeCall(sessionState, "id", callArgumentsJson);
+        executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 
         Optional<String> trueBranchStartTaskId = model.findTaskIdByName("trueBranch");
         assertTrue(trueBranchStartTaskId.isPresent());
@@ -50,15 +49,14 @@ class AddIfElseBranchingCallExecutorTest {
     }
 
     @Test
-    void should_work_as_expected_for_new_check_activity_task() {
+    void should_work_as_expected_for_new_check_activity_task() throws JsonProcessingException {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         model.addTask("task");
 
         IfElseBranchingDto callArguments = new IfElseBranchingDto("", "checkTask", "task", "trueBranch", "falseBranch");
-        JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
 
-        executor.executeCall(sessionState, "id", callArgumentsJson);
+        executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 
         Optional<String> checkTaskId = model.findTaskIdByName("checkTask");
         assertTrue(checkTaskId.isPresent());

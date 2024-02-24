@@ -1,6 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.RemoveActivityDto;
@@ -23,14 +23,13 @@ class RemoveActivityCallExecutorTest {
     }
 
     @Test
-    void removes_task_from_the_model() {
+    void removes_task_from_the_model() throws JsonProcessingException {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         model.addTask("task");
         RemoveActivityDto callArguments = new RemoveActivityDto("", "task");
-        JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
 
-        executor.executeCall(sessionState, "id", callArgumentsJson);
+        executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 
         assertTrue(model.findTaskIdByName("task").isEmpty());
     }

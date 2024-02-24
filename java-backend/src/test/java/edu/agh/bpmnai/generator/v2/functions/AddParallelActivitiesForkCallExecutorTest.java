@@ -1,6 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.ParallelForkDto;
@@ -27,14 +27,13 @@ class AddParallelActivitiesForkCallExecutorTest {
     }
 
     @Test
-    void works_as_expected() {
+    void works_as_expected() throws JsonProcessingException {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         String predecessorTaskId = model.addTask("task");
         ParallelForkDto callArguments = new ParallelForkDto("", "elementName", "task", List.of("activity1", "activity2"));
-        JsonNode callArgumentsJson = mapper.valueToTree(callArguments);
 
-        executor.executeCall(sessionState, "id", callArgumentsJson);
+        executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 
         Optional<String> firstTaskId = model.findTaskIdByName("activity1");
         assertTrue(firstTaskId.isPresent());
