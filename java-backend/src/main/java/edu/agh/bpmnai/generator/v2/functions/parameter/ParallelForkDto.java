@@ -5,8 +5,8 @@ import edu.agh.bpmnai.generator.v2.Description;
 import java.util.List;
 
 public record ParallelForkDto(
-        @Description("Background for the specific update, and how it addresses the problem specified by the user")
-        String background,
+        @Description("Retrospective summary of the current state of the model")
+        RetrospectiveSummary retrospectiveSummary,
         @Description("Name of the whole fork")
         String elementName,
         @Description("Model element, which is the direct predecessor to added fork in the process flow. Must be an element that was previously added to the model, or a special 'Start' activity indicating the start of the process.")

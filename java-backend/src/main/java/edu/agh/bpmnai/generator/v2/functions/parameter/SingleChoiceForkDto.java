@@ -6,8 +6,8 @@ import jakarta.annotation.Nullable;
 import java.util.List;
 
 public record SingleChoiceForkDto(
-        @Description("Background for the specific update, and how it addresses the problem specified by the user.")
-        String background,
+        @Description("Retrospective summary of the current state of the model")
+        RetrospectiveSummary retrospectiveSummary,
         @Description("Name of the whole fork")
         String elementName,
         @Description("Activity in which the condition is checked, that determines which activity will be executed next. Does not have to exist in the model. In the verb+object naming convention")

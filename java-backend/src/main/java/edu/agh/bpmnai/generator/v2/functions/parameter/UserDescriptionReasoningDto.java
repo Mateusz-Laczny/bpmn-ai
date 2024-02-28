@@ -6,7 +6,8 @@ import jakarta.annotation.Nullable;
 import java.util.List;
 
 public record UserDescriptionReasoningDto(
-        @Description("All information that can help modeling the process, which is known or can be reasonably assumed") String background,
+        @Description("Retrospective summary of the current state of the model")
+        RetrospectiveSummary retrospectiveSummary,
         @Description("Thoughts about the description, what process does it describe, what is missing and how it could be improved.") List<Thought> thoughts,
         @Description("Optional message to the user, asking about the missing details. Should be as specific as possible. This is the only parameter that will be visible to the user") @Nullable String messageToTheUser) {
 }
