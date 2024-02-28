@@ -17,7 +17,7 @@ public class IsDescriptionDetailedEnoughCallExecutor implements FunctionCallExec
 
     @Override
     public String getFunctionName() {
-        return "is_request_description_detailed_enough";
+        return "is_request_detailed_enough";
     }
 
     @Override
@@ -29,7 +29,7 @@ public class IsDescriptionDetailedEnoughCallExecutor implements FunctionCallExec
 
         UserDescriptionReasoningDto callArguments = argumentsParsingResult.result();
 
-        if (callArguments.messageToTheUser() != null) {
+        if (callArguments.messageToTheUser() != null && callArguments.messageToTheUser().isEmpty()) {
             return FunctionCallResult.withMessageToUser(callArguments.messageToTheUser());
         }
 

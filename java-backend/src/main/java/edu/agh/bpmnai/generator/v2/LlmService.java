@@ -1,5 +1,7 @@
 package edu.agh.bpmnai.generator.v2;
 
+import edu.agh.bpmnai.generator.bpmn.layouting.BpmnSemanticLayouting;
+import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.openai.OpenAI.OpenAIModel;
 import edu.agh.bpmnai.generator.openai.OpenAIChatCompletionApi;
 import edu.agh.bpmnai.generator.v2.functions.ChatFunctionDto;
@@ -22,8 +24,8 @@ import static edu.agh.bpmnai.generator.v2.session.SessionStatus.*;
 public class LlmService {
 
     public static final ChatFunctionDto IS_REQUEST_DESCRIPTION_DETAILED_ENOUGH = ChatFunctionDto.builder()
-            .name("is_request_description_detailed_enough")
-            .description("Checks if the user's request is detailed enough and asks for more details if necessary.")
+            .name("is_request_detailed_enough")
+            .description("Checks if the user's request is detailed enough and asks for more details only if necessary.")
             .parameters(getSchemaForParametersDto(UserDescriptionReasoningDto.class))
             .build();
     private static final Set<ChatFunctionDto> chatFunctions = Set.of(
@@ -68,22 +70,26 @@ public class LlmService {
 
     private final SessionStateStorage sessionStateStorage;
 
+    private final BpmnSemanticLayouting bpmnSemanticLayouting;
+
     @Autowired
-    public LlmService(OpenAIChatCompletionApi openAIChatCompletionApi, FunctionExecutionService functionExecutionService, SessionStateStorage sessionStateStorage) {
+    public LlmService(OpenAIChatCompletionApi openAIChatCompletionApi, FunctionExecutionService functionExecutionService, SessionStateStorage sessionStateStorage, BpmnSemanticLayouting bpmnSemanticLayouting) {
         this.openAIChatCompletionApi = openAIChatCompletionApi;
         this.functionExecutionService = functionExecutionService;
         this.sessionStateStorage = sessionStateStorage;
+        this.bpmnSemanticLayouting = bpmnSemanticLayouting;
     }
 
     public UserRequestResponse getResponse(String userMessageContent) {
         SessionState sessionState = sessionStateStorage.getCurrentState();
-        sessionState.setSessionStatus(NEW);
         if (sessionState.sessionStatus() == TOOL_CALL_WAITING_FOR_USER_RESPONSE) {
             String callId = sessionState.getLastMessage().toolCalls().get(0).id();
             sessionState.appendToolResponse(callId, new FunctionCallResponseDto(true, Map.of("response", userMessageContent)));
         } else {
             sessionState.appendUserMessage(userMessageContent);
         }
+
+        sessionState.setSessionStatus(NEW);
 
         Object toolChoice = new ToolToCallDto(IS_REQUEST_DESCRIPTION_DETAILED_ENOUGH.name());
 
@@ -98,6 +104,8 @@ public class LlmService {
 
             if (sessionState.sessionStatus() == IN_PROGRESS) {
                 toolChoice = "auto";
+            } else if (sessionState.sessionStatus() == NEW) {
+                sessionState.setSessionStatus(IN_PROGRESS);
             }
 
             var completionRequest = ChatCompletionDto.builder()
@@ -134,10 +142,9 @@ public class LlmService {
                 responseForUser = chatResponse.content();
                 stillResponding = false;
             }
-
-            sessionState.setSessionStatus(IN_PROGRESS);
         }
 
-        return new UserRequestResponse(responseForUser, sessionState.model().asXmlString());
+        BpmnModel layoutedModel = bpmnSemanticLayouting.layoutModel(sessionState.model());
+        return new UserRequestResponse(responseForUser, layoutedModel.asXmlString());
     }
 }

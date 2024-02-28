@@ -351,8 +351,8 @@ public final class BpmnModel {
         }
     }
 
-    public Set<String> findStartEvents() {
-        return modelInstance.getModelElementsByType(StartEvent.class).stream().map(BaseElement::getId).collect(toSet());
+    public String getStartEvent() {
+        return modelInstance.getModelElementsByType(StartEvent.class).iterator().next().getId();
     }
 
     public boolean doesIdExist(String id) {

@@ -18,7 +18,7 @@ public class MockApiConfiguration {
 
     @Bean
     BpmnSemanticLayouting bpmnSemanticLayouting() {
-        return new BpmnSemanticLayouting();
+        return new BpmnSemanticLayouting(100, 60);
     }
 
     @Bean

@@ -1,7 +1,6 @@
 package edu.agh.bpmnai.generator;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnProvider;
-import edu.agh.bpmnai.generator.bpmn.layouting.BpmnSemanticLayouting;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnFile;
 import edu.agh.bpmnai.generator.v2.LlmService;
 import edu.agh.bpmnai.generator.v2.UserRequestResponse;
@@ -19,13 +18,10 @@ public class GenerationController {
 
     private final LlmService llmService;
 
-    private final BpmnSemanticLayouting bpmnSemanticLayouting;
-
     @Autowired
-    public GenerationController(BpmnProvider bpmnProvider, LlmService llmService, BpmnSemanticLayouting bpmnSemanticLayouting) {
+    public GenerationController(BpmnProvider bpmnProvider, LlmService llmService) {
         this.bpmnProvider = bpmnProvider;
         this.llmService = llmService;
-        this.bpmnSemanticLayouting = bpmnSemanticLayouting;
     }
 
     @PostMapping("/from/text")
