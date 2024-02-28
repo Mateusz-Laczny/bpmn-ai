@@ -2,7 +2,7 @@ package edu.agh.bpmnai.generator.v2.functions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.agh.bpmnai.generator.v2.UserDescriptionReasoningDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.UserDescriptionReasoningDto;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

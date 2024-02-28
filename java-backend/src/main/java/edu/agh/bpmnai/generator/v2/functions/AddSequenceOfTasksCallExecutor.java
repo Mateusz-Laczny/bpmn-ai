@@ -1,7 +1,7 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.SequenceOfActivitiesDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.SequenceOfActivitiesDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

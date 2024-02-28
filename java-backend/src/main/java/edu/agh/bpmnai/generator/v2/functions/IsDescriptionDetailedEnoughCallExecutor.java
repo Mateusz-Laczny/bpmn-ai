@@ -1,6 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
-import edu.agh.bpmnai.generator.v2.UserDescriptionReasoningDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.UserDescriptionReasoningDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

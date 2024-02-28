@@ -3,7 +3,7 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.RemoveActivityDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveActivityDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -6,6 +6,7 @@ import edu.agh.bpmnai.generator.openai.OpenAI.OpenAIModel;
 import edu.agh.bpmnai.generator.openai.OpenAIChatCompletionApi;
 import edu.agh.bpmnai.generator.v2.functions.ChatFunctionDto;
 import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
+import edu.agh.bpmnai.generator.v2.functions.parameter.*;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

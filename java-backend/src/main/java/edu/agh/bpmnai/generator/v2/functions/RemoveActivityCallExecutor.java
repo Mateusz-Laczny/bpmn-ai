@@ -1,7 +1,7 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.RemoveActivityDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveActivityDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
