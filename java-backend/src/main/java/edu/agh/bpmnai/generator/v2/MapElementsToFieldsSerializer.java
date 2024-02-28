@@ -6,15 +6,15 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Map.Entry;
 
-public class MapElementsToFieldsSerializer extends JsonSerializer<Map<String, String>> {
+public class MapElementsToFieldsSerializer extends JsonSerializer<Map<String, Object>> {
 
     @Override
-    public void serialize(Map<String, String> map, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+    public void serialize(Map<String, Object> map, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
         jsonGenerator.writeStartObject();
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-            jsonGenerator.writeStringField("key", entry.getKey());
-            jsonGenerator.writeStringField("value", entry.getValue());
+        for (Entry<String, Object> entry : map.entrySet()) {
+            jsonGenerator.writeStringField(entry.getKey(), entry.getValue().toString());
         }
         jsonGenerator.writeEndObject();
     }
