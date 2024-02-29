@@ -34,4 +34,9 @@ public class GenerationController {
         log.info("Received request on endpoint 'v2/send/message': requestBody: {}", newMessage);
         return llmService.getResponse(newMessage.content());
     }
+
+    @DeleteMapping("v2/clear")
+    public void clearConversation() {
+        llmService.clearConversation();
+    }
 }

@@ -148,4 +148,8 @@ public class LlmService {
         BpmnModel layoutedModel = bpmnSemanticLayouting.layoutModel(sessionState.model());
         return new UserRequestResponse(responseForUser, layoutedModel.asXmlString());
     }
+
+    public void clearConversation() {
+        sessionStateStorage.clearState();
+    }
 }
