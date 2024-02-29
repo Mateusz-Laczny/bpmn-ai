@@ -29,7 +29,7 @@ public class IsDescriptionDetailedEnoughCallExecutor implements FunctionCallExec
 
         UserDescriptionReasoningDto callArguments = argumentsParsingResult.result();
 
-        if (callArguments.messageToTheUser() != null && callArguments.messageToTheUser().isEmpty()) {
+        if (callArguments.messageToTheUser() != null && !callArguments.messageToTheUser().isEmpty()) {
             return FunctionCallResult.withMessageToUser(callArguments.messageToTheUser());
         }
 
