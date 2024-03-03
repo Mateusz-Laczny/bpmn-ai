@@ -3,6 +3,7 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.functions.parameter.WhileLoopDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,9 +21,12 @@ class AddWhileLoopCallExecutorTest {
     private static final ObjectMapper mapper = new ObjectMapper();
     private AddWhileLoopCallExecutor executor;
 
+    RetrospectiveSummary aRetrospectiveSummary;
+
     @BeforeEach
     void setUp() {
         executor = new AddWhileLoopCallExecutor(new ToolCallArgumentsParser(mapper));
+        aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
     @Test
@@ -30,7 +34,7 @@ class AddWhileLoopCallExecutorTest {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         String checkTaskId = model.addTask("task");
-        WhileLoopDto callArguments = new WhileLoopDto("", "task", null, List.of("task1", "task2"));
+        WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary, "task", null, List.of("task1", "task2"));
 
         executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 
@@ -57,7 +61,7 @@ class AddWhileLoopCallExecutorTest {
         BpmnModel model = sessionState.model();
         model.addTask("task");
 
-        WhileLoopDto callArguments = new WhileLoopDto("", "checkTask", "task", List.of("task1", "task2"));
+        WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary, "checkTask", "task", List.of("task1", "task2"));
 
         executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 

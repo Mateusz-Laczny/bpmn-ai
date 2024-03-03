@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.functions.parameter.ParallelGatewayDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,9 +22,12 @@ class AddParallelGatewayCallExecutorTest {
 
     AddParallelGatewayCallExecutor executor;
 
+    RetrospectiveSummary aRetrospectiveSummary;
+
     @BeforeEach
     void setUp() {
         executor = new AddParallelGatewayCallExecutor(new ToolCallArgumentsParser(mapper));
+        aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
     @Test
@@ -31,7 +35,7 @@ class AddParallelGatewayCallExecutorTest {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         String predecessorTaskId = model.addTask("task");
-        ParallelGatewayDto callArguments = new ParallelGatewayDto("", "elementName", "task", List.of("activity1", "activity2"));
+        ParallelGatewayDto callArguments = new ParallelGatewayDto(aRetrospectiveSummary, "", "elementName", "task", List.of("activity1", "activity2"));
 
         executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 

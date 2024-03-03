@@ -3,6 +3,7 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.functions.parameter.XorGatewayDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,9 +21,12 @@ class AddXorGatewayExecutorTest {
     private static final ObjectMapper mapper = new ObjectMapper();
     private AddXorGatewayExecutor executor;
 
+    RetrospectiveSummary aRetrospectiveSummary;
+
     @BeforeEach
     void setUp() {
         executor = new AddXorGatewayExecutor(new ToolCallArgumentsParser(mapper));
+        aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
     @Test
@@ -30,7 +34,7 @@ class AddXorGatewayExecutorTest {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         String checkTaskId = model.addTask("task");
-        XorGatewayDto callArguments = new XorGatewayDto("", "elementName", "task", null, List.of("task1", "task2"));
+        XorGatewayDto callArguments = new XorGatewayDto(aRetrospectiveSummary, "", "elementName", "task", null, List.of("task1", "task2"));
 
         executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 
@@ -63,7 +67,7 @@ class AddXorGatewayExecutorTest {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         model.addTask("task");
-        XorGatewayDto callArguments = new XorGatewayDto("", "elementName", "checkTask", "task", List.of("task1", "task2"));
+        XorGatewayDto callArguments = new XorGatewayDto(aRetrospectiveSummary, "", "elementName", "checkTask", "task", List.of("task1", "task2"));
 
         executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 

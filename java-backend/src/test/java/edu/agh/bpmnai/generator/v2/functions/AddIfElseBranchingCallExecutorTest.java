@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.functions.parameter.IfElseBranchingDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,11 +20,14 @@ class AddIfElseBranchingCallExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    RetrospectiveSummary aRetrospectiveSummary;
+
     AddIfElseBranchingCallExecutor executor;
 
     @BeforeEach
     void setUp() {
         executor = new AddIfElseBranchingCallExecutor(new ToolCallArgumentsParser(mapper));
+        aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
     @Test
@@ -31,7 +35,7 @@ class AddIfElseBranchingCallExecutorTest {
         SessionState sessionState = new SessionState(List.of());
         BpmnModel model = sessionState.model();
         String checkTaskId = model.addTask("task");
-        IfElseBranchingDto callArguments = new IfElseBranchingDto("", "task", null, "trueBranch", "falseBranch");
+        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "task", "", null, "trueBranch", "falseBranch");
 
         executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 
@@ -54,7 +58,7 @@ class AddIfElseBranchingCallExecutorTest {
         BpmnModel model = sessionState.model();
         model.addTask("task");
 
-        IfElseBranchingDto callArguments = new IfElseBranchingDto("", "checkTask", "task", "trueBranch", "falseBranch");
+        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "checkTask", "", "task", "trueBranch", "falseBranch");
 
         executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
 
