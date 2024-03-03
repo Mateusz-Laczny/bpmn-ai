@@ -4,9 +4,7 @@ import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class BpmnSemanticLayouting {
@@ -36,6 +34,10 @@ public class BpmnSemanticLayouting {
 
                 int newCellX = nextElementId.predecessorPosition().x() + 1;
                 int newCellY = nextElementId.predecessorPosition().y();
+                Collection<String> elementPredecessors = model.findPredecessors(singleSuccessorId);
+                if (elementPredecessors.size() > 1) {
+                    newCellY = findRowForElement(elementPredecessors, grid);
+                }
                 grid.addCell(new Cell(newCellX, newCellY, singleSuccessorId));
                 if (!alreadyVisitedElements.contains(singleSuccessorId)) {
                     List<String> elementSuccessors = layoutedModel.findSuccessors(singleSuccessorId).stream().filter(id -> !alreadyVisitedElements.contains(id)).toList();
@@ -81,6 +83,22 @@ public class BpmnSemanticLayouting {
         }
 
         return layoutedModel;
+    }
+
+    private int findRowForElement(Collection<String> elementPredecessors, Grid grid) {
+        int maxPredecessorColumnIndex = -1;
+        for (String elementPredecessor : elementPredecessors) {
+            Optional<Cell> elementCell = grid.findCellByIdOfElementInside(elementPredecessor);
+            if (elementCell.isEmpty()) {
+                throw new RuntimeException();
+            }
+
+            if (elementCell.get().y() > maxPredecessorColumnIndex) {
+                maxPredecessorColumnIndex = elementCell.get().y();
+            }
+        }
+
+        return maxPredecessorColumnIndex - (elementPredecessors.size() / 2);
     }
 
     private record SuccessorsNotInGrid(GridPosition predecessorPosition, List<String> elements) {
