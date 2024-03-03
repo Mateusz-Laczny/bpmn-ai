@@ -1,7 +1,7 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.functions.parameter.ParallelForkDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.ParallelGatewayDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,28 +15,28 @@ import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.INCLUSIVE;
 
 @Service
 @Slf4j
-public class AddParallelActivitiesForkCallExecutor implements FunctionCallExecutor {
+public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
 
     private final ToolCallArgumentsParser callArgumentsParser;
 
     @Autowired
-    public AddParallelActivitiesForkCallExecutor(ToolCallArgumentsParser callArgumentsParser) {
+    public AddParallelGatewayCallExecutor(ToolCallArgumentsParser callArgumentsParser) {
         this.callArgumentsParser = callArgumentsParser;
     }
 
     @Override
     public String getFunctionName() {
-        return "add_parallel_activities_fork";
+        return AddParallelGatewayFunction.FUNCTION_NAME;
     }
 
     @Override
     public FunctionCallResult executeCall(SessionState sessionState, String functionId, String callArgumentsJson) {
-        ArgumentsParsingResult<ParallelForkDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, ParallelForkDto.class);
+        ArgumentsParsingResult<ParallelGatewayDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, ParallelGatewayDto.class);
         if (argumentsParsingResult.isError()) {
             return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
         }
 
-        ParallelForkDto callArguments = argumentsParsingResult.result();
+        ParallelGatewayDto callArguments = argumentsParsingResult.result();
 
         BpmnModel model = sessionState.model();
         Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());

@@ -1,7 +1,7 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.functions.parameter.SingleChoiceForkDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.XorGatewayDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,28 +15,28 @@ import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
 
 @Service
 @Slf4j
-public class AddSingleChoiceForkFunctionCallExecutor implements FunctionCallExecutor {
+public class AddXorGatewayExecutor implements FunctionCallExecutor {
 
     private final ToolCallArgumentsParser callArgumentsParser;
 
     @Autowired
-    public AddSingleChoiceForkFunctionCallExecutor(ToolCallArgumentsParser callArgumentsParser) {
+    public AddXorGatewayExecutor(ToolCallArgumentsParser callArgumentsParser) {
         this.callArgumentsParser = callArgumentsParser;
     }
 
     @Override
     public String getFunctionName() {
-        return "add_single_choice_fork_between_activities";
+        return AddXorGatewayFunction.FUNCTION_NAME;
     }
 
     @Override
     public FunctionCallResult executeCall(SessionState sessionState, String functionId, String callArgumentsJson) {
-        ArgumentsParsingResult<SingleChoiceForkDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, SingleChoiceForkDto.class);
+        ArgumentsParsingResult<XorGatewayDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, XorGatewayDto.class);
         if (argumentsParsingResult.isError()) {
             return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
         }
 
-        SingleChoiceForkDto callArguments = argumentsParsingResult.result();
+        XorGatewayDto callArguments = argumentsParsingResult.result();
         BpmnModel model = sessionState.model();
         String checkTaskName = callArguments.checkTask();
         Optional<String> optionalTaskElementId = model.findTaskIdByName(checkTaskName);

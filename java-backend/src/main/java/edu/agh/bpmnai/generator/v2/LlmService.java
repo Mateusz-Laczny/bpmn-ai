@@ -4,6 +4,8 @@ import edu.agh.bpmnai.generator.bpmn.layouting.BpmnSemanticLayouting;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.openai.OpenAI.OpenAIModel;
 import edu.agh.bpmnai.generator.openai.OpenAIChatCompletionApi;
+import edu.agh.bpmnai.generator.v2.functions.AddParallelGatewayFunction;
+import edu.agh.bpmnai.generator.v2.functions.AddXorGatewayFunction;
 import edu.agh.bpmnai.generator.v2.functions.ChatFunctionDto;
 import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.parameter.*;
@@ -36,16 +38,8 @@ public class LlmService {
                     .description("Adds a sequence of activities to the model, executed in a linear fashion (one after the other).")
                     .parameters(getSchemaForParametersDto(SequenceOfTasksDto.class))
                     .build(),
-            ChatFunctionDto.builder()
-                    .name("add_single_choice_fork_between_activities")
-                    .description("Adds a fork to the model, where one path has to be chosen from several alternatives. After the fork, the paths converge on a single point, from which the process is continued. Remember that the single choice fork ensures that only one path is taken based on the conditions.")
-                    .parameters(getSchemaForParametersDto(SingleChoiceForkDto.class))
-                    .build(),
-            ChatFunctionDto.builder()
-                    .name("add_parallel_activities_fork")
-                    .description("Adds a fork to the model, where two or more activities have to be executed, which can be executed at the same time. After the fork, the paths converge on a single point, from which the process is continued.")
-                    .parameters(getSchemaForParametersDto(ParallelForkDto.class))
-                    .build(),
+            AddXorGatewayFunction.FUNCTION_DTO,
+            AddParallelGatewayFunction.FUNCTION_DTO,
             ChatFunctionDto.builder()
                     .name("add_while_loop")
                     .description("Adds a while loop to the model, where one or more activities can be executed multiple times, based on a condition")
@@ -59,7 +53,7 @@ public class LlmService {
             ChatFunctionDto.builder()
                     .name("remove_activity")
                     .description("Removes an activity from the model. All activity predecessors will be connected to the activity successor")
-                    .parameters(getSchemaForParametersDto(RemoveActivityDto.class))
+                    .parameters(getSchemaForParametersDto(RemoveElementDto.class))
                     .build()
     );
 

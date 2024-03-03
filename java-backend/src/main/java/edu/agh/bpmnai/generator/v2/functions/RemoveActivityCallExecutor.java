@@ -1,7 +1,7 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveActivityDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,12 +25,12 @@ public class RemoveActivityCallExecutor implements FunctionCallExecutor {
 
     @Override
     public FunctionCallResult executeCall(SessionState sessionState, String functionId, String callArgumentsJson) {
-        ArgumentsParsingResult<RemoveActivityDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, RemoveActivityDto.class);
+        ArgumentsParsingResult<RemoveElementDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, RemoveElementDto.class);
         if (argumentsParsingResult.isError()) {
             return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
         }
 
-        RemoveActivityDto callArguments = argumentsParsingResult.result();
+        RemoveElementDto callArguments = argumentsParsingResult.result();
 
         BpmnModel model = sessionState.model();
         Optional<String> elementToCutOutId = model.findTaskIdByName(callArguments.elementToRemove());
