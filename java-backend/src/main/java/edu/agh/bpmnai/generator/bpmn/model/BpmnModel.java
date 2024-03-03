@@ -255,13 +255,16 @@ public final class BpmnModel {
         edgeElement.setBpmnElement(sequenceFlowElement);
         Waypoint sourceWaypoint = createElementWithParent(edgeElement, Waypoint.class);
         Bounds sourceElementBoundsElement = ((BpmnShape) sourceElement.getDiagramElement()).getBounds();
-        sourceWaypoint.setX(sourceElementBoundsElement.getX());
-        sourceWaypoint.setY(sourceElementBoundsElement.getY());
+        double sourceX = sourceElementBoundsElement.getX() + getElementDimensions(sourceElement.getId()).width();
+        sourceWaypoint.setX(sourceX);
+        double sourceY = sourceElementBoundsElement.getY() + (getElementDimensions(sourceElement.getId()).height() / 2);
+        sourceWaypoint.setY(sourceY);
 
         Waypoint targetWaypoint = createElementWithParent(edgeElement, Waypoint.class);
         Bounds targetElementBoundsElement = ((BpmnShape) targetElement.getDiagramElement()).getBounds();
         targetWaypoint.setX(targetElementBoundsElement.getX());
-        targetWaypoint.setY(targetElementBoundsElement.getY());
+        double targetY = targetElementBoundsElement.getY() + (getElementDimensions(targetElement.getId()).height() / 2);
+        targetWaypoint.setY(targetY);
     }
 
     public String addUnlabelledSequenceFlow(String sourceElementId, String targetElementId) {
@@ -373,7 +376,6 @@ public final class BpmnModel {
     }
 
     public Dimensions getElementDimensions(String elementId) {
-        System.out.println(asXmlString());
         BaseElement targetElement = modelInstance.getModelElementById(elementId);
         Bounds targetElementBoundsElement = ((BpmnShape) targetElement.getDiagramElement()).getBounds();
         return new Dimensions(targetElementBoundsElement.getX(), targetElementBoundsElement.getY(), targetElementBoundsElement.getWidth(), targetElementBoundsElement.getHeight());
