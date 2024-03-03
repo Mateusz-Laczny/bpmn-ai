@@ -1,7 +1,7 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.functions.parameter.SequenceOfActivitiesDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.SequenceOfTasksDto;
 import edu.agh.bpmnai.generator.v2.session.SessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,12 +29,12 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
     @Override
     public FunctionCallResult executeCall(SessionState sessionState, String functionId, String callArgumentsJson) {
-        ArgumentsParsingResult<SequenceOfActivitiesDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, SequenceOfActivitiesDto.class);
+        ArgumentsParsingResult<SequenceOfTasksDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, SequenceOfTasksDto.class);
         if (argumentsParsingResult.isError()) {
             return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
         }
 
-        SequenceOfActivitiesDto callArguments = argumentsParsingResult.result();
+        SequenceOfTasksDto callArguments = argumentsParsingResult.result();
         BpmnModel model = sessionState.model();
         Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());
         if (optionalPredecessorElementId.isEmpty()) {
@@ -51,7 +51,7 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
             log.warn("Predecessor activity has more than one successor, choosing the first one; activityName: {}", callArguments.predecessorElement());
         }
 
-        for (String newActivityName : callArguments.newActivities()) {
+        for (String newActivityName : callArguments.tasksInSequence()) {
             String nextTaskId = model.findTaskIdByName(newActivityName).orElseGet(() -> model.addTask(newActivityName));
             if (model.findSuccessors(predecessorElementId).contains(nextTaskId)) {
                 continue;

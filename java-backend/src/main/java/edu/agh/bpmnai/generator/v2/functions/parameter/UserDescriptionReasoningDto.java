@@ -1,19 +1,12 @@
 package edu.agh.bpmnai.generator.v2.functions.parameter;
 
 import edu.agh.bpmnai.generator.v2.Description;
-import jakarta.annotation.Nullable;
-
-import java.util.List;
 
 public record UserDescriptionReasoningDto(
-        @Description("Retrospective summary of the current state of the model")
+        @Description("Retrospective summary of the current state of the diagram")
         RetrospectiveSummary retrospectiveSummary,
-        @Description("Thoughts about the description, what process does it describe, what is missing and how it could be improved.") List<Thought> thoughts,
-        @Description("Optional message to the user, asking about the missing details. Should be as specific as possible. This is the only parameter that will be visible to the user") @Nullable String messageToTheUser) {
-}
-
-record Thought(
-        @Description("Text of the thought.") String thoughtText,
-        @Description("How useful is the thought, on a scale from 1 to 10, where 10 indicates best.") String usefulnessScore
-) {
+        @Description("Reasoning about the user's message in the context of the current state of the diagram. Should focus on those aspects in particular: possible missing details, paths in the model besides the happy path. At least 200 characters long.") String reasoning,
+        @Description("Message to the user. If a question, should also provide a reasonable possible answer") String messageToTheUser,
+        @Description("Whether more information is required to create the diagram. If false, start creating the diagram using other functions")
+        boolean needMoreInfo) {
 }

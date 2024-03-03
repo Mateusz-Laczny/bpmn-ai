@@ -37,7 +37,7 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
 
         IfElseBranchingDto callArguments = argumentsParsingResult.result();
         BpmnModel model = sessionState.model();
-        String checkTaskName = callArguments.checkActivity();
+        String checkTaskName = callArguments.checkTask();
         Optional<String> optionalCheckTaskElementId = model.findTaskIdByName(checkTaskName);
         String checkTaskElementId;
         if (optionalCheckTaskElementId.isPresent()) {
@@ -64,12 +64,12 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
         model.clearSuccessors(checkTaskElementId);
 
         String trueBranchBeginningElementId;
-        Optional<String> existingTrueBranchBeginningElementId = model.findTaskIdByName(callArguments.trueBranchBeginningActivity());
-        trueBranchBeginningElementId = existingTrueBranchBeginningElementId.orElseGet(() -> model.addTask(callArguments.trueBranchBeginningActivity()));
+        Optional<String> existingTrueBranchBeginningElementId = model.findTaskIdByName(callArguments.trueBranchBeginningTask());
+        trueBranchBeginningElementId = existingTrueBranchBeginningElementId.orElseGet(() -> model.addTask(callArguments.trueBranchBeginningTask()));
 
         String falseBranchBeginningElementId;
-        Optional<String> existingFalseBranchBeginningElementId = model.findTaskIdByName(callArguments.falseBranchBeginningActivity());
-        falseBranchBeginningElementId = existingFalseBranchBeginningElementId.orElseGet(() -> model.addTask(callArguments.falseBranchBeginningActivity()));
+        Optional<String> existingFalseBranchBeginningElementId = model.findTaskIdByName(callArguments.falseBranchBeginningTask());
+        falseBranchBeginningElementId = existingFalseBranchBeginningElementId.orElseGet(() -> model.addTask(callArguments.falseBranchBeginningTask()));
 
         String gatewayId = model.addGateway(EXCLUSIVE);
         model.addUnlabelledSequenceFlow(checkTaskElementId, gatewayId);

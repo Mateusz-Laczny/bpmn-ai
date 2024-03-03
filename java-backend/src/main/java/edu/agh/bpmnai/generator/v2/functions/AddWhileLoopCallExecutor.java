@@ -39,7 +39,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         WhileLoopDto callArguments = argumentsParsingResult.result();
 
         BpmnModel model = sessionState.model();
-        String checkTaskName = callArguments.checkActivity();
+        String checkTaskName = callArguments.checkTask();
         Optional<String> optionalCheckTaskElementId = model.findTaskIdByName(checkTaskName);
         String checkTaskId;
         Set<String> predecessorTaskSuccessorsBeforeModification;
@@ -71,7 +71,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         }
 
         String previousElementInLoopId = openingGatewayId;
-        for (String taskInLoop : callArguments.activitiesInLoop()) {
+        for (String taskInLoop : callArguments.tasksInLoop()) {
             String newTaskId = model.addTask(taskInLoop);
             model.addUnlabelledSequenceFlow(previousElementInLoopId, newTaskId);
             previousElementInLoopId = newTaskId;

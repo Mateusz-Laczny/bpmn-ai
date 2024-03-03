@@ -16,13 +16,7 @@ public class SessionStateStorage {
 
     private SessionState initializeEmptySessionState() {
         final SessionState sessionState;
-        sessionState = new SessionState(List.of("You are the world's best business process modelling specialist. You'll receive a 500$ tip, if you follow ALL of the rules:\n" +
-                                                "- make as detailed model as possible\n" +
-                                                "- reason about every user request\n" +
-                                                "- do not mention functions in user-facing messages\n" +
-                                                "- use as few function calls as possible\n" +
-                                                "- use the provided functions to create the model, do not try to include the model as a text message"
-        ));
+        sessionState = new SessionState(List.of("You are the world's best business process modelling specialist. When confronted with a user request, ask questions to gather as much necessary information as possible, the use provided functions to create a BPMN diagram based on the user responses"));
         return sessionState;
     }
 

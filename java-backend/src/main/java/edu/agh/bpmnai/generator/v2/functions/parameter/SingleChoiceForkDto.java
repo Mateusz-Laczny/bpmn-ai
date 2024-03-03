@@ -6,16 +6,18 @@ import jakarta.annotation.Nullable;
 import java.util.List;
 
 public record SingleChoiceForkDto(
-        @Description("Retrospective summary of the current state of the model")
+        @Description("Retrospective summary of the current state of the diagram")
         RetrospectiveSummary retrospectiveSummary,
-        @Description("Name of the whole fork")
+        @Description("What is this action trying to achieve? Example: \"The customer can choose which mode of transport they prefer. There are 4 possible modes of transport, so I will add a single choice fork, which includes those choices\"")
+        String reasoning,
+        @Description("Name of the element")
         String elementName,
-        @Description("Activity in which the condition is checked, that determines which activity will be executed next. Does not have to exist in the model. In the verb+object naming convention")
-        String checkActivity,
-        @Description("Model element, which will be the direct predecessor to added fork in the process flow. Must be an element name that exists in the model, or a special 'Start' activity, indicating the start of the process. Must be provided, if `checkActivity` does not yet exist in the model")
+        @Description("Task in which the condition is checked, that determines which task will be executed next. Does not have to exist in the diagram. In the verb+object naming convention")
+        String checkTask,
+        @Description("Model element, which will be the direct predecessor to added fork in the process flow. Must be an element name that exists in the diagram, or a special 'Start' element, indicating the start of the process. Must be provided, if `checkTask` does not yet exist in the diagram")
         @Nullable
         String predecessorElement,
-        @Description("List of possible choices. In the verb+object naming convention.")
-        List<String> activitiesToChooseFrom
+        @Description("Tasks ot choose from. The chosen task will be executed next in the process. In the verb+object naming convention.")
+        List<String> tasksToChooseFrom
 ) {
 }

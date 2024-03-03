@@ -34,11 +34,11 @@ public class LlmService {
             ChatFunctionDto.builder()
                     .name("add_sequence_of_activities")
                     .description("Adds a sequence of activities to the model, executed in a linear fashion (one after the other).")
-                    .parameters(getSchemaForParametersDto(SequenceOfActivitiesDto.class))
+                    .parameters(getSchemaForParametersDto(SequenceOfTasksDto.class))
                     .build(),
             ChatFunctionDto.builder()
                     .name("add_single_choice_fork_between_activities")
-                    .description("Adds a fork to the model, where one path has to be chosen from several alternatives. After the fork, the paths converge on a single point, from which the process is continued.")
+                    .description("Adds a fork to the model, where one path has to be chosen from several alternatives. After the fork, the paths converge on a single point, from which the process is continued. Remember that the single choice fork ensures that only one path is taken based on the conditions.")
                     .parameters(getSchemaForParametersDto(SingleChoiceForkDto.class))
                     .build(),
             ChatFunctionDto.builder()
@@ -90,8 +90,6 @@ public class LlmService {
             sessionState.appendUserMessage(userMessageContent);
         }
 
-        sessionState.setSessionStatus(NEW);
-
         Object toolChoice = new ToolToCallDto(IS_REQUEST_DESCRIPTION_DETAILED_ENOUGH.name());
 
         boolean stillResponding = true;
@@ -130,6 +128,7 @@ public class LlmService {
                                 responseForUser = functionCallResult.messageToUser();
                             } else {
                                 sessionState.appendToolResponse(toolCall.id(), new FunctionCallResponseDto(true));
+                                sessionState.setSessionStatus(IN_PROGRESS);
                             }
                         } else {
                             sessionState.appendToolResponse(toolCall.id(), new FunctionCallResponseDto(false, Map.of("errors", functionCallResult.errors())));

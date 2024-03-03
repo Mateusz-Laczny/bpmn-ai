@@ -38,7 +38,7 @@ public class AddSingleChoiceForkFunctionCallExecutor implements FunctionCallExec
 
         SingleChoiceForkDto callArguments = argumentsParsingResult.result();
         BpmnModel model = sessionState.model();
-        String checkTaskName = callArguments.checkActivity();
+        String checkTaskName = callArguments.checkTask();
         Optional<String> optionalTaskElementId = model.findTaskIdByName(checkTaskName);
         String checkTaskId;
         Set<String> predecessorTaskSuccessorsBeforeModification;
@@ -63,7 +63,7 @@ public class AddSingleChoiceForkFunctionCallExecutor implements FunctionCallExec
         String closingGatewayId = model.addGateway(EXCLUSIVE);
         model.addUnlabelledSequenceFlow(checkTaskId, openingGatewayId);
 
-        for (String nextTaskPossibleChoice : callArguments.activitiesToChooseFrom()) {
+        for (String nextTaskPossibleChoice : callArguments.tasksToChooseFrom()) {
             String newTaskId = model.addTask(nextTaskPossibleChoice);
             model.addUnlabelledSequenceFlow(openingGatewayId, newTaskId);
             model.addUnlabelledSequenceFlow(newTaskId, closingGatewayId);
