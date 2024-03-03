@@ -28,12 +28,12 @@ public class BpmnSemanticLayouting {
         var alreadyVisitedElements = new HashSet<>();
         alreadyVisitedElements.add(currentElementId);
         while (!boundary.isEmpty()) {
-            SuccessorsNotInGrid nextElementId = boundary.remove(0);
-            if (nextElementId.elements().size() == 1) {
-                String singleSuccessorId = nextElementId.elements().get(0);
+            SuccessorsNotInGrid processedElements = boundary.remove(0);
+            if (processedElements.elements().size() == 1) {
+                String singleSuccessorId = processedElements.elements().get(0);
 
-                int newCellX = nextElementId.predecessorPosition().x() + 1;
-                int newCellY = nextElementId.predecessorPosition().y();
+                int newCellX = processedElements.predecessorPosition().x() + 1;
+                int newCellY = processedElements.predecessorPosition().y();
                 Collection<String> elementPredecessors = model.findPredecessors(singleSuccessorId);
                 if (elementPredecessors.size() > 1) {
                     newCellY = findRowForElement(elementPredecessors, grid);
@@ -45,11 +45,11 @@ public class BpmnSemanticLayouting {
                     alreadyVisitedElements.add(singleSuccessorId);
                 }
             } else {
-                int newCellX = nextElementId.predecessorPosition().x() + 1;
-                int predecessorY = nextElementId.predecessorPosition().y();
+                int newCellX = processedElements.predecessorPosition().x() + 1;
+                int predecessorY = processedElements.predecessorPosition().y();
                 int currentYOffset = -1;
                 boolean insertAbove = true;
-                for (String successorId : nextElementId.elements()) {
+                for (String successorId : processedElements.elements()) {
                     if (alreadyVisitedElements.contains(successorId)) {
                         continue;
                     }
