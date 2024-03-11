@@ -3,9 +3,10 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.v2.functions.execution.AddSequenceOfTasksCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.functions.parameter.SequenceOfTasksDto;
-import edu.agh.bpmnai.generator.v2.session.SessionState;
+import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,20 +24,22 @@ class AddSequenceOfTasksCallExecutorTest {
 
     RetrospectiveSummary aRetrospectiveSummary;
 
+    SessionStateStore sessionStateStore;
+
     @BeforeEach
     void setUp() {
-        executor = new AddSequenceOfTasksCallExecutor(new ToolCallArgumentsParser(mapper));
+        sessionStateStore = new SessionStateStore();
+        executor = new AddSequenceOfTasksCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore);
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
     @Test
     void works_as_expected() throws JsonProcessingException {
-        SessionState sessionState = new SessionState(List.of());
-        BpmnModel model = sessionState.model();
+        BpmnModel model = sessionStateStore.model();
         String predecessorTaskId = model.addTask("task");
         SequenceOfTasksDto callArguments = new SequenceOfTasksDto(aRetrospectiveSummary, "", "task", List.of("activity1", "activity2"));
 
-        executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
+        executor.executeCall(mapper.writeValueAsString(callArguments));
 
         Optional<String> firstTaskId = model.findTaskIdByName("activity1");
         assertTrue(firstTaskId.isPresent());

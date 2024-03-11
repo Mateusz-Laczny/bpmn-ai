@@ -10,6 +10,9 @@ import edu.agh.bpmnai.generator.openai.model.ChatFunction;
 import edu.agh.bpmnai.generator.openai.model.ChatMessage;
 import edu.agh.bpmnai.generator.v2.ChatCompletionDto;
 import edu.agh.bpmnai.generator.v2.ChatCompletionResponseDto;
+import edu.agh.bpmnai.generator.v2.ChatMessageDto;
+import edu.agh.bpmnai.generator.v2.ChatToolDto;
+import edu.agh.bpmnai.generator.v2.functions.ChatFunctionDto;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +28,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -45,6 +49,17 @@ public class OpenAIChatCompletionApi {
     public OpenAIChatCompletionApi(ObjectMapper objectMapper, RestTemplate restTemplate) {
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
+    }
+
+    public ChatMessageDto sendRequest(OpenAIModel modelToUse, List<ChatMessageDto> messages, Set<ChatFunctionDto> availableFunctions, Object toolChoice) {
+        var completionRequest = ChatCompletionDto.builder()
+                .messages(messages)
+                .model(modelToUse.getModelProperties().name())
+                .tools(availableFunctions.stream().map(ChatToolDto::new).toList())
+                .toolChoice(toolChoice)
+                .build();
+        ChatCompletionResponseDto responseBody = getChatCompletion(completionRequest);
+        return responseBody.choices().get(0).message();
     }
 
     public ChatCompletionResponse getChatCompletion(OpenAIChatSession conversation) throws FailedRequestException {

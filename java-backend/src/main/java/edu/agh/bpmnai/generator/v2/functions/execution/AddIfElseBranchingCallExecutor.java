@@ -1,8 +1,12 @@
-package edu.agh.bpmnai.generator.v2.functions;
+package edu.agh.bpmnai.generator.v2.functions.execution;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.v2.functions.AddIfElseBranchingFunction;
+import edu.agh.bpmnai.generator.v2.functions.ArgumentsParsingResult;
+import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
+import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.IfElseBranchingDto;
-import edu.agh.bpmnai.generator.v2.session.SessionState;
+import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,25 +22,28 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
 
     private final ToolCallArgumentsParser callArgumentsParser;
 
+    private final SessionStateStore sessionStateStore;
+
     @Autowired
-    public AddIfElseBranchingCallExecutor(ToolCallArgumentsParser callArgumentsParser) {
+    public AddIfElseBranchingCallExecutor(ToolCallArgumentsParser callArgumentsParser, SessionStateStore sessionStateStore) {
         this.callArgumentsParser = callArgumentsParser;
+        this.sessionStateStore = sessionStateStore;
     }
 
     @Override
     public String getFunctionName() {
-        return "add_if_else_branching";
+        return AddIfElseBranchingFunction.FUNCTION_NAME;
     }
 
     @Override
-    public FunctionCallResult executeCall(SessionState sessionState, String functionId, String callArgumentsJson) {
+    public FunctionCallResult executeCall(String callArgumentsJson) {
         ArgumentsParsingResult<IfElseBranchingDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, IfElseBranchingDto.class);
         if (argumentsParsingResult.isError()) {
             return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
         }
 
         IfElseBranchingDto callArguments = argumentsParsingResult.result();
-        BpmnModel model = sessionState.model();
+        BpmnModel model = sessionStateStore.model();
         String checkTaskName = callArguments.checkTask();
         Optional<String> optionalCheckTaskElementId = model.findTaskIdByName(checkTaskName);
         String checkTaskElementId;

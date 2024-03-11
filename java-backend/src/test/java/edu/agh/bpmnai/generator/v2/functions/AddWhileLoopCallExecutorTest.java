@@ -3,9 +3,10 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.v2.functions.execution.AddWhileLoopCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.functions.parameter.WhileLoopDto;
-import edu.agh.bpmnai.generator.v2.session.SessionState;
+import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,20 +24,22 @@ class AddWhileLoopCallExecutorTest {
 
     RetrospectiveSummary aRetrospectiveSummary;
 
+    SessionStateStore sessionStateStore;
+
     @BeforeEach
     void setUp() {
-        executor = new AddWhileLoopCallExecutor(new ToolCallArgumentsParser(mapper));
+        sessionStateStore = new SessionStateStore();
+        executor = new AddWhileLoopCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore);
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
     @Test
     void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
-        SessionState sessionState = new SessionState(List.of());
-        BpmnModel model = sessionState.model();
+        BpmnModel model = sessionStateStore.model();
         String checkTaskId = model.addTask("task");
         WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary, "task", null, List.of("task1", "task2"));
 
-        executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
+        executor.executeCall(mapper.writeValueAsString(callArguments));
 
         Optional<String> firstTaskId = model.findTaskIdByName("task1");
         assertTrue(firstTaskId.isPresent());
@@ -57,13 +60,12 @@ class AddWhileLoopCallExecutorTest {
 
     @Test
     void should_work_as_expected_for_new_check_activity_task() throws JsonProcessingException {
-        SessionState sessionState = new SessionState(List.of());
-        BpmnModel model = sessionState.model();
+        BpmnModel model = sessionStateStore.model();
         model.addTask("task");
 
         WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary, "checkTask", "task", List.of("task1", "task2"));
 
-        executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
+        executor.executeCall(mapper.writeValueAsString(callArguments));
 
         Optional<String> checkTaskId = model.findTaskIdByName("checkTask");
         assertTrue(checkTaskId.isPresent());

@@ -3,13 +3,13 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.v2.functions.execution.AddIfElseBranchingCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.IfElseBranchingDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
-import edu.agh.bpmnai.generator.v2.session.SessionState;
+import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -24,20 +24,22 @@ class AddIfElseBranchingCallExecutorTest {
 
     AddIfElseBranchingCallExecutor executor;
 
+    SessionStateStore sessionStateStore;
+
     @BeforeEach
     void setUp() {
-        executor = new AddIfElseBranchingCallExecutor(new ToolCallArgumentsParser(mapper));
+        sessionStateStore = new SessionStateStore();
+        executor = new AddIfElseBranchingCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore);
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
     @Test
     void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
-        SessionState sessionState = new SessionState(List.of());
-        BpmnModel model = sessionState.model();
+        BpmnModel model = sessionStateStore.model();
         String checkTaskId = model.addTask("task");
-        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "task", "", null, "trueBranch", "falseBranch");
+        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "", "task", null, "trueBranch", "falseBranch");
 
-        executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
+        executor.executeCall(mapper.writeValueAsString(callArguments));
 
         Optional<String> trueBranchStartTaskId = model.findTaskIdByName("trueBranch");
         assertTrue(trueBranchStartTaskId.isPresent());
@@ -54,13 +56,12 @@ class AddIfElseBranchingCallExecutorTest {
 
     @Test
     void should_work_as_expected_for_new_check_activity_task() throws JsonProcessingException {
-        SessionState sessionState = new SessionState(List.of());
-        BpmnModel model = sessionState.model();
+        BpmnModel model = sessionStateStore.model();
         model.addTask("task");
 
-        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "checkTask", "", "task", "trueBranch", "falseBranch");
+        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "", "checkTask", "task", "trueBranch", "falseBranch");
 
-        executor.executeCall(sessionState, "id", mapper.writeValueAsString(callArguments));
+        executor.executeCall(mapper.writeValueAsString(callArguments));
 
         Optional<String> checkTaskId = model.findTaskIdByName("checkTask");
         assertTrue(checkTaskId.isPresent());

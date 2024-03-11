@@ -35,8 +35,9 @@ public class GenerationController {
         return llmService.getResponse(newMessage.content());
     }
 
-    @DeleteMapping("v2/clear")
-    public void clearConversation() {
-        llmService.clearConversation();
+    @PostMapping("v2/start")
+    public void startNewConversation() {
+        log.info("New conversation started");
+        llmService.startNewConversation();
     }
 }
