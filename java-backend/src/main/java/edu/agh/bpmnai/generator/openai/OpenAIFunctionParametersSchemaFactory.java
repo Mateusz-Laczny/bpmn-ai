@@ -3,7 +3,7 @@ package edu.agh.bpmnai.generator.openai;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.generator.impl.PropertySortUtils;
-import edu.agh.bpmnai.generator.v2.Description;
+import edu.agh.bpmnai.generator.v2.functions.parameter.Description;
 import jakarta.annotation.Nullable;
 
 public class OpenAIFunctionParametersSchemaFactory {

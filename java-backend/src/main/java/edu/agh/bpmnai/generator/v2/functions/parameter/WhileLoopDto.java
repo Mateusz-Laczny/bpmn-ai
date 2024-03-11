@@ -1,6 +1,5 @@
 package edu.agh.bpmnai.generator.v2.functions.parameter;
 
-import edu.agh.bpmnai.generator.v2.Description;
 import jakarta.annotation.Nullable;
 
 import java.util.List;

@@ -1,4 +1,4 @@
-package edu.agh.bpmnai.generator.v2;
+package edu.agh.bpmnai.generator.v2.functions.parameter;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
