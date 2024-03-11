@@ -24,7 +24,12 @@ public class LlmService {
     private final ChatMessageBuilder chatMessageBuilder;
 
     @Autowired
-    public LlmService(SessionStateStore sessionStateStore, BpmnSemanticLayouting bpmnSemanticLayouting, AskQuestionsState askQuestionsState, ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState, ModifyModelState modifyModelState, ChatMessageBuilder chatMessageBuilder) {
+    public LlmService(SessionStateStore sessionStateStore,
+                      BpmnSemanticLayouting bpmnSemanticLayouting,
+                      AskQuestionsState askQuestionsState,
+                      ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState,
+                      ModifyModelState modifyModelState,
+                      ChatMessageBuilder chatMessageBuilder) {
         this.sessionStateStore = sessionStateStore;
         this.bpmnSemanticLayouting = bpmnSemanticLayouting;
         this.askQuestionsState = askQuestionsState;
@@ -46,7 +51,7 @@ public class LlmService {
         }
 
         BpmnModel layoutedModel = bpmnSemanticLayouting.layoutModel(sessionStateStore.model());
-        return new UserRequestResponse(sessionStateStore.lastAddedMessage().content(), layoutedModel.asXmlString());
+        return new UserRequestResponse(sessionStateStore.lastAddedMessageWithUserFacingContent().content(), layoutedModel.asXmlString());
     }
 
     public void startNewConversation() {

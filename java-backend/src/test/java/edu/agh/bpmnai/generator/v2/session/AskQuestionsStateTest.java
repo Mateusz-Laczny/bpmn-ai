@@ -16,8 +16,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Optional;
 
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.ASK_QUESTIONS;
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.REASON_ABOUT_TASKS_AND_PROCESS_FLOW;
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.*;
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
@@ -42,7 +41,7 @@ class AskQuestionsStateTest {
     void returns_ASK_QUESTIONS_when_model_response_has_no_tool_calls() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var state = new AskQuestionsState(mock(FunctionExecutionService.class), mockApi, aModel, sessionStateStore, chatMessageBuilder);
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null));
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, null, null));
 
         SessionStatus status = state.process("aUserRequest");
 
@@ -57,7 +56,7 @@ class AskQuestionsStateTest {
         var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder);
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto("aName", ""));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall)));
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall), null));
 
         SessionStatus status = state.process("aUserRequest");
 
@@ -74,7 +73,7 @@ class AskQuestionsStateTest {
         var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder);
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto("aName", ""));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall)));
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall), null));
 
         SessionStatus status = state.process("aUserRequest");
 
@@ -91,7 +90,7 @@ class AskQuestionsStateTest {
         var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder);
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto(FinishAskingQuestionsFunction.FUNCTION_NAME, ""));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall)));
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall), null));
 
         SessionStatus status = state.process("aUserRequest");
 
@@ -101,19 +100,24 @@ class AskQuestionsStateTest {
     }
 
     @Test
-    void remains_in_ASK_QUESTIONS_state_if_ask_questions_is_called() {
+    void returns_end_and_adds_question_to_conversation_thread_if_ask_question_is_called() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
-        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Optional.of(FunctionCallResult.successfulCall()));
+        String question = "aQuestion";
+        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Optional.of(FunctionCallResult.withMessageToUser(question)));
         var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder);
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto(AskQuestionFunction.FUNCTION_NAME, ""));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall)));
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall), null));
 
         SessionStatus status = state.process("aUserRequest");
 
         ChatMessageDto lastAddedMessage = sessionStateStore.lastAddedMessage();
-        assertEquals(ASK_QUESTIONS, status);
+        assertEquals(END, status);
         assertEquals(callId, lastAddedMessage.toolCallId());
+
+        List<ChatMessageDto> allMessages = sessionStateStore.messages();
+        ChatMessageDto secondLastAddedMessage = allMessages.get(allMessages.size() - 2);
+        assertEquals(question, secondLastAddedMessage.userFacingContent());
     }
 }

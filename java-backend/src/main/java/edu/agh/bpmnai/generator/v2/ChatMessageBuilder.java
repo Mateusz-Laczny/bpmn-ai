@@ -9,23 +9,23 @@ public class ChatMessageBuilder {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ChatMessageDto buildAssistantMessage(String messageContent) {
-        return new ChatMessageDto("assistant", messageContent);
+        return ChatMessageDto.userFacingMessage("assistant", messageContent);
     }
 
     public ChatMessageDto buildUserMessage(String content) {
-        return new ChatMessageDto("user", content);
+        return ChatMessageDto.userFacingMessage("user", content);
     }
 
     public ChatMessageDto buildToolCallResponseMessage(String callId, FunctionCallResponseDto response) {
         try {
             String contentAsString = objectMapper.writeValueAsString(response);
-            return new ChatMessageDto("tool", contentAsString, callId);
+            return ChatMessageDto.modelOnlyToolResponse("tool", contentAsString, callId);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
     public ChatMessageDto buildSystemMessage(String messageContent) {
-        return new ChatMessageDto("system", messageContent);
+        return ChatMessageDto.modelOnlyMessage("system", messageContent);
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.google.common.collect.Streams.findLast;
 import static java.util.Collections.unmodifiableList;
 
 @Component
@@ -35,6 +36,14 @@ public class SessionStateStore {
 
     public ChatMessageDto lastAddedMessage() {
         return messages.get(messages().size() - 1);
+    }
+
+    public ChatMessageDto lastAddedMessageWithUserFacingContent() {
+        return findLast(messages.stream().filter(ChatMessageDto::hasUserFacingContent)).get();
+    }
+
+    public int numberOfMessages() {
+        return messages.size();
     }
 
     public void clearState() {
