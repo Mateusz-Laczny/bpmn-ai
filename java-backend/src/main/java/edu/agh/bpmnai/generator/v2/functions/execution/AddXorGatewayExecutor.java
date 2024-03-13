@@ -45,7 +45,7 @@ public class AddXorGatewayExecutor implements FunctionCallExecutor {
 
         XorGatewayDto callArguments = argumentsParsingResult.result();
         BpmnModel model = sessionStateStore.model();
-        String checkTaskName = callArguments.checkTask();
+        String checkTaskName = callArguments.checkActivity();
         Optional<String> optionalTaskElementId = model.findTaskIdByName(checkTaskName);
         String checkTaskId;
         Set<String> predecessorTaskSuccessorsBeforeModification;
@@ -70,7 +70,7 @@ public class AddXorGatewayExecutor implements FunctionCallExecutor {
         String closingGatewayId = model.addGateway(EXCLUSIVE);
         model.addUnlabelledSequenceFlow(checkTaskId, openingGatewayId);
 
-        for (String nextTaskPossibleChoice : callArguments.tasksToChooseFrom()) {
+        for (String nextTaskPossibleChoice : callArguments.activitiesInsideGateway()) {
             String newTaskId = model.addTask(nextTaskPossibleChoice);
             model.addUnlabelledSequenceFlow(openingGatewayId, newTaskId);
             model.addUnlabelledSequenceFlow(newTaskId, closingGatewayId);

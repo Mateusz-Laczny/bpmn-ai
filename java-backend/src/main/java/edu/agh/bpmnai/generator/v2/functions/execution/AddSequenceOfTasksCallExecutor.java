@@ -43,7 +43,7 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
         SequenceOfTasksDto callArguments = argumentsParsingResult.result();
         BpmnModel model = sessionStateStore.model();
-        Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());
+        Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.startOfSequence());
         if (optionalPredecessorElementId.isEmpty()) {
             log.info("Predecessor element does not exist in the model");
             return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
@@ -55,10 +55,10 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
         Set<String> predecessorTaskSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
         if (predecessorTaskSuccessorsBeforeModification.size() > 1) {
-            log.warn("Predecessor activity has more than one successor, choosing the first one; activityName: {}", callArguments.predecessorElement());
+            log.warn("Predecessor activity has more than one successor, choosing the first one; activityName: {}", callArguments.startOfSequence());
         }
 
-        for (String newActivityName : callArguments.tasksInSequence()) {
+        for (String newActivityName : callArguments.activitiesInSequence()) {
             String nextTaskId = model.findTaskIdByName(newActivityName).orElseGet(() -> model.addTask(newActivityName));
             if (model.findSuccessors(predecessorElementId).contains(nextTaskId)) {
                 continue;
@@ -70,7 +70,7 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
         if (!predecessorTaskSuccessorsBeforeModification.isEmpty()) {
             if (predecessorTaskSuccessorsBeforeModification.size() > 1) {
-                log.warn("Predecessor element has more than one successor, choosing the first one; activityName: {}", callArguments.predecessorElement());
+                log.warn("Predecessor element has more than one successor, choosing the first one; activityName: {}", callArguments.startOfSequence());
             }
 
             String endOfChainElementId = predecessorTaskSuccessorsBeforeModification.iterator().next();

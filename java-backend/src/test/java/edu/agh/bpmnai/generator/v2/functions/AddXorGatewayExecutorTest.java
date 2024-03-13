@@ -20,11 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AddXorGatewayExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
-    private AddXorGatewayExecutor executor;
-
     RetrospectiveSummary aRetrospectiveSummary;
-
     SessionStateStore sessionStateStore;
+    private AddXorGatewayExecutor executor;
 
     @BeforeEach
     void setUp() {
@@ -69,11 +67,11 @@ class AddXorGatewayExecutorTest {
     void should_work_as_expected_for_new_check_activity_task() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
         model.addTask("task");
-        XorGatewayDto callArguments = new XorGatewayDto(aRetrospectiveSummary, "", "elementName", "checkTask", "task", List.of("task1", "task2"));
+        XorGatewayDto callArguments = new XorGatewayDto(aRetrospectiveSummary, "", "elementName", "checkActivity", "task", List.of("task1", "task2"));
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> checkTaskId = model.findTaskIdByName("checkTask");
+        Optional<String> checkTaskId = model.findTaskIdByName("checkActivity");
         assertTrue(checkTaskId.isPresent());
         Optional<String> firstTaskId = model.findTaskIdByName("task1");
         assertTrue(firstTaskId.isPresent());

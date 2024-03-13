@@ -78,7 +78,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         }
 
         String previousElementInLoopId = openingGatewayId;
-        for (String taskInLoop : callArguments.tasksInLoop()) {
+        for (String taskInLoop : callArguments.activitiesInLoop()) {
             String newTaskId = model.addTask(taskInLoop);
             model.addUnlabelledSequenceFlow(previousElementInLoopId, newTaskId);
             previousElementInLoopId = newTaskId;

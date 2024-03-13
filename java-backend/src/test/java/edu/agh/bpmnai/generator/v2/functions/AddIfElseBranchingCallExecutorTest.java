@@ -59,11 +59,11 @@ class AddIfElseBranchingCallExecutorTest {
         BpmnModel model = sessionStateStore.model();
         model.addTask("task");
 
-        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "", "checkTask", "task", "trueBranch", "falseBranch");
+        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "", "checkActivity", "task", "trueBranch", "falseBranch");
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> checkTaskId = model.findTaskIdByName("checkTask");
+        Optional<String> checkTaskId = model.findTaskIdByName("checkActivity");
         assertTrue(checkTaskId.isPresent());
         Optional<String> trueBranchStartTaskId = model.findTaskIdByName("trueBranch");
         assertTrue(trueBranchStartTaskId.isPresent());

@@ -11,12 +11,12 @@ public record XorGatewayDto(
         String reasoning,
         @Description("Name of the element")
         String elementName,
-        @Description("Task in which the condition is checked, that determines which task will be executed next. Does not have to exist in the diagram. In the verb+object naming convention, should be a question like 'Pizza ok?'")
-        String checkTask,
-        @Description("Model element, which will be the direct predecessor to added gateway in the process flow. Must be an element name that exists in the diagram, or a special 'Start' element, indicating the start of the process. Must be provided, if `checkTask` does not yet exist in the diagram")
+        @Description("Activity in which the condition is checked, that determines which activity be executed next. If does not exist currently in the diagram, it will be added. In the verb+object naming convention, should be a question like 'Pizza ok?'")
+        String checkActivity,
+        @Description("Diagram element, which will be the direct predecessor to added gateway in the process flow. Must be an element name that exists in the diagram, or a special 'Start' element, indicating the start of the process. Must be provided, if `checkActivity` does not yet exist in the diagram")
         @Nullable
         String predecessorElement,
-        @Description("Tasks ot choose from. The chosen task will be executed next in the process. In the verb+object naming convention.")
-        List<String> tasksToChooseFrom
+        @Description("Activities, which will be added inside the gateway. In the verb+object naming convention.")
+        List<String> activitiesInsideGateway
 ) {
 }

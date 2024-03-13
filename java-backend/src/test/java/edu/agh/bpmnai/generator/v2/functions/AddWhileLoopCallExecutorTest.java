@@ -20,11 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AddWhileLoopCallExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
-    private AddWhileLoopCallExecutor executor;
-
     RetrospectiveSummary aRetrospectiveSummary;
-
     SessionStateStore sessionStateStore;
+    private AddWhileLoopCallExecutor executor;
 
     @BeforeEach
     void setUp() {
@@ -63,11 +61,11 @@ class AddWhileLoopCallExecutorTest {
         BpmnModel model = sessionStateStore.model();
         model.addTask("task");
 
-        WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary, "checkTask", "task", List.of("task1", "task2"));
+        WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary, "checkActivity", "task", List.of("task1", "task2"));
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> checkTaskId = model.findTaskIdByName("checkTask");
+        Optional<String> checkTaskId = model.findTaskIdByName("checkActivity");
         assertTrue(checkTaskId.isPresent());
         Optional<String> firstTaskId = model.findTaskIdByName("task1");
         assertTrue(firstTaskId.isPresent());

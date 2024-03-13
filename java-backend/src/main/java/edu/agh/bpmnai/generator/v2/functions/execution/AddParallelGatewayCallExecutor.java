@@ -60,7 +60,7 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
         String openingGatewayId = model.addGateway(INCLUSIVE);
         String closingGatewayId = model.addGateway(INCLUSIVE);
         model.addUnlabelledSequenceFlow(predecessorElementId, openingGatewayId);
-        for (String taskToExecute : callArguments.tasksToExecute()) {
+        for (String taskToExecute : callArguments.activitiesInsideGateway()) {
             String taskId = model.addTask(taskToExecute);
             model.addUnlabelledSequenceFlow(openingGatewayId, taskId);
             model.addUnlabelledSequenceFlow(taskId, closingGatewayId);

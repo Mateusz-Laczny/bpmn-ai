@@ -32,12 +32,7 @@ public class ReasonAboutTasksAndProcessFlowState {
 
     public SessionStatus process(String userRequestContent) {
         sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(userRequestContent));
-        var promptMessage = chatMessageBuilder.buildUserMessage("Now, reason about what activities need to be added to the diagram, and how should the process flow look like. Use BPMN terminology\n" +
-                                                                "Example: We need to order parts from multiple manufacturers, " +
-                                                                "so I need to add tasks 'Order from manufacturer 1', " +
-                                                                "'Order from manufacturer 2', 'Order from manufacturer 3'. " +
-                                                                "Since we can make orders in parallel, " +
-                                                                "I will enclose those tasks in a parallel gateway.");
+        var promptMessage = chatMessageBuilder.buildSystemMessage("Now, reason about and describe the plan of implementing the user request. Use BPMN terminology. Remember to think about possible edge cases and paths different than the happy path");
         sessionStateStore.appendMessage(promptMessage);
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(usedModel, sessionStateStore.messages(), null, null);
         log.info("Response: '{}'", chatResponse.content());
