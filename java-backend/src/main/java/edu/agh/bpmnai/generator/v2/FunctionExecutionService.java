@@ -26,6 +26,7 @@ public class FunctionExecutionService {
     public Optional<FunctionCallResult> executeFunctionCall(ToolCallDto functionCall) {
         String calledFunctionName = functionCall.functionCallProperties().name();
         if (!functionNameToExecutor.containsKey(calledFunctionName)) {
+            log.warn("Could not find executor for function with name '{}'", calledFunctionName);
             return Optional.empty();
         }
         FunctionCallExecutor executorFunction = functionNameToExecutor.get(calledFunctionName);

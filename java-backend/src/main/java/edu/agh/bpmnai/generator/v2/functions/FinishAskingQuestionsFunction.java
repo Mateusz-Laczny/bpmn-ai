@@ -8,6 +8,6 @@ public class FinishAskingQuestionsFunction {
     public static final String FUNCTION_NAME = "finish_asking_questions";
     public static final ChatFunctionDto FUNCTION_DTO = ChatFunctionDto.builder()
             .name(FUNCTION_NAME)
-            .description("Finish asking questions and go to the next step of the process.")
+            .description("Finish asking questions and start modifying the diagram.")
             .parameters(getSchemaForParametersDto(FinishAskingQuestionsDto.class)).build();
 }

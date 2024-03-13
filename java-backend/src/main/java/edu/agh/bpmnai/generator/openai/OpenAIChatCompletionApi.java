@@ -15,6 +15,7 @@ import edu.agh.bpmnai.generator.v2.ChatToolDto;
 import edu.agh.bpmnai.generator.v2.functions.ChatFunctionDto;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
+import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -51,11 +52,11 @@ public class OpenAIChatCompletionApi {
         this.restTemplate = restTemplate;
     }
 
-    public ChatMessageDto sendRequest(OpenAIModel modelToUse, List<ChatMessageDto> messages, Set<ChatFunctionDto> availableFunctions, Object toolChoice) {
+    public ChatMessageDto sendRequest(OpenAIModel modelToUse, List<ChatMessageDto> messages, @Nullable Set<ChatFunctionDto> availableFunctions, Object toolChoice) {
         var completionRequest = ChatCompletionDto.builder()
                 .messages(messages)
                 .model(modelToUse.getModelProperties().name())
-                .tools(availableFunctions.stream().map(ChatToolDto::new).toList())
+                .tools(availableFunctions != null ? availableFunctions.stream().map(ChatToolDto::new).toList() : null)
                 .toolChoice(toolChoice)
                 .build();
         ChatCompletionResponseDto responseBody = getChatCompletion(completionRequest);

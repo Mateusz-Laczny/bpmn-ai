@@ -9,7 +9,7 @@ public class RespondWithoutModifyingDiagramFunction {
 
     public static final ChatFunctionDto FUNCTION_DTO = ChatFunctionDto.builder()
             .name(FUNCTION_NAME)
-            .description("Sends a message to the user without modifying the model")
+            .description("Sends a message to the user, and stop without modifying the diagram. Use only if the user's request does not require modifying the diagram")
             .parameters(getSchemaForParametersDto(RespondWithoutModifyingDiagramParametersDto.class))
             .build();
 }

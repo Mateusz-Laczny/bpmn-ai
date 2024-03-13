@@ -48,6 +48,7 @@ public class LlmService {
                 case MODIFY_MODEL -> modifyModelState.process(userMessageContent);
                 default -> throw new IllegalStateException("Unexpected session state '%s'".formatted(sessionState));
             };
+            log.info("New state: '{}'", sessionState);
         }
 
         BpmnModel layoutedModel = bpmnSemanticLayouting.layoutModel(sessionStateStore.model());

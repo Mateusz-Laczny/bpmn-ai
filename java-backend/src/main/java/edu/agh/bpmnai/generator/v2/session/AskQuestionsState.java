@@ -59,6 +59,7 @@ public class AskQuestionsState {
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(usedModel, sessionStateStore.messages(), AVAILABLE_FUNCTIONS_IN_THIS_STATE, "auto");
 
         if (chatResponse.toolCalls() == null) {
+            log.warn("No tools calls even though a tool call was expected");
             sessionStateStore.appendMessage(chatResponse);
             sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage("A function must be called in this step"));
             return ASK_QUESTIONS;
@@ -70,6 +71,7 @@ public class AskQuestionsState {
         String calledFunctionName = toolCall.functionCallProperties().name();
         Optional<FunctionCallResult> possibleFunctionCallResult = functionExecutionService.executeFunctionCall(toolCall);
         if (possibleFunctionCallResult.isEmpty()) {
+            log.info("");
             sessionStateStore.appendMessage(chatResponse);
             var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(false, Map.of("errors", "Function '%s' does not exist".formatted(calledFunctionName))));
             sessionStateStore.appendMessage(response);
@@ -78,7 +80,7 @@ public class AskQuestionsState {
 
         FunctionCallResult functionCallResult = possibleFunctionCallResult.get();
         if (!functionCallResult.errors().isEmpty()) {
-            log.info("Errors when calling function '{}': '{}'", calledFunctionName, functionCallResult.errors());
+            log.warn("Errors when calling function '{}': '{}'", calledFunctionName, functionCallResult.errors());
             sessionStateStore.appendMessage(chatResponse);
             var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(false, Map.of("errors", functionCallResult.errors())));
             sessionStateStore.appendMessage(response);
@@ -94,11 +96,9 @@ public class AskQuestionsState {
         sessionStateStore.appendMessage(response);
 
         if (calledFunctionName.equals(FinishAskingQuestionsFunction.FUNCTION_NAME)) {
-            log.debug("Changing state to '{}'", REASON_ABOUT_TASKS_AND_PROCESS_FLOW);
             return REASON_ABOUT_TASKS_AND_PROCESS_FLOW;
         }
 
-        log.debug("Changing state to '{}'", END);
         return END;
     }
 }

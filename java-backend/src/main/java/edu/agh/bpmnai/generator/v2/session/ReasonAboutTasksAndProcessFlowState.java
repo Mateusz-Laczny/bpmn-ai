@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import static edu.agh.bpmnai.generator.v2.session.SessionStatus.MODIFY_MODEL;
-import static java.util.Collections.emptySet;
 
 @Service
 @Slf4j
@@ -33,14 +32,15 @@ public class ReasonAboutTasksAndProcessFlowState {
 
     public SessionStatus process(String userRequestContent) {
         sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(userRequestContent));
-        var promptMessage = chatMessageBuilder.buildUserMessage("Now, reason about what tasks need to be added to the diagram, and how should the process flow look like.\n" +
+        var promptMessage = chatMessageBuilder.buildUserMessage("Now, reason about what activities need to be added to the diagram, and how should the process flow look like. Use BPMN terminology\n" +
                                                                 "Example: We need to order parts from multiple manufacturers, " +
                                                                 "so I need to add tasks 'Order from manufacturer 1', " +
                                                                 "'Order from manufacturer 2', 'Order from manufacturer 3'. " +
                                                                 "Since we can make orders in parallel, " +
                                                                 "I will enclose those tasks in a parallel gateway.");
         sessionStateStore.appendMessage(promptMessage);
-        ChatMessageDto chatResponse = chatCompletionApi.sendRequest(usedModel, sessionStateStore.messages(), emptySet(), "none");
+        ChatMessageDto chatResponse = chatCompletionApi.sendRequest(usedModel, sessionStateStore.messages(), null, null);
+        log.info("Response: '{}'", chatResponse.content());
         sessionStateStore.appendMessage(chatResponse);
         return MODIFY_MODEL;
     }

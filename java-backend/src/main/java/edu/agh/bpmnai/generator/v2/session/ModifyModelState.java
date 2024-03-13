@@ -69,7 +69,7 @@ public class ModifyModelState {
 
             FunctionCallResult functionCallResult = possibleFunctionCallResult.get();
             if (!functionCallResult.errors().isEmpty()) {
-                log.info("Errors when calling function '{}': '{}'", calledFunctionName, functionCallResult.errors());
+                log.warn("Errors when calling function '{}': '{}'", calledFunctionName, functionCallResult.errors());
                 var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(false, Map.of("errors", functionCallResult.errors())));
                 sessionStateStore.appendMessage(response);
                 return MODIFY_MODEL;
