@@ -59,13 +59,12 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
         }
 
         for (String newActivityName : callArguments.activitiesInSequence()) {
-            String nextTaskId = model.findTaskIdByName(newActivityName).orElseGet(() -> model.addTask(newActivityName));
-            if (model.findSuccessors(predecessorElementId).contains(nextTaskId)) {
-                continue;
+            String currentTaskId = model.findTaskIdByName(newActivityName).orElse(model.addTask(newActivityName));
+            if (!model.areElementsDirectlyConnected(predecessorElementId, currentTaskId)) {
+                model.addUnlabelledSequenceFlow(predecessorElementId, currentTaskId);
             }
 
-            model.addUnlabelledSequenceFlow(predecessorElementId, nextTaskId);
-            predecessorElementId = nextTaskId;
+            predecessorElementId = currentTaskId;
         }
 
         if (!predecessorTaskSuccessorsBeforeModification.isEmpty()) {
@@ -74,7 +73,9 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
             }
 
             String endOfChainElementId = predecessorTaskSuccessorsBeforeModification.iterator().next();
-            model.addUnlabelledSequenceFlow(predecessorElementId, endOfChainElementId);
+            if (!model.areElementsDirectlyConnected(predecessorElementId, endOfChainElementId)) {
+                model.addUnlabelledSequenceFlow(predecessorElementId, endOfChainElementId);
+            }
         }
 
         return FunctionCallResult.successfulCall();

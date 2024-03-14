@@ -423,4 +423,8 @@ public final class BpmnModel {
 
         return generatedId;
     }
+
+    public boolean areElementsDirectlyConnected(String firstElementId, String secondElementId) {
+        return findSuccessors(firstElementId).contains(secondElementId);
+    }
 }

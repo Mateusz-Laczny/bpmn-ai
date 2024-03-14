@@ -56,7 +56,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         } else {
             Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());
             if (optionalPredecessorElementId.isEmpty()) {
-                log.info("Predecessor element does not exist in the model");
+                log.warn("Call unsuccessful, predecessor element does not exist in the model");
                 return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
             }
             String predecessorElementId = optionalPredecessorElementId.get();
@@ -71,7 +71,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         model.addUnlabelledSequenceFlow(checkTaskId, openingGatewayId);
         if (!predecessorTaskSuccessorsBeforeModification.isEmpty()) {
             if (predecessorTaskSuccessorsBeforeModification.size() > 1) {
-                log.warn("Predecessor activity has more than on successor, choosing the first one");
+                log.warn("Predecessor element has more than on successor, choosing the first one");
             }
             String nextTaskId = predecessorTaskSuccessorsBeforeModification.iterator().next();
             model.addLabelledSequenceFlow(openingGatewayId, nextTaskId, "false");
@@ -79,12 +79,18 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
         String previousElementInLoopId = openingGatewayId;
         for (String taskInLoop : callArguments.activitiesInLoop()) {
-            String newTaskId = model.addTask(taskInLoop);
-            model.addUnlabelledSequenceFlow(previousElementInLoopId, newTaskId);
-            previousElementInLoopId = newTaskId;
+            String currentTaskId = model.findTaskIdByName(taskInLoop).orElse(model.addTask(taskInLoop));
+            if (!model.areElementsDirectlyConnected(previousElementInLoopId, currentTaskId)) {
+                model.addUnlabelledSequenceFlow(previousElementInLoopId, currentTaskId);
+            }
+
+            previousElementInLoopId = currentTaskId;
         }
 
-        model.addUnlabelledSequenceFlow(previousElementInLoopId, checkTaskId);
+        if (!model.areElementsDirectlyConnected(previousElementInLoopId, checkTaskId)) {
+            model.addUnlabelledSequenceFlow(previousElementInLoopId, checkTaskId);
+        }
+
         return FunctionCallResult.successfulCall();
     }
 }

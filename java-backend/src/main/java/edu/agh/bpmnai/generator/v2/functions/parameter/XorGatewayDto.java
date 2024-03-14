@@ -16,7 +16,7 @@ public record XorGatewayDto(
         @Description("Diagram element, which will be the direct predecessor to added gateway in the process flow. Must be an element name that exists in the diagram, or a special 'Start' element, indicating the start of the process. Must be provided, if `checkActivity` does not yet exist in the diagram")
         @Nullable
         String predecessorElement,
-        @Description("Activities, which will be added inside the gateway. In the verb+object naming convention.")
+        @Description("Activities, which will be added inside the gateway. In the verb+object naming convention. For the gateway to make sense it must contain at least 2 activities.")
         List<String> activitiesInsideGateway
 ) {
 }
