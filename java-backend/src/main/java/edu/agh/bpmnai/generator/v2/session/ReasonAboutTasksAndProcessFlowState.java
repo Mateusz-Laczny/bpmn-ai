@@ -32,7 +32,7 @@ public class ReasonAboutTasksAndProcessFlowState {
 
     public SessionStatus process(String userRequestContent) {
         sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(userRequestContent));
-        var promptMessage = chatMessageBuilder.buildSystemMessage("Now, reason about and describe the plan of implementing the user request. Use BPMN terminology. Remember to think about possible edge cases and paths different than the happy path");
+        var promptMessage = chatMessageBuilder.buildSystemMessage("Now, reason about and describe the plan of implementing the user request. Use BPMN terminology. Remember to think about possible edge cases and paths different than the happy path. Don't try to create diagram, this will be done in the next step.");
         sessionStateStore.appendMessage(promptMessage);
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(usedModel, sessionStateStore.messages(), null, null);
         log.info("Response: '{}'", chatResponse.content());

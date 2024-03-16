@@ -39,9 +39,9 @@ class AddXorGatewayExecutorTest {
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> firstTaskId = model.findTaskIdByName("task1");
+        Optional<String> firstTaskId = model.findElementByName("task1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findTaskIdByName("task2");
+        Optional<String> secondTaskId = model.findElementByName("task2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> checkTaskSuccessors = model.findSuccessors(checkTaskId);
@@ -71,11 +71,11 @@ class AddXorGatewayExecutorTest {
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> checkTaskId = model.findTaskIdByName("checkActivity");
+        Optional<String> checkTaskId = model.findElementByName("checkActivity");
         assertTrue(checkTaskId.isPresent());
-        Optional<String> firstTaskId = model.findTaskIdByName("task1");
+        Optional<String> firstTaskId = model.findElementByName("task1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findTaskIdByName("task2");
+        Optional<String> secondTaskId = model.findElementByName("task2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> checkTaskSuccessors = model.findSuccessors(checkTaskId.get());
@@ -95,5 +95,49 @@ class AddXorGatewayExecutorTest {
         assertEquals(1, firstTaskSuccessors.size());
         assertEquals(1, secondTaskSuccessors.size());
         assertEquals(firstTaskSuccessors, secondTaskSuccessors);
+    }
+
+    @Test
+    void should_work_as_expected_when_inserting_between_existing_tasks() throws JsonProcessingException {
+        BpmnModel model = sessionStateStore.model();
+        String predecessorTaskId = model.addTask("predecessorTask");
+        String successorTaskId = model.addTask("successorTask");
+        model.addUnlabelledSequenceFlow(predecessorTaskId, successorTaskId);
+        XorGatewayDto callArguments = new XorGatewayDto(aRetrospectiveSummary, "", "elementName", "checkActivity", "predecessorTask", List.of("task1", "task2"));
+
+        executor.executeCall(mapper.writeValueAsString(callArguments));
+
+        Optional<String> checkTaskId = model.findElementByName("checkActivity");
+        assertTrue(checkTaskId.isPresent());
+        Optional<String> firstTaskId = model.findElementByName("task1");
+        assertTrue(firstTaskId.isPresent());
+        Optional<String> secondTaskId = model.findElementByName("task2");
+        assertTrue(secondTaskId.isPresent());
+
+        Set<String> checkTaskSuccessors = model.findSuccessors(checkTaskId.get());
+        assertEquals(1, checkTaskSuccessors.size());
+
+        Set<String> predecessorTaskSuccessors = model.findSuccessors(predecessorTaskId);
+        assertEquals(Set.of(checkTaskId.get()), predecessorTaskSuccessors);
+
+        String openingGatewayId = checkTaskSuccessors.iterator().next();
+        assertEquals(Set.of(firstTaskId.get(), secondTaskId.get()), model.findSuccessors(openingGatewayId));
+
+        Set<String> openingGatewaySuccessors = model.findSuccessors(openingGatewayId);
+        assertEquals(2, openingGatewaySuccessors.size());
+        assertTrue(openingGatewaySuccessors.contains(firstTaskId.get()));
+        assertTrue(openingGatewaySuccessors.contains(secondTaskId.get()));
+
+        Set<String> firstTaskSuccessors = model.findSuccessors(firstTaskId.get());
+        Set<String> secondTaskSuccessors = model.findSuccessors(firstTaskId.get());
+        assertEquals(1, firstTaskSuccessors.size());
+        assertEquals(1, secondTaskSuccessors.size());
+        assertEquals(firstTaskSuccessors, secondTaskSuccessors);
+
+        String closingGatewayId = firstTaskSuccessors.iterator().next();
+        Set<String> closingGatewaySuccessors = model.findSuccessors(closingGatewayId);
+        assertEquals(1, closingGatewaySuccessors.size());
+        assertTrue(closingGatewaySuccessors.contains(successorTaskId));
+        System.out.println(model.asXmlString());
     }
 }

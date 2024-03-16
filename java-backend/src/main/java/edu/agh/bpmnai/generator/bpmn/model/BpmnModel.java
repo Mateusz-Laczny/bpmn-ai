@@ -49,7 +49,7 @@ public final class BpmnModel {
         diagramPlane = createElementWithParent(diagram, "id", BpmnPlane.class);
         diagram.setBpmnPlane(diagramPlane);
 
-        String startEventId = addStartEvent(new BpmnStartEvent(idOfDefaultProcess, ""));
+        String startEventId = addStartEvent(new BpmnStartEvent(idOfDefaultProcess, "Start"));
         aliases.put("Start", startEventId);
 
         Bpmn.validateModel(modelInstance);
@@ -133,7 +133,7 @@ public final class BpmnModel {
         final String id = generateUniqueId();
         switch (gateway.type()) {
             case EXCLUSIVE -> gatewayElement = createElementWithParent(process, id, ExclusiveGateway.class);
-            case INCLUSIVE -> gatewayElement = createElementWithParent(process, id, InclusiveGateway.class);
+            case PARALLEL -> gatewayElement = createElementWithParent(process, id, ParallelGateway.class);
             default -> throw new IllegalStateException("Unexpected gateway type value: " + gateway.type());
         }
 
@@ -153,8 +153,8 @@ public final class BpmnModel {
         bounds.setWidth(42);
     }
 
-    public String addGateway(BpmnGatewayType gatewayType) {
-        return addGateway(new BpmnGateway(idOfDefaultProcess, null, gatewayType));
+    public String addGateway(BpmnGatewayType gatewayType, String name) {
+        return addGateway(new BpmnGateway(idOfDefaultProcess, name, gatewayType));
     }
 
     public String addStartEvent(BpmnStartEvent startEvent) {
@@ -317,18 +317,10 @@ public final class BpmnModel {
         removeElement(elementId);
     }
 
-    public Optional<String> findTaskIdByName(String taskName) {
-        if (aliases.containsKey(taskName)) {
-            return Optional.of(aliases.get(taskName));
-        }
-        Optional<Task> task = getTaskByName(taskName);
-        return task.map(BaseElement::getId);
-    }
-
-    private Optional<Task> getTaskByName(String taskName) {
-        for (Task task : modelInstance.getModelElementsByType(Task.class)) {
-            if (task.getName().equals(taskName)) {
-                return Optional.of(task);
+    public Optional<String> findElementByName(String taskName) {
+        for (BaseElement element : modelInstance.getModelElementsByType(BaseElement.class)) {
+            if (Objects.equals(element.getAttributeValue("name"), taskName)) {
+                return Optional.of(element.getId());
             }
         }
         return Optional.empty();
@@ -426,5 +418,9 @@ public final class BpmnModel {
 
     public boolean areElementsDirectlyConnected(String firstElementId, String secondElementId) {
         return findSuccessors(firstElementId).contains(secondElementId);
+    }
+
+    public String getName(String elementId) {
+        return modelInstance.getModelElementById(elementId).getAttributeValue("name");
     }
 }

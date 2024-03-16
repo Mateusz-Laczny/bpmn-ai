@@ -35,13 +35,13 @@ class AddWhileLoopCallExecutorTest {
     void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
         String checkTaskId = model.addTask("task");
-        WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary, "task", null, List.of("task1", "task2"));
+        WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary, "someName", "task", null, List.of("task1", "task2"));
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> firstTaskId = model.findTaskIdByName("task1");
+        Optional<String> firstTaskId = model.findElementByName("task1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findTaskIdByName("task2");
+        Optional<String> secondTaskId = model.findElementByName("task2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(checkTaskId);
@@ -61,15 +61,15 @@ class AddWhileLoopCallExecutorTest {
         BpmnModel model = sessionStateStore.model();
         model.addTask("task");
 
-        WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary, "checkActivity", "task", List.of("task1", "task2"));
+        WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary, "someName", "checkActivity", "task", List.of("task1", "task2"));
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> checkTaskId = model.findTaskIdByName("checkActivity");
+        Optional<String> checkTaskId = model.findElementByName("checkActivity");
         assertTrue(checkTaskId.isPresent());
-        Optional<String> firstTaskId = model.findTaskIdByName("task1");
+        Optional<String> firstTaskId = model.findElementByName("task1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findTaskIdByName("task2");
+        Optional<String> secondTaskId = model.findElementByName("task2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(checkTaskId.get());

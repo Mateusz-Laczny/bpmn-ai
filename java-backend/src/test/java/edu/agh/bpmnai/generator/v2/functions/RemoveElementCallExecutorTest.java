@@ -35,6 +35,6 @@ class RemoveElementCallExecutorTest {
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        assertTrue(model.findTaskIdByName("task").isEmpty());
+        assertTrue(model.findElementByName("task").isEmpty());
     }
 }

@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.session;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnToStringExporter;
 import edu.agh.bpmnai.generator.openai.OpenAI;
 import edu.agh.bpmnai.generator.openai.OpenAIChatCompletionApi;
 import edu.agh.bpmnai.generator.openai.model.FunctionCallDto;
@@ -40,7 +41,7 @@ class AskQuestionsStateTest {
     @Test
     void returns_ASK_QUESTIONS_when_model_response_has_no_tool_calls() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
-        var state = new AskQuestionsState(mock(FunctionExecutionService.class), mockApi, aModel, sessionStateStore, chatMessageBuilder);
+        var state = new AskQuestionsState(mock(FunctionExecutionService.class), mockApi, aModel, sessionStateStore, chatMessageBuilder, mock(BpmnToStringExporter.class));
         when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, null, null));
 
         SessionStatus status = state.process("aUserRequest");
@@ -53,7 +54,7 @@ class AskQuestionsStateTest {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
         when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Optional.empty());
-        var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder);
+        var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder, mock(BpmnToStringExporter.class));
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto("aName", ""));
         when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall), null));
@@ -70,7 +71,7 @@ class AskQuestionsStateTest {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
         when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Optional.of(new FunctionCallResult(List.of("error"), emptyMap(), null)));
-        var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder);
+        var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder, mock(BpmnToStringExporter.class));
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto("aName", ""));
         when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall), null));
@@ -87,7 +88,7 @@ class AskQuestionsStateTest {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
         when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Optional.of(FunctionCallResult.successfulCall()));
-        var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder);
+        var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder, mock(BpmnToStringExporter.class));
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto(FinishAskingQuestionsFunction.FUNCTION_NAME, ""));
         when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall), null));
@@ -105,7 +106,7 @@ class AskQuestionsStateTest {
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
         String question = "aQuestion";
         when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Optional.of(FunctionCallResult.withMessageToUser(question)));
-        var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder);
+        var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder, mock(BpmnToStringExporter.class));
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto(AskQuestionFunction.FUNCTION_NAME, ""));
         when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall), null));

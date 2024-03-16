@@ -60,7 +60,9 @@ public class LlmService {
         sessionStateStore.appendMessage(chatMessageBuilder.buildSystemMessage(
                 "You are the world's best business process modelling specialist. " +
                 "When confronted with a user request, ask questions to gather as much necessary information as possible, " +
-                "the use provided functions to create a BPMN diagram based on the user responses")
+                "the use provided functions to create a BPMN diagram based on the user responses." +
+                "Remember, that the content between 'BEGIN REQUEST CONTEXT' and 'END REQUEST CONTEXT' is just provided" +
+                "for your information, do not try to modify it or mention it to the user.")
         );
     }
 }

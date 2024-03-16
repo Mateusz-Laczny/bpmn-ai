@@ -37,13 +37,13 @@ class AddIfElseBranchingCallExecutorTest {
     void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
         String checkTaskId = model.addTask("task");
-        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "", "task", null, "trueBranch", "falseBranch");
+        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "", "someName", "task", null, "trueBranch", "falseBranch");
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> trueBranchStartTaskId = model.findTaskIdByName("trueBranch");
+        Optional<String> trueBranchStartTaskId = model.findElementByName("trueBranch");
         assertTrue(trueBranchStartTaskId.isPresent());
-        Optional<String> falseBranchStartTaskId = model.findTaskIdByName("falseBranch");
+        Optional<String> falseBranchStartTaskId = model.findElementByName("falseBranch");
         assertTrue(falseBranchStartTaskId.isPresent());
 
         Set<String> checkTaskSuccessors = model.findSuccessors(checkTaskId);
@@ -59,19 +59,45 @@ class AddIfElseBranchingCallExecutorTest {
         BpmnModel model = sessionStateStore.model();
         model.addTask("task");
 
-        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "", "checkActivity", "task", "trueBranch", "falseBranch");
+        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "", "someName", "checkActivity", "task", "trueBranch", "falseBranch");
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> checkTaskId = model.findTaskIdByName("checkActivity");
+        Optional<String> checkTaskId = model.findElementByName("checkActivity");
         assertTrue(checkTaskId.isPresent());
-        Optional<String> trueBranchStartTaskId = model.findTaskIdByName("trueBranch");
+        Optional<String> trueBranchStartTaskId = model.findElementByName("trueBranch");
         assertTrue(trueBranchStartTaskId.isPresent());
-        Optional<String> falseBranchStartTaskId = model.findTaskIdByName("falseBranch");
+        Optional<String> falseBranchStartTaskId = model.findElementByName("falseBranch");
         assertTrue(falseBranchStartTaskId.isPresent());
 
         Set<String> checkTaskSuccessors = model.findSuccessors(checkTaskId.get());
         assertEquals(1, checkTaskSuccessors.size());
+
+        String gatewayId = checkTaskSuccessors.iterator().next();
+        assertTrue(model.findSuccessors(gatewayId).contains(trueBranchStartTaskId.get()));
+        assertTrue(model.findSuccessors(gatewayId).contains(falseBranchStartTaskId.get()));
+    }
+
+    @Test
+    void should_work_for_start_activity_as_predecessor() throws JsonProcessingException {
+        BpmnModel model = sessionStateStore.model();
+
+        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary, "", "someName", "checkActivity", "Start", "trueBranch", "falseBranch");
+
+        executor.executeCall(mapper.writeValueAsString(callArguments));
+
+        Optional<String> checkTaskId = model.findElementByName("checkActivity");
+        assertTrue(checkTaskId.isPresent());
+        Optional<String> trueBranchStartTaskId = model.findElementByName("trueBranch");
+        assertTrue(trueBranchStartTaskId.isPresent());
+        Optional<String> falseBranchStartTaskId = model.findElementByName("falseBranch");
+        assertTrue(falseBranchStartTaskId.isPresent());
+
+        Set<String> checkTaskSuccessors = model.findSuccessors(checkTaskId.get());
+        assertEquals(1, checkTaskSuccessors.size());
+
+        Set<String> startEventSuccessors = model.findSuccessors(model.getStartEvent());
+        assertEquals(1, startEventSuccessors.size());
 
         String gatewayId = checkTaskSuccessors.iterator().next();
         assertTrue(model.findSuccessors(gatewayId).contains(trueBranchStartTaskId.get()));

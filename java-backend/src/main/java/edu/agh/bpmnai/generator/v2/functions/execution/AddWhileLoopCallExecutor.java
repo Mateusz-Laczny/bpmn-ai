@@ -47,14 +47,14 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
         BpmnModel model = sessionStateStore.model();
         String checkTaskName = callArguments.checkTask();
-        Optional<String> optionalCheckTaskElementId = model.findTaskIdByName(checkTaskName);
+        Optional<String> optionalCheckTaskElementId = model.findElementByName(checkTaskName);
         String checkTaskId;
         Set<String> predecessorTaskSuccessorsBeforeModification;
         if (optionalCheckTaskElementId.isPresent()) {
             checkTaskId = optionalCheckTaskElementId.get();
             predecessorTaskSuccessorsBeforeModification = model.findSuccessors(checkTaskId);
         } else {
-            Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());
+            Optional<String> optionalPredecessorElementId = model.findElementByName(callArguments.predecessorElement());
             if (optionalPredecessorElementId.isEmpty()) {
                 log.warn("Call unsuccessful, predecessor element does not exist in the model");
                 return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
@@ -67,7 +67,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
         model.clearSuccessors(checkTaskId);
 
-        String openingGatewayId = model.addGateway(EXCLUSIVE);
+        String openingGatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " gateway");
         model.addUnlabelledSequenceFlow(checkTaskId, openingGatewayId);
         if (!predecessorTaskSuccessorsBeforeModification.isEmpty()) {
             if (predecessorTaskSuccessorsBeforeModification.size() > 1) {
@@ -79,7 +79,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
         String previousElementInLoopId = openingGatewayId;
         for (String taskInLoop : callArguments.activitiesInLoop()) {
-            String currentTaskId = model.findTaskIdByName(taskInLoop).orElse(model.addTask(taskInLoop));
+            String currentTaskId = model.findElementByName(taskInLoop).orElse(model.addTask(taskInLoop));
             if (!model.areElementsDirectlyConnected(previousElementInLoopId, currentTaskId)) {
                 model.addUnlabelledSequenceFlow(previousElementInLoopId, currentTaskId);
             }

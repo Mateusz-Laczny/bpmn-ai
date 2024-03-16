@@ -42,9 +42,9 @@ class AddParallelGatewayCallExecutorTest {
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> firstTaskId = model.findTaskIdByName("activity1");
+        Optional<String> firstTaskId = model.findElementByName("activity1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findTaskIdByName("activity2");
+        Optional<String> secondTaskId = model.findElementByName("activity2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(predecessorTaskId);

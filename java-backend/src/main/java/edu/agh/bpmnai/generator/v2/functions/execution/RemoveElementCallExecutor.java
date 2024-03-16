@@ -40,7 +40,7 @@ public class RemoveElementCallExecutor implements FunctionCallExecutor {
         RemoveElementDto callArguments = argumentsParsingResult.result();
 
         BpmnModel model = sessionStateStore.model();
-        Optional<String> elementToCutOutId = model.findTaskIdByName(callArguments.elementToRemove());
+        Optional<String> elementToCutOutId = model.findElementByName(callArguments.elementToRemove());
 
         elementToCutOutId.ifPresent(model::cutOutElement);
         return FunctionCallResult.successfulCall();

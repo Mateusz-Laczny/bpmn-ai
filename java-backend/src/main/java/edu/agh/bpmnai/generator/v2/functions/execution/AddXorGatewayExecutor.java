@@ -46,28 +46,29 @@ public class AddXorGatewayExecutor implements FunctionCallExecutor {
         XorGatewayDto callArguments = argumentsParsingResult.result();
         BpmnModel model = sessionStateStore.model();
         String checkTaskName = callArguments.checkActivity();
-        Optional<String> optionalTaskElementId = model.findTaskIdByName(checkTaskName);
+        Optional<String> optionalTaskElementId = model.findElementByName(checkTaskName);
         String checkTaskId;
         Set<String> predecessorTaskSuccessorsBeforeModification;
         if (optionalTaskElementId.isPresent()) {
             checkTaskId = optionalTaskElementId.get();
             predecessorTaskSuccessorsBeforeModification = model.findSuccessors(checkTaskId);
         } else {
-            Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());
+            Optional<String> optionalPredecessorElementId = model.findElementByName(callArguments.predecessorElement());
             if (optionalPredecessorElementId.isEmpty()) {
                 log.info("Predecessor element does not exist in the model");
                 return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
             }
             String predecessorElementId = optionalPredecessorElementId.get();
+            predecessorTaskSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
+            model.clearSuccessors(predecessorElementId);
             checkTaskId = model.addTask(checkTaskName);
             model.addUnlabelledSequenceFlow(predecessorElementId, checkTaskId);
-            predecessorTaskSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
         }
 
         model.clearSuccessors(checkTaskId);
 
-        String openingGatewayId = model.addGateway(EXCLUSIVE);
-        String closingGatewayId = model.addGateway(EXCLUSIVE);
+        String openingGatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " opening gateway");
+        String closingGatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " closing gateway");
         model.addUnlabelledSequenceFlow(checkTaskId, openingGatewayId);
 
         for (String nextTaskPossibleChoice : callArguments.activitiesInsideGateway()) {

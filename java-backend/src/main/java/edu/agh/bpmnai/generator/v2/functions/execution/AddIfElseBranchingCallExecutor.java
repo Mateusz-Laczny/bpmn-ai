@@ -45,7 +45,7 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
         IfElseBranchingDto callArguments = argumentsParsingResult.result();
         BpmnModel model = sessionStateStore.model();
         String checkTaskName = callArguments.checkTask();
-        Optional<String> optionalCheckTaskElementId = model.findTaskIdByName(checkTaskName);
+        Optional<String> optionalCheckTaskElementId = model.findElementByName(checkTaskName);
         String checkTaskElementId;
         if (optionalCheckTaskElementId.isPresent()) {
             checkTaskElementId = optionalCheckTaskElementId.get();
@@ -55,7 +55,7 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
                 return FunctionCallResult.unsuccessfulCall(List.of("Check task does not exist in the model and predecessor element is null"));
             }
 
-            Optional<String> predecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());
+            Optional<String> predecessorElementId = model.findElementByName(callArguments.predecessorElement());
             if (predecessorElementId.isEmpty()) {
                 log.info("Predecessor element does not exist in the model");
                 return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
@@ -71,14 +71,14 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
         model.clearSuccessors(checkTaskElementId);
 
         String trueBranchBeginningElementId;
-        Optional<String> existingTrueBranchBeginningElementId = model.findTaskIdByName(callArguments.trueBranchBeginningTask());
+        Optional<String> existingTrueBranchBeginningElementId = model.findElementByName(callArguments.trueBranchBeginningTask());
         trueBranchBeginningElementId = existingTrueBranchBeginningElementId.orElseGet(() -> model.addTask(callArguments.trueBranchBeginningTask()));
 
         String falseBranchBeginningElementId;
-        Optional<String> existingFalseBranchBeginningElementId = model.findTaskIdByName(callArguments.falseBranchBeginningTask());
+        Optional<String> existingFalseBranchBeginningElementId = model.findElementByName(callArguments.falseBranchBeginningTask());
         falseBranchBeginningElementId = existingFalseBranchBeginningElementId.orElseGet(() -> model.addTask(callArguments.falseBranchBeginningTask()));
 
-        String gatewayId = model.addGateway(EXCLUSIVE);
+        String gatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " gateway");
         model.addUnlabelledSequenceFlow(checkTaskElementId, gatewayId);
         model.addLabelledSequenceFlow(gatewayId, trueBranchBeginningElementId, "true");
         model.addLabelledSequenceFlow(gatewayId, falseBranchBeginningElementId, "false");

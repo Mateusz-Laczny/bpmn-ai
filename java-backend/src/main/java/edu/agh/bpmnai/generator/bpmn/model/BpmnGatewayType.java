@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum BpmnGatewayType {
     EXCLUSIVE("exclusive"),
-    INCLUSIVE("inclusive");
+    PARALLEL("inclusive");
 
     private final String jsonValue;
 

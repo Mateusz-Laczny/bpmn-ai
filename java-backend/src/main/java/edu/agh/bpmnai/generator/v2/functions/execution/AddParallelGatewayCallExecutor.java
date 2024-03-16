@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.INCLUSIVE;
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.PARALLEL;
 
 @Service
 @Slf4j
@@ -46,7 +46,7 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
         ParallelGatewayDto callArguments = argumentsParsingResult.result();
 
         BpmnModel model = sessionStateStore.model();
-        Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.predecessorElement());
+        Optional<String> optionalPredecessorElementId = model.findElementByName(callArguments.predecessorElement());
         if (optionalPredecessorElementId.isEmpty()) {
             log.info("Predecessor element does not exist in the model");
             return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
@@ -57,8 +57,8 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
         Set<String> predecessorElementSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
         model.clearSuccessors(predecessorElementId);
 
-        String openingGatewayId = model.addGateway(INCLUSIVE);
-        String closingGatewayId = model.addGateway(INCLUSIVE);
+        String openingGatewayId = model.addGateway(PARALLEL, callArguments.elementName() + " opening gateway");
+        String closingGatewayId = model.addGateway(PARALLEL, callArguments.elementName() + " closing gateway");
         model.addUnlabelledSequenceFlow(predecessorElementId, openingGatewayId);
         for (String taskToExecute : callArguments.activitiesInsideGateway()) {
             String taskId = model.addTask(taskToExecute);

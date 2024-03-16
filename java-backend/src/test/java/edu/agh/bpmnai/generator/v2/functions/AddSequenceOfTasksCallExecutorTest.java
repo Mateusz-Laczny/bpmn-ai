@@ -14,17 +14,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AddSequenceOfTasksCallExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
-    private AddSequenceOfTasksCallExecutor executor;
-
     RetrospectiveSummary aRetrospectiveSummary;
-
     SessionStateStore sessionStateStore;
+    private AddSequenceOfTasksCallExecutor executor;
 
     @BeforeEach
     void setUp() {
@@ -41,12 +40,44 @@ class AddSequenceOfTasksCallExecutorTest {
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> firstTaskId = model.findTaskIdByName("activity1");
+        Optional<String> firstTaskId = model.findElementByName("activity1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findTaskIdByName("activity2");
+        Optional<String> secondTaskId = model.findElementByName("activity2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(predecessorTaskId);
+        assertEquals(1, predecessorTaskSuccessors.size());
+        assertTrue(predecessorTaskSuccessors.contains(firstTaskId.get()));
+
+        Set<String> firstTaskSuccessors = model.findSuccessors(firstTaskId.get());
+        Set<String> secondTaskSuccessors = model.findSuccessors(secondTaskId.get());
+
+        assertEquals(1, firstTaskSuccessors.size());
+        assertEquals(0, secondTaskSuccessors.size());
+        assertTrue(firstTaskSuccessors.contains(secondTaskId.get()));
+    }
+
+    @Test
+    void works_as_expected_when_inserting_the_sequence_into_an_existing_model() throws JsonProcessingException {
+        BpmnModel model = sessionStateStore.model();
+        String checkTaskId = model.addTask("task");
+        String gatewayId = model.addGateway(EXCLUSIVE, "gateway");
+        String firstPathAfterGateway = model.addTask("path1");
+        String secondPathAfterGateway = model.addTask("path2");
+        model.addUnlabelledSequenceFlow(model.getStartEvent(), checkTaskId);
+        model.addUnlabelledSequenceFlow(checkTaskId, gatewayId);
+        model.addUnlabelledSequenceFlow(gatewayId, firstPathAfterGateway);
+        model.addUnlabelledSequenceFlow(gatewayId, secondPathAfterGateway);
+        SequenceOfTasksDto callArguments = new SequenceOfTasksDto(aRetrospectiveSummary, "", "path1", List.of("activity1", "activity2"));
+
+        executor.executeCall(mapper.writeValueAsString(callArguments));
+
+        Optional<String> firstTaskId = model.findElementByName("activity1");
+        assertTrue(firstTaskId.isPresent());
+        Optional<String> secondTaskId = model.findElementByName("activity2");
+        assertTrue(secondTaskId.isPresent());
+
+        Set<String> predecessorTaskSuccessors = model.findSuccessors(firstPathAfterGateway);
         assertEquals(1, predecessorTaskSuccessors.size());
         assertTrue(predecessorTaskSuccessors.contains(firstTaskId.get()));
 

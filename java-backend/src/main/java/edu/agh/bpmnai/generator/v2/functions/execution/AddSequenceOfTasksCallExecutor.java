@@ -43,7 +43,7 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
         SequenceOfTasksDto callArguments = argumentsParsingResult.result();
         BpmnModel model = sessionStateStore.model();
-        Optional<String> optionalPredecessorElementId = model.findTaskIdByName(callArguments.startOfSequence());
+        Optional<String> optionalPredecessorElementId = model.findElementByName(callArguments.startOfSequence());
         if (optionalPredecessorElementId.isEmpty()) {
             log.info("Predecessor element does not exist in the model");
             return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
@@ -59,7 +59,7 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
         }
 
         for (String newActivityName : callArguments.activitiesInSequence()) {
-            String currentTaskId = model.findTaskIdByName(newActivityName).orElse(model.addTask(newActivityName));
+            String currentTaskId = model.findElementByName(newActivityName).orElse(model.addTask(newActivityName));
             if (!model.areElementsDirectlyConnected(predecessorElementId, currentTaskId)) {
                 model.addUnlabelledSequenceFlow(predecessorElementId, currentTaskId);
             }

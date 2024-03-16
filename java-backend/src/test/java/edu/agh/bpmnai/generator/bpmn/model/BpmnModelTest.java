@@ -5,7 +5,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 import java.util.Set;
 
-import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.INCLUSIVE;
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.PARALLEL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -17,7 +18,7 @@ class BpmnModelTest {
 
         String taskId = model.addTask("task");
 
-        Optional<String> taskIdFromModel = model.findTaskIdByName("task");
+        Optional<String> taskIdFromModel = model.findElementByName("task");
         assertTrue(taskIdFromModel.isPresent());
         assertEquals(taskId, taskIdFromModel.get());
         Dimensions taskDimensions = model.getElementDimensions(taskId);
@@ -31,7 +32,7 @@ class BpmnModelTest {
     void correctly_adds_gateway_to_the_model() {
         BpmnModel model = new BpmnModel();
 
-        String gatewayId = model.addGateway(INCLUSIVE);
+        String gatewayId = model.addGateway(PARALLEL, "some name");
 
         assertTrue(model.doesIdExist(gatewayId));
         Dimensions taskDimensions = model.getElementDimensions(gatewayId);
@@ -63,5 +64,23 @@ class BpmnModelTest {
 
         model.clearSuccessors(taskId);
         assertEquals(Set.of(), model.findSuccessors(taskId));
+    }
+
+    @Test
+    void getName_returns_correct_name_for_task() {
+        BpmnModel model = new BpmnModel();
+        String taskId = model.addTask("task");
+
+        String taskName = model.getName(taskId);
+        assertEquals("task", taskName);
+    }
+
+    @Test
+    void getName_returns_correct_name_for_gateway() {
+        BpmnModel model = new BpmnModel();
+        String taskId = model.addGateway(EXCLUSIVE, "gateway");
+
+        String taskName = model.getName(taskId);
+        assertEquals("gateway", taskName);
     }
 }

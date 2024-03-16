@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.session;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnToStringExporter;
 import edu.agh.bpmnai.generator.openai.OpenAI;
 import edu.agh.bpmnai.generator.openai.OpenAIChatCompletionApi;
 import edu.agh.bpmnai.generator.v2.*;
@@ -33,16 +34,30 @@ public class AskQuestionsState {
 
     private final ChatMessageBuilder chatMessageBuilder;
 
+    private final BpmnToStringExporter bpmnToStringExporter;
+
     @Autowired
-    public AskQuestionsState(FunctionExecutionService functionExecutionService, OpenAIChatCompletionApi chatCompletionApi, OpenAI.OpenAIModel usedModel, SessionStateStore sessionStateStore, ChatMessageBuilder chatMessageBuilder) {
+    public AskQuestionsState(FunctionExecutionService functionExecutionService, OpenAIChatCompletionApi chatCompletionApi, OpenAI.OpenAIModel usedModel, SessionStateStore sessionStateStore, ChatMessageBuilder chatMessageBuilder, BpmnToStringExporter bpmnToStringExporter) {
         this.functionExecutionService = functionExecutionService;
         this.chatCompletionApi = chatCompletionApi;
         this.usedModel = usedModel;
         this.sessionStateStore = sessionStateStore;
         this.chatMessageBuilder = chatMessageBuilder;
+        this.bpmnToStringExporter = bpmnToStringExporter;
     }
 
     public SessionStatus process(String userRequestContent) {
+        userRequestContent =
+                "BEGIN USER REQUEST\n"
+                + userRequestContent
+                + "END USER REQUEST\n"
+                + "\n"
+                + "BEGIN REQUEST CONTEXT\n"
+                + "Current diagram state:\n" + bpmnToStringExporter.export(sessionStateStore.model())
+                + "\n"
+                + "END REQUEST CONTEXT";
+        log.info("Request text sent to LLM: '{}'", userRequestContent);
+
         if (sessionStateStore.numberOfMessages() > 0) {
             ChatMessageDto lastMessage = sessionStateStore.lastAddedMessage();
             if (lastMessage.hasToolCalls()) {
