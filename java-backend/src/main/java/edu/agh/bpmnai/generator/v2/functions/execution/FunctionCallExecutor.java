@@ -1,10 +1,12 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
-import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
+import edu.agh.bpmnai.generator.datatype.Result;
+
+import java.util.List;
 
 public interface FunctionCallExecutor {
 
     String getFunctionName();
 
-    FunctionCallResult executeCall(String callArguments);
+    Result<String, List<String>> executeCall(String callArguments);
 }

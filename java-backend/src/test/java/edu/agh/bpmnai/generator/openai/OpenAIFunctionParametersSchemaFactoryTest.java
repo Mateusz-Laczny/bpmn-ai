@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Nullable;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -14,13 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class OpenAIFunctionParametersSchemaFactoryTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
-
-    OpenAIFunctionParametersSchemaFactory schemaGenerator;
-
-    @BeforeEach
-    void setUp() {
-        schemaGenerator = new OpenAIFunctionParametersSchemaFactory();
-    }
 
     @Test
     void shouldGenerateSchemaForSimpleDto() throws JsonProcessingException {

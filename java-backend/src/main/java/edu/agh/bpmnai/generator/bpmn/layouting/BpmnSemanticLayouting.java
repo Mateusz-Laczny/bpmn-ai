@@ -1,12 +1,15 @@
 package edu.agh.bpmnai.generator.bpmn.layouting;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.datatype.Result;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 @Service
+@Slf4j
 public class BpmnSemanticLayouting {
 
     private final int cellWidth;
@@ -36,7 +39,11 @@ public class BpmnSemanticLayouting {
                 int newCellY = processedElements.predecessorPosition().y();
                 Collection<String> elementPredecessors = model.findPredecessors(singleSuccessorId);
                 if (elementPredecessors.size() > 1) {
-                    newCellY = findRowForElement(elementPredecessors, grid);
+                    Result<Integer, String> findRowResult = findRowForElement(elementPredecessors, grid);
+                    if (findRowResult.isError()) {
+                        log.warn("Could not calculate row for element, predecessor with id '{}' is not in grid", findRowResult.getError());
+                    }
+                    newCellY = findRowForElement(elementPredecessors, grid).getValue();
                 }
                 grid.addCell(new Cell(newCellX, newCellY, singleSuccessorId));
                 if (!alreadyVisitedElements.contains(singleSuccessorId)) {
@@ -85,12 +92,12 @@ public class BpmnSemanticLayouting {
         return layoutedModel;
     }
 
-    private int findRowForElement(Collection<String> elementPredecessors, Grid grid) {
+    private Result<Integer, String> findRowForElement(Collection<String> elementPredecessors, Grid grid) {
         int maxPredecessorColumnIndex = -1;
         for (String elementPredecessor : elementPredecessors) {
             Optional<Cell> elementCell = grid.findCellByIdOfElementInside(elementPredecessor);
             if (elementCell.isEmpty()) {
-                throw new RuntimeException();
+                return Result.error(elementPredecessor);
             }
 
             if (elementCell.get().y() > maxPredecessorColumnIndex) {
@@ -98,7 +105,7 @@ public class BpmnSemanticLayouting {
             }
         }
 
-        return maxPredecessorColumnIndex - (elementPredecessors.size() / 2);
+        return Result.ok(maxPredecessorColumnIndex - (elementPredecessors.size() / 2));
     }
 
     private record SuccessorsNotInGrid(GridPosition predecessorPosition, List<String> elements) {

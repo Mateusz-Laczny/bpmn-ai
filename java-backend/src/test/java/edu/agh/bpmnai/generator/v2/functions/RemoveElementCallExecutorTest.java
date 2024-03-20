@@ -30,11 +30,11 @@ class RemoveElementCallExecutorTest {
     @Test
     void removes_task_from_the_model() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        model.addTask("task");
+        model.addTask("task", "");
         RemoveElementDto callArguments = new RemoveElementDto(aRetrospectiveSummary, "", "task");
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        assertTrue(model.findElementByName("task").isEmpty());
+        assertTrue(model.findElementByModelFriendlyId("task").isEmpty());
     }
 }

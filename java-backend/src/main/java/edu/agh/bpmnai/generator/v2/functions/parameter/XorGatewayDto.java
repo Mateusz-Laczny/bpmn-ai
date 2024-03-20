@@ -17,6 +17,6 @@ public record XorGatewayDto(
         @Nullable
         String predecessorElement,
         @Description("Activities, which will be added inside the gateway. In the verb+object naming convention. For the gateway to make sense it must contain at least 2 activities.")
-        List<String> activitiesInsideGateway
+        List<Activity> activitiesInsideGateway
 ) {
 }

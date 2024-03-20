@@ -16,9 +16,9 @@ class BpmnModelTest {
     void correctly_adds_task_to_the_model() {
         BpmnModel model = new BpmnModel();
 
-        String taskId = model.addTask("task");
+        String taskId = model.addTask("task", "taskModelFacingName");
 
-        Optional<String> taskIdFromModel = model.findElementByName("task");
+        Optional<String> taskIdFromModel = model.findElementByModelFriendlyId("taskModelFacingName");
         assertTrue(taskIdFromModel.isPresent());
         assertEquals(taskId, taskIdFromModel.get());
         Dimensions taskDimensions = model.getElementDimensions(taskId);
@@ -46,7 +46,7 @@ class BpmnModelTest {
     void correctly_updates_the_position_of_the_element() {
         BpmnModel model = new BpmnModel();
 
-        String taskId = model.addTask("task");
+        String taskId = model.addTask("task", "");
         model.setPositionOfElement(taskId, 10, 15);
 
         Dimensions taskDimensions = model.getElementDimensions(taskId);
@@ -58,8 +58,8 @@ class BpmnModelTest {
     void correctly_clears_successors_of_the_element() {
         BpmnModel model = new BpmnModel();
 
-        String taskId = model.addTask("task");
-        String secondTaskId = model.addTask("task2");
+        String taskId = model.addTask("task", "taskModelFacingName");
+        String secondTaskId = model.addTask("task2", "task2ModelFacingName");
         model.addUnlabelledSequenceFlow(taskId, secondTaskId);
 
         model.clearSuccessors(taskId);
@@ -69,10 +69,10 @@ class BpmnModelTest {
     @Test
     void getName_returns_correct_name_for_task() {
         BpmnModel model = new BpmnModel();
-        String taskId = model.addTask("task");
+        String taskId = model.addTask("task", "taskModelFacingName");
 
-        String taskName = model.getName(taskId);
-        assertEquals("task", taskName);
+        String taskName = model.getModelFacingName(taskId);
+        assertEquals("taskModelFacingName", taskName);
     }
 
     @Test
@@ -80,7 +80,7 @@ class BpmnModelTest {
         BpmnModel model = new BpmnModel();
         String taskId = model.addGateway(EXCLUSIVE, "gateway");
 
-        String taskName = model.getName(taskId);
+        String taskName = model.getModelFacingName(taskId);
         assertEquals("gateway", taskName);
     }
 }

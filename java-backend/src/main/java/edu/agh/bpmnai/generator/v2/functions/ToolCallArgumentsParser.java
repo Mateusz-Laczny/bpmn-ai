@@ -2,6 +2,7 @@ package edu.agh.bpmnai.generator.v2.functions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.agh.bpmnai.generator.datatype.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,13 +20,13 @@ public class ToolCallArgumentsParser {
         this.objectMapper = objectMapper;
     }
 
-    public <T> ArgumentsParsingResult<T> parseArguments(String argumentsJson, Class<T> targetClass) {
+    public <T> Result<T, List<String>> parseArguments(String argumentsJson, Class<T> targetClass) {
         try {
             T parsedValue = objectMapper.readValue(argumentsJson, targetClass);
-            return new ArgumentsParsingResult<>(parsedValue);
+            return Result.ok(parsedValue);
         } catch (JsonProcessingException e) {
             log.info("Failed parsing call arguments", e);
-            return new ArgumentsParsingResult<>(List.of("The tool call arguments could not be parsed: '%s'".formatted(e.getMessage())));
+            return Result.error(List.of("The tool call arguments could not be parsed: '%s'".formatted(e.getMessage())));
         }
     }
 }

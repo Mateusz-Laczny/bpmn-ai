@@ -15,6 +15,6 @@ public record WhileLoopDto(
         @Nullable
         String predecessorElement,
         @Description("Sequence of activities executed in order inside the loop. The last activity is connected via the sequence flow to the start of the loop. In the verb+object naming convention.")
-        List<String> activitiesInLoop
+        List<Activity> activitiesInLoop
 ) {
 }

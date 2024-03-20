@@ -1,5 +1,7 @@
 package edu.agh.bpmnai.generator.bpmn.model;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -26,18 +28,16 @@ public final class BpmnModel {
 
     private final BpmnPlane diagramPlane;
 
-    private final Map<String, String> aliases;
+    private final BiMap<String, String> idToModelFriendlyId = HashBiMap.create();
 
     private BpmnModel(BpmnModelInstance modelInstanceToCopy, String idOfDefaultProcess) {
         this.modelInstance = modelInstanceToCopy.clone();
         this.idOfDefaultProcess = idOfDefaultProcess;
         diagramPlane = ((BpmnDiagram) modelInstance.getModelElementById("diagram")).getBpmnPlane();
-        aliases = new HashMap<>();
     }
 
     public BpmnModel() {
         modelInstance = Bpmn.createEmptyModel();
-        aliases = new HashMap<>();
         Definitions definitions = modelInstance.newInstance(Definitions.class);
         definitions.setTargetNamespace("http://camunda.org/examples");
         modelInstance.setDefinitions(definitions);
@@ -50,7 +50,7 @@ public final class BpmnModel {
         diagram.setBpmnPlane(diagramPlane);
 
         String startEventId = addStartEvent(new BpmnStartEvent(idOfDefaultProcess, "Start"));
-        aliases.put("Start", startEventId);
+        idToModelFriendlyId.put(startEventId, "Start");
 
         Bpmn.validateModel(modelInstance);
     }
@@ -82,12 +82,13 @@ public final class BpmnModel {
         return Bpmn.convertToString(modelInstance);
     }
 
-    public String addTask(String taskName) {
+    public String addTask(String taskName, String modelFriendlyId) {
         Process process = modelInstance.getModelElementById(idOfDefaultProcess);
         String id = generateUniqueId();
         Task userTaskElement = createElementWithParent(process, id, Task.class);
         userTaskElement.setAttributeValue("name", taskName);
         addTaskDiagramElement(userTaskElement);
+        idToModelFriendlyId.put(id, modelFriendlyId);
         return id;
     }
 
@@ -137,7 +138,7 @@ public final class BpmnModel {
             default -> throw new IllegalStateException("Unexpected gateway type value: " + gateway.type());
         }
 
-        gatewayElement.setAttributeValue("name", gateway.name());
+        idToModelFriendlyId.put(id, gateway.name());
         addGatewayDiagramElement(gatewayElement);
         return id;
     }
@@ -317,13 +318,8 @@ public final class BpmnModel {
         removeElement(elementId);
     }
 
-    public Optional<String> findElementByName(String taskName) {
-        for (BaseElement element : modelInstance.getModelElementsByType(BaseElement.class)) {
-            if (Objects.equals(element.getAttributeValue("name"), taskName)) {
-                return Optional.of(element.getId());
-            }
-        }
-        return Optional.empty();
+    public Optional<String> findElementByModelFriendlyId(String elementName) {
+        return Optional.ofNullable(idToModelFriendlyId.inverse().get(elementName));
     }
 
     public Set<String> findPredecessors(String elementId) {
@@ -374,7 +370,7 @@ public final class BpmnModel {
     }
 
     public void setAlias(String elementId, String alias) {
-        aliases.put(elementId, alias);
+        idToModelFriendlyId.put(elementId, alias);
     }
 
     @Override
@@ -420,7 +416,7 @@ public final class BpmnModel {
         return findSuccessors(firstElementId).contains(secondElementId);
     }
 
-    public String getName(String elementId) {
-        return modelInstance.getModelElementById(elementId).getAttributeValue("name");
+    public String getModelFacingName(String elementId) {
+        return idToModelFriendlyId.get(elementId);
     }
 }

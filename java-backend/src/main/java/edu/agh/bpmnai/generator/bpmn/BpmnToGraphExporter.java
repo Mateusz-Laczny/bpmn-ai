@@ -36,7 +36,7 @@ public class BpmnToGraphExporter {
                 }
 
                 elementsToVisit.add(elementSuccessorId);
-                boolean nodeForNeighbourAdded = graph.addNode(elementSuccessorId, model.getName(elementSuccessorId));
+                boolean nodeForNeighbourAdded = graph.addNode(elementSuccessorId, model.getModelFacingName(elementSuccessorId));
                 if (!nodeForNeighbourAdded) {
                     log.warn("Node for element with id '{}' already exists in the graph", elementSuccessorId);
                 }

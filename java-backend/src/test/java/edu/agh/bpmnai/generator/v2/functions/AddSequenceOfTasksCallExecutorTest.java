@@ -3,7 +3,9 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.v2.functions.execution.ActivityService;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddSequenceOfTasksCallExecutor;
+import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.functions.parameter.SequenceOfTasksDto;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
@@ -15,6 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
+import static edu.agh.bpmnai.generator.v2.functions.parameter.DuplicateHandlingStrategy.ADD_NEW_INSTANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,26 +26,32 @@ class AddSequenceOfTasksCallExecutorTest {
     private static final ObjectMapper mapper = new ObjectMapper();
     RetrospectiveSummary aRetrospectiveSummary;
     SessionStateStore sessionStateStore;
-    private AddSequenceOfTasksCallExecutor executor;
+    AddSequenceOfTasksCallExecutor executor;
+
+    ActivityService activityService;
 
     @BeforeEach
     void setUp() {
         sessionStateStore = new SessionStateStore();
-        executor = new AddSequenceOfTasksCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore);
+        activityService = new ActivityService();
+        executor = new AddSequenceOfTasksCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore, activityService);
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
     @Test
     void works_as_expected() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        String predecessorTaskId = model.addTask("task");
-        SequenceOfTasksDto callArguments = new SequenceOfTasksDto(aRetrospectiveSummary, "", "task", List.of("activity1", "activity2"));
+        String predecessorTaskId = model.addTask("task", "task");
+        SequenceOfTasksDto callArguments = new SequenceOfTasksDto(aRetrospectiveSummary,
+                "",
+                "task",
+                List.of(new Activity("activity1", ADD_NEW_INSTANCE), new Activity("activity2", ADD_NEW_INSTANCE)));
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> firstTaskId = model.findElementByName("activity1");
+        Optional<String> firstTaskId = model.findElementByModelFriendlyId("activity1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findElementByName("activity2");
+        Optional<String> secondTaskId = model.findElementByModelFriendlyId("activity2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(predecessorTaskId);
@@ -60,21 +69,24 @@ class AddSequenceOfTasksCallExecutorTest {
     @Test
     void works_as_expected_when_inserting_the_sequence_into_an_existing_model() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        String checkTaskId = model.addTask("task");
+        String checkTaskId = model.addTask("task", "task");
         String gatewayId = model.addGateway(EXCLUSIVE, "gateway");
-        String firstPathAfterGateway = model.addTask("path1");
-        String secondPathAfterGateway = model.addTask("path2");
+        String firstPathAfterGateway = model.addTask("path1", "path1");
+        String secondPathAfterGateway = model.addTask("path2", "path2");
         model.addUnlabelledSequenceFlow(model.getStartEvent(), checkTaskId);
         model.addUnlabelledSequenceFlow(checkTaskId, gatewayId);
         model.addUnlabelledSequenceFlow(gatewayId, firstPathAfterGateway);
         model.addUnlabelledSequenceFlow(gatewayId, secondPathAfterGateway);
-        SequenceOfTasksDto callArguments = new SequenceOfTasksDto(aRetrospectiveSummary, "", "path1", List.of("activity1", "activity2"));
+        SequenceOfTasksDto callArguments = new SequenceOfTasksDto(aRetrospectiveSummary,
+                "",
+                "path1",
+                List.of(new Activity("activity1", ADD_NEW_INSTANCE), new Activity("activity2", ADD_NEW_INSTANCE)));
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> firstTaskId = model.findElementByName("activity1");
+        Optional<String> firstTaskId = model.findElementByModelFriendlyId("activity1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findElementByName("activity2");
+        Optional<String> secondTaskId = model.findElementByModelFriendlyId("activity2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(firstPathAfterGateway);

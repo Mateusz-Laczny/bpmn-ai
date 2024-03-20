@@ -1,16 +1,19 @@
 package edu.agh.bpmnai.generator.v2.session;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnToStringExporter;
+import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.openai.OpenAI;
 import edu.agh.bpmnai.generator.openai.OpenAIChatCompletionApi;
 import edu.agh.bpmnai.generator.v2.*;
-import edu.agh.bpmnai.generator.v2.functions.*;
+import edu.agh.bpmnai.generator.v2.functions.AskQuestionFunction;
+import edu.agh.bpmnai.generator.v2.functions.ChatFunctionDto;
+import edu.agh.bpmnai.generator.v2.functions.FinishAskingQuestionsFunction;
+import edu.agh.bpmnai.generator.v2.functions.RespondWithoutModifyingDiagramFunction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static edu.agh.bpmnai.generator.v2.session.SessionStatus.*;
@@ -84,26 +87,16 @@ public class AskQuestionsState {
         log.info("Calling function '{}'", toolCall);
 
         String calledFunctionName = toolCall.functionCallProperties().name();
-        Optional<FunctionCallResult> possibleFunctionCallResult = functionExecutionService.executeFunctionCall(toolCall);
-        if (possibleFunctionCallResult.isEmpty()) {
-            log.info("");
-            sessionStateStore.appendMessage(chatResponse);
-            var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(false, Map.of("errors", "Function '%s' does not exist".formatted(calledFunctionName))));
+        Result<String, CallError> functionCallResult = functionExecutionService.executeFunctionCall(toolCall);
+        if (functionCallResult.isError()) {
+            log.warn("Call of function '{}' returned error '{}'", calledFunctionName, functionCallResult.getError());
+            var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(false, Map.of("errors", functionCallResult.getError().message())));
             sessionStateStore.appendMessage(response);
             return ASK_QUESTIONS;
         }
 
-        FunctionCallResult functionCallResult = possibleFunctionCallResult.get();
-        if (!functionCallResult.errors().isEmpty()) {
-            log.warn("Errors when calling function '{}': '{}'", calledFunctionName, functionCallResult.errors());
-            sessionStateStore.appendMessage(chatResponse);
-            var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(false, Map.of("errors", functionCallResult.errors())));
-            sessionStateStore.appendMessage(response);
-            return ASK_QUESTIONS;
-        }
-
-        if (functionCallResult.messageToUser() != null) {
-            chatResponse = chatResponse.withUserFacingContent(functionCallResult.messageToUser());
+        if (calledFunctionName.equals(AskQuestionFunction.FUNCTION_NAME)) {
+            chatResponse = chatResponse.withUserFacingContent(functionCallResult.getValue());
         }
 
         sessionStateStore.appendMessage(chatResponse);

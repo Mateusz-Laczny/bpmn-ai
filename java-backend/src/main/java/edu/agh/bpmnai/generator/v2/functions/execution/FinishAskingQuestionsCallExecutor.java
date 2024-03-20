@@ -1,12 +1,13 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
-import edu.agh.bpmnai.generator.v2.functions.ArgumentsParsingResult;
+import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.FinishAskingQuestionsFunction;
-import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.FinishAskingQuestionsDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class FinishAskingQuestionsCallExecutor implements FunctionCallExecutor {
@@ -23,14 +24,14 @@ public class FinishAskingQuestionsCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public FunctionCallResult executeCall(String callArgumentsJson) {
-        ArgumentsParsingResult<FinishAskingQuestionsDto> argumentsParsingResult =
+    public Result<String, List<String>> executeCall(String callArgumentsJson) {
+        Result<FinishAskingQuestionsDto, List<String>> argumentsParsingResult =
                 callArgumentsParser.parseArguments(callArgumentsJson, FinishAskingQuestionsDto.class);
         if (argumentsParsingResult.isError()) {
-            return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
+            return Result.error(argumentsParsingResult.getError());
         }
 
-        FinishAskingQuestionsDto callArguments = argumentsParsingResult.result();
-        return FunctionCallResult.withMessageToUser(callArguments.finalMessageToTheUser());
+        FinishAskingQuestionsDto callArguments = argumentsParsingResult.getValue();
+        return Result.ok(callArguments.finalMessageToTheUser());
     }
 }

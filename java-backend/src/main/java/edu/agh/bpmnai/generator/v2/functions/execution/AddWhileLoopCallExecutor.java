@@ -1,16 +1,17 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AddWhileLoopFunction;
-import edu.agh.bpmnai.generator.v2.functions.ArgumentsParsingResult;
-import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
+import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.WhileLoopDto;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -25,10 +26,13 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
     private final SessionStateStore sessionStateStore;
 
+    private final ActivityService activityService;
+
     @Autowired
-    public AddWhileLoopCallExecutor(ToolCallArgumentsParser callArgumentsParser, SessionStateStore sessionStateStore) {
+    public AddWhileLoopCallExecutor(ToolCallArgumentsParser callArgumentsParser, SessionStateStore sessionStateStore, ActivityService activityService) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
+        this.activityService = activityService;
     }
 
     @Override
@@ -37,31 +41,34 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public FunctionCallResult executeCall(String callArgumentsJson) {
-        ArgumentsParsingResult<WhileLoopDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, WhileLoopDto.class);
+    public Result<String, List<String>> executeCall(String callArgumentsJson) {
+        Result<WhileLoopDto, List<String>> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, WhileLoopDto.class);
         if (argumentsParsingResult.isError()) {
-            return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
+            return Result.error(argumentsParsingResult.getError());
         }
 
-        WhileLoopDto callArguments = argumentsParsingResult.result();
+        WhileLoopDto callArguments = argumentsParsingResult.getValue();
 
         BpmnModel model = sessionStateStore.model();
         String checkTaskName = callArguments.checkTask();
-        Optional<String> optionalCheckTaskElementId = model.findElementByName(checkTaskName);
+        Optional<String> optionalCheckTaskElementId = model.findElementByModelFriendlyId(checkTaskName);
         String checkTaskId;
         Set<String> predecessorTaskSuccessorsBeforeModification;
+        Set<String> addedActivitiesNames = new HashSet<>();
         if (optionalCheckTaskElementId.isPresent()) {
             checkTaskId = optionalCheckTaskElementId.get();
             predecessorTaskSuccessorsBeforeModification = model.findSuccessors(checkTaskId);
         } else {
-            Optional<String> optionalPredecessorElementId = model.findElementByName(callArguments.predecessorElement());
+            Optional<String> optionalPredecessorElementId = model.findElementByModelFriendlyId(callArguments.predecessorElement());
             if (optionalPredecessorElementId.isEmpty()) {
                 log.warn("Call unsuccessful, predecessor element does not exist in the model");
-                return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
+                return Result.error(List.of("Predecessor element does not exist in the model"));
             }
+
             String predecessorElementId = optionalPredecessorElementId.get();
             predecessorTaskSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
-            checkTaskId = model.addTask(checkTaskName);
+            checkTaskId = model.addTask(checkTaskName, checkTaskName);
+            addedActivitiesNames.add(checkTaskName);
             model.addUnlabelledSequenceFlow(predecessorElementId, checkTaskId);
         }
 
@@ -78,19 +85,26 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         }
 
         String previousElementInLoopId = openingGatewayId;
-        for (String taskInLoop : callArguments.activitiesInLoop()) {
-            String currentTaskId = model.findElementByName(taskInLoop).orElse(model.addTask(taskInLoop));
-            if (!model.areElementsDirectlyConnected(previousElementInLoopId, currentTaskId)) {
-                model.addUnlabelledSequenceFlow(previousElementInLoopId, currentTaskId);
+        for (Activity activityInLoop : callArguments.activitiesInLoop()) {
+            Result<ActivityIdAndName, String> activityAddResult = activityService.addActivityToModel(model, activityInLoop);
+            if (activityAddResult.isError()) {
+                return Result.error(List.of(activityAddResult.getError()));
             }
 
-            previousElementInLoopId = currentTaskId;
+            String activityId = activityAddResult.getValue().id();
+            addedActivitiesNames.add(activityAddResult.getValue().modelFacingName());
+
+            if (!model.areElementsDirectlyConnected(previousElementInLoopId, activityId)) {
+                model.addUnlabelledSequenceFlow(previousElementInLoopId, activityId);
+            }
+
+            previousElementInLoopId = activityId;
         }
 
         if (!model.areElementsDirectlyConnected(previousElementInLoopId, checkTaskId)) {
             model.addUnlabelledSequenceFlow(previousElementInLoopId, checkTaskId);
         }
 
-        return FunctionCallResult.successfulCall();
+        return Result.ok("Added activities: " + addedActivitiesNames);
     }
 }

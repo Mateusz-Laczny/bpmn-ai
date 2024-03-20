@@ -3,7 +3,9 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.v2.functions.execution.ActivityService;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddParallelGatewayCallExecutor;
+import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.ParallelGatewayDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static edu.agh.bpmnai.generator.v2.functions.parameter.DuplicateHandlingStrategy.ADD_NEW_INSTANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -27,24 +30,31 @@ class AddParallelGatewayCallExecutorTest {
 
     SessionStateStore sessionStateStore;
 
+    ActivityService activityService;
+
     @BeforeEach
     void setUp() {
         sessionStateStore = new SessionStateStore();
-        executor = new AddParallelGatewayCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore);
+        activityService = new ActivityService();
+        executor = new AddParallelGatewayCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore, activityService);
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
     @Test
     void works_as_expected() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        String predecessorTaskId = model.addTask("task");
-        ParallelGatewayDto callArguments = new ParallelGatewayDto(aRetrospectiveSummary, "", "elementName", "task", List.of("activity1", "activity2"));
+        String predecessorTaskId = model.addTask("task", "task");
+        ParallelGatewayDto callArguments = new ParallelGatewayDto(aRetrospectiveSummary,
+                "",
+                "elementName",
+                "task",
+                List.of(new Activity("activity1", ADD_NEW_INSTANCE), new Activity("activity2", ADD_NEW_INSTANCE)));
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
-        Optional<String> firstTaskId = model.findElementByName("activity1");
+        Optional<String> firstTaskId = model.findElementByModelFriendlyId("activity1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findElementByName("activity2");
+        Optional<String> secondTaskId = model.findElementByModelFriendlyId("activity2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(predecessorTaskId);

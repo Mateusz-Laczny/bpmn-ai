@@ -12,6 +12,6 @@ public record ParallelGatewayDto(
         @Description("Diagram element, which is the direct predecessor to added gateway in the process flow. Must be an element that was previously added to the diagram, or a special 'Start' activity indicating the start of the process.")
         String predecessorElement,
         @Description("Activities inside the gateway. In the verb+object naming convention. For the parallel gateway to make sense, it must contain at least 2 activities")
-        List<String> activitiesInsideGateway
+        List<Activity> activitiesInsideGateway
 ) {
 }

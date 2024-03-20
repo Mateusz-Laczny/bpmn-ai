@@ -1,16 +1,17 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AddParallelGatewayFunction;
-import edu.agh.bpmnai.generator.v2.functions.ArgumentsParsingResult;
-import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
+import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.ParallelGatewayDto;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -25,10 +26,13 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
 
     private final SessionStateStore sessionStateStore;
 
+    private final ActivityService activityService;
+
     @Autowired
-    public AddParallelGatewayCallExecutor(ToolCallArgumentsParser callArgumentsParser, SessionStateStore sessionStateStore) {
+    public AddParallelGatewayCallExecutor(ToolCallArgumentsParser callArgumentsParser, SessionStateStore sessionStateStore, ActivityService activityService) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
+        this.activityService = activityService;
     }
 
     @Override
@@ -37,33 +41,40 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public FunctionCallResult executeCall(String callArgumentsJson) {
-        ArgumentsParsingResult<ParallelGatewayDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, ParallelGatewayDto.class);
+    public Result<String, List<String>> executeCall(String callArgumentsJson) {
+        Result<ParallelGatewayDto, List<String>> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, ParallelGatewayDto.class);
         if (argumentsParsingResult.isError()) {
-            return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
+            return Result.error(argumentsParsingResult.getError());
         }
 
-        ParallelGatewayDto callArguments = argumentsParsingResult.result();
+        ParallelGatewayDto callArguments = argumentsParsingResult.getValue();
 
         BpmnModel model = sessionStateStore.model();
-        Optional<String> optionalPredecessorElementId = model.findElementByName(callArguments.predecessorElement());
+        Optional<String> optionalPredecessorElementId = model.findElementByModelFriendlyId(callArguments.predecessorElement());
         if (optionalPredecessorElementId.isEmpty()) {
             log.info("Predecessor element does not exist in the model");
-            return FunctionCallResult.unsuccessfulCall(List.of("Predecessor element does not exist in the model"));
+            return Result.error(List.of("Predecessor element does not exist in the model"));
         }
 
         String predecessorElementId = optionalPredecessorElementId.get();
-
         Set<String> predecessorElementSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
         model.clearSuccessors(predecessorElementId);
 
         String openingGatewayId = model.addGateway(PARALLEL, callArguments.elementName() + " opening gateway");
         String closingGatewayId = model.addGateway(PARALLEL, callArguments.elementName() + " closing gateway");
         model.addUnlabelledSequenceFlow(predecessorElementId, openingGatewayId);
-        for (String taskToExecute : callArguments.activitiesInsideGateway()) {
-            String taskId = model.addTask(taskToExecute);
-            model.addUnlabelledSequenceFlow(openingGatewayId, taskId);
-            model.addUnlabelledSequenceFlow(taskId, closingGatewayId);
+
+        Set<String> addedActivitiesNames = new HashSet<>();
+        for (Activity activityInGateway : callArguments.activitiesInsideGateway()) {
+            Result<ActivityIdAndName, String> activityAddResult = activityService.addActivityToModel(model, activityInGateway);
+            if (activityAddResult.isError()) {
+                return Result.error(List.of(activityAddResult.getError()));
+            }
+
+            String activityId = activityAddResult.getValue().id();
+            addedActivitiesNames.add(activityAddResult.getValue().modelFacingName());
+            model.addUnlabelledSequenceFlow(openingGatewayId, activityId);
+            model.addUnlabelledSequenceFlow(activityId, closingGatewayId);
         }
 
         if (!predecessorElementSuccessorsBeforeModification.isEmpty()) {
@@ -76,6 +87,6 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
         }
 
         model.setAlias(closingGatewayId, callArguments.elementName());
-        return FunctionCallResult.successfulCall();
+        return Result.ok("Added activities: " + addedActivitiesNames);
     }
 }

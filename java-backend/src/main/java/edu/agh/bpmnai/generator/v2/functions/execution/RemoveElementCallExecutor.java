@@ -1,8 +1,7 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.functions.ArgumentsParsingResult;
-import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
+import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.RemoveElementFunction;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementDto;
@@ -10,6 +9,7 @@ import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -31,18 +31,18 @@ public class RemoveElementCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public FunctionCallResult executeCall(String callArgumentsJson) {
-        ArgumentsParsingResult<RemoveElementDto> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, RemoveElementDto.class);
+    public Result<String, List<String>> executeCall(String callArgumentsJson) {
+        Result<RemoveElementDto, List<String>> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, RemoveElementDto.class);
         if (argumentsParsingResult.isError()) {
-            return FunctionCallResult.unsuccessfulCall(argumentsParsingResult.errors());
+            return Result.error(argumentsParsingResult.getError());
         }
 
-        RemoveElementDto callArguments = argumentsParsingResult.result();
+        RemoveElementDto callArguments = argumentsParsingResult.getValue();
 
         BpmnModel model = sessionStateStore.model();
-        Optional<String> elementToCutOutId = model.findElementByName(callArguments.elementToRemove());
+        Optional<String> elementToCutOutId = model.findElementByModelFriendlyId(callArguments.elementToRemove());
 
         elementToCutOutId.ifPresent(model::cutOutElement);
-        return FunctionCallResult.successfulCall();
+        return Result.ok("");
     }
 }

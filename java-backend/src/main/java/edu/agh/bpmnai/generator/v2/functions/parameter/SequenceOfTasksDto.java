@@ -10,6 +10,6 @@ public record SequenceOfTasksDto(
         @Description("Diagram element, which will be the start of the added sequence in the process flow. Must be an element that exists in the diagram, or a special 'Start' element.")
         String startOfSequence,
         @Description("Activities which will be added to the diagram, in the verb+object naming convention. Each activity will be connected to the next activity via a sequence flow")
-        List<String> activitiesInSequence
+        List<Activity> activitiesInSequence
 ) {
 }

@@ -1,24 +1,21 @@
 package edu.agh.bpmnai.generator.v2.session;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnToStringExporter;
+import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.openai.OpenAI;
 import edu.agh.bpmnai.generator.openai.OpenAIChatCompletionApi;
 import edu.agh.bpmnai.generator.openai.model.FunctionCallDto;
-import edu.agh.bpmnai.generator.v2.ChatMessageBuilder;
-import edu.agh.bpmnai.generator.v2.ChatMessageDto;
-import edu.agh.bpmnai.generator.v2.FunctionExecutionService;
-import edu.agh.bpmnai.generator.v2.ToolCallDto;
+import edu.agh.bpmnai.generator.v2.*;
 import edu.agh.bpmnai.generator.v2.functions.AskQuestionFunction;
 import edu.agh.bpmnai.generator.v2.functions.FinishAskingQuestionsFunction;
-import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Optional;
 
+import static edu.agh.bpmnai.generator.v2.CallErrorType.CALL_FAILED;
+import static edu.agh.bpmnai.generator.v2.CallErrorType.NO_EXECUTOR_FOUND;
 import static edu.agh.bpmnai.generator.v2.session.SessionStatus.*;
-import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
@@ -53,7 +50,7 @@ class AskQuestionsStateTest {
     void adds_error_response_to_conversation_when_called_function_does_not_exist() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
-        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Optional.empty());
+        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.error(new CallError(NO_EXECUTOR_FOUND, "Some error description")));
         var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder, mock(BpmnToStringExporter.class));
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto("aName", ""));
@@ -70,7 +67,7 @@ class AskQuestionsStateTest {
     void adds_error_response_to_conversation_when_function_call_fails() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
-        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Optional.of(new FunctionCallResult(List.of("error"), emptyMap(), null)));
+        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.error(new CallError(CALL_FAILED, "Some error description")));
         var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder, mock(BpmnToStringExporter.class));
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto("aName", ""));
@@ -87,7 +84,7 @@ class AskQuestionsStateTest {
     void goes_to_next_step_if_finish_asking_questions_is_called() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
-        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Optional.of(FunctionCallResult.successfulCall()));
+        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.ok(""));
         var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder, mock(BpmnToStringExporter.class));
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto(FinishAskingQuestionsFunction.FUNCTION_NAME, ""));
@@ -105,7 +102,7 @@ class AskQuestionsStateTest {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
         String question = "aQuestion";
-        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Optional.of(FunctionCallResult.withMessageToUser(question)));
+        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.ok(question));
         var state = new AskQuestionsState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, chatMessageBuilder, mock(BpmnToStringExporter.class));
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto(AskQuestionFunction.FUNCTION_NAME, ""));

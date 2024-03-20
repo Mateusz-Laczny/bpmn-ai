@@ -16,7 +16,7 @@ class BpmnSemanticLayoutingTest {
         int cellHeight = 100;
         var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
         var model = new BpmnModel();
-        String taskId = model.addTask("aTask");
+        String taskId = model.addTask("aTask", "");
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, taskId);
 
@@ -36,7 +36,7 @@ class BpmnSemanticLayoutingTest {
         int cellHeight = 100;
         var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
         var model = new BpmnModel();
-        String taskId = model.addTask("aTask");
+        String taskId = model.addTask("aTask", "aTask");
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, taskId);
 
@@ -50,8 +50,8 @@ class BpmnSemanticLayoutingTest {
         int cellHeight = 100;
         var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
         var model = new BpmnModel();
-        String firstTaskId = model.addTask("aTask1");
-        String secondTaskId = model.addTask("aTask2");
+        String firstTaskId = model.addTask("aTask1", "aTask1");
+        String secondTaskId = model.addTask("aTask2", "aTask2");
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, firstTaskId);
         model.addUnlabelledSequenceFlow(startEventId, secondTaskId);
@@ -77,7 +77,7 @@ class BpmnSemanticLayoutingTest {
         int cellHeight = 100;
         var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
         var model = new BpmnModel();
-        String taskId = model.addTask("aTask1");
+        String taskId = model.addTask("aTask1", "aTask1");
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, taskId);
         model.addUnlabelledSequenceFlow(taskId, startEventId);
@@ -99,14 +99,14 @@ class BpmnSemanticLayoutingTest {
         int cellHeight = 100;
         var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
         var model = new BpmnModel();
-        String firstTaskId = model.addTask("aTask1");
-        String secondTaskId = model.addTask("aTask2");
+        String firstTaskId = model.addTask("aTask1", "aTask1");
+        String secondTaskId = model.addTask("aTask2", "aTask2");
 
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, firstTaskId);
         model.addUnlabelledSequenceFlow(startEventId, secondTaskId);
 
-        String successorTaskId = model.addTask("successorTask");
+        String successorTaskId = model.addTask("successorTask", "successorTask");
         model.addUnlabelledSequenceFlow(firstTaskId, successorTaskId);
         model.addUnlabelledSequenceFlow(secondTaskId, successorTaskId);
 

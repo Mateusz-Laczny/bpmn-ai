@@ -15,8 +15,8 @@ public record IfElseBranchingDto(
         @Nullable
         String predecessorElement,
         @Description("Task that is the beginning of the true branch. May or may not exist in the diagram.")
-        String trueBranchBeginningTask,
+        Activity trueBranchBeginningTask,
         @Description("Task that is the beginning of the false branch. May or may not exist in the diagram.")
-        String falseBranchBeginningTask
+        Activity falseBranchBeginningTask
 ) {
 }
