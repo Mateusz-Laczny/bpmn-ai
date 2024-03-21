@@ -5,9 +5,8 @@ import edu.agh.bpmnai.generator.v2.Graph;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Service
@@ -17,7 +16,7 @@ public class BpmnToGraphExporter {
     public Graph export(BpmnModel model) {
         var graph = Graph.empty();
         String startEventId = model.getStartEvent();
-        List<String> elementsToVisit = new ArrayList<>();
+        LinkedHashSet<String> elementsToVisit = new LinkedHashSet<>();
         elementsToVisit.add(startEventId);
         Set<String> visitedElements = new HashSet<>();
 
@@ -27,20 +26,20 @@ public class BpmnToGraphExporter {
         }
 
         while (!elementsToVisit.isEmpty()) {
-            String currentlyProcessedElement = elementsToVisit.remove(0);
+            String currentlyProcessedElement = elementsToVisit.iterator().next();
+            elementsToVisit.remove(currentlyProcessedElement);
             visitedElements.add(currentlyProcessedElement);
 
             for (String elementSuccessorId : model.findSuccessors(currentlyProcessedElement)) {
+                graph.addEdge(currentlyProcessedElement, elementSuccessorId);
                 if (visitedElements.contains(elementSuccessorId)) {
                     continue;
                 }
 
                 elementsToVisit.add(elementSuccessorId);
-                boolean nodeForNeighbourAdded = graph.addNode(elementSuccessorId, model.getModelFacingName(elementSuccessorId));
-                if (!nodeForNeighbourAdded) {
-                    log.warn("Node for element with id '{}' already exists in the graph", elementSuccessorId);
+                if (!graph.containsNodeWithId(elementSuccessorId)) {
+                    graph.addNode(elementSuccessorId, model.getModelFacingName(elementSuccessorId));
                 }
-                graph.addEdge(currentlyProcessedElement, elementSuccessorId);
             }
         }
 

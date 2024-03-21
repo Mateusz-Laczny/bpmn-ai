@@ -138,6 +138,7 @@ public final class BpmnModel {
             default -> throw new IllegalStateException("Unexpected gateway type value: " + gateway.type());
         }
 
+        gatewayElement.setAttributeValue("name", gateway.name());
         idToModelFriendlyId.put(id, gateway.name());
         addGatewayDiagramElement(gatewayElement);
         return id;

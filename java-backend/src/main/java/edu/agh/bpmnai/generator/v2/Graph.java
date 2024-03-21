@@ -70,4 +70,8 @@ public class Graph {
 
         return Optional.of(new Node(nodeId, nodeLabels.get(nodeId)));
     }
+
+    public boolean containsNodeWithId(String nodeId) {
+        return nodeToNeighbours.containsKey(nodeId);
+    }
 }

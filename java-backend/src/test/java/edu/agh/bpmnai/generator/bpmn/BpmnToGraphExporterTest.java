@@ -2,11 +2,13 @@ package edu.agh.bpmnai.generator.bpmn;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.Graph;
+import edu.agh.bpmnai.generator.v2.Node;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class BpmnToGraphExporterTest {
 
@@ -28,10 +30,11 @@ class BpmnToGraphExporterTest {
 
         assertTrue(resultGraph.findNodeById(startEventId).isPresent());
         assertTrue(resultGraph.findNodeById(activityId).isPresent());
+        assertEquals(Set.of(new Node(activityId, null)), resultGraph.getNeighboursOfNode(startEventId));
     }
 
     @Test
-    void does_not_add_disjoint_elements_to_the_graph() {
+    void adds_disjoint_elements_to_the_graph() {
         var model = new BpmnModel();
         String startEventId = model.getStartEvent();
         String activityId = model.addTask("Some task", "");

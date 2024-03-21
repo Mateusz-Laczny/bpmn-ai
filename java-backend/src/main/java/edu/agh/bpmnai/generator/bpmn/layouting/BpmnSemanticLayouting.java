@@ -42,8 +42,9 @@ public class BpmnSemanticLayouting {
                     Result<Integer, String> findRowResult = findRowForElement(elementPredecessors, grid);
                     if (findRowResult.isError()) {
                         log.warn("Could not calculate row for element, predecessor with id '{}' is not in grid", findRowResult.getError());
+                    } else {
+                        newCellY = findRowForElement(elementPredecessors, grid).getValue();
                     }
-                    newCellY = findRowForElement(elementPredecessors, grid).getValue();
                 }
                 grid.addCell(new Cell(newCellX, newCellY, singleSuccessorId));
                 if (!alreadyVisitedElements.contains(singleSuccessorId)) {

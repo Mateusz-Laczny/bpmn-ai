@@ -7,8 +7,7 @@ import java.util.Set;
 
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.PARALLEL;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class BpmnModelTest {
 
@@ -82,5 +81,22 @@ class BpmnModelTest {
 
         String taskName = model.getModelFacingName(taskId);
         assertEquals("gateway", taskName);
+    }
+
+    @Test
+    void areElementsDirectlyConnected_returns_true_if_elements_are_connected() {
+        BpmnModel model = new BpmnModel();
+        String taskId = model.addTask("", "task");
+        model.addUnlabelledSequenceFlow(model.getStartEvent(), taskId);
+
+        assertTrue(model.areElementsDirectlyConnected(model.getStartEvent(), taskId));
+    }
+
+    @Test
+    void areElementsDirectlyConnected_returns_false_if_elements_are_not_connected() {
+        BpmnModel model = new BpmnModel();
+        String taskId = model.addTask("", "task");
+
+        assertFalse(model.areElementsDirectlyConnected(model.getStartEvent(), taskId));
     }
 }
