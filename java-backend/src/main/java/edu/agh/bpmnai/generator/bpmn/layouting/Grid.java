@@ -43,7 +43,7 @@ public class Grid {
     }
 
     public void shiftColumnInYAxis(int columnIndex, int shiftAmount) {
-        for (Cell cell : gridTable.row(columnIndex).values()) {
+        for (Cell cell : List.copyOf(gridTable.row(columnIndex).values())) {
             moveCell(cell.gridPosition(), cell.gridPosition().withY(cell.gridPosition().y() + shiftAmount));
         }
     }
