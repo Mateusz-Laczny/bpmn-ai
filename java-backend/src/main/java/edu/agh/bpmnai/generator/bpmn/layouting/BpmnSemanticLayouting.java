@@ -24,66 +24,56 @@ public class BpmnSemanticLayouting {
     public BpmnModel layoutModel(BpmnModel model) {
         BpmnModel layoutedModel = model.getCopy();
         var grid = new Grid();
-        String currentElementId = layoutedModel.getStartEvent();
-        grid.addCell(new Cell(0, 0, currentElementId));
-        List<SuccessorsNotInGrid> boundary = new ArrayList<>();
-        boundary.add(new SuccessorsNotInGrid(new GridPosition(0, 0), List.copyOf(layoutedModel.findSuccessors(currentElementId))));
-        var alreadyVisitedElements = new HashSet<>();
-        alreadyVisitedElements.add(currentElementId);
+        grid.addCell(new Cell(0, 0, layoutedModel.getStartEvent()));
+        List<String> boundary = new ArrayList<>(layoutedModel.findSuccessors(layoutedModel.getStartEvent()));
         while (!boundary.isEmpty()) {
-            SuccessorsNotInGrid processedElements = boundary.remove(0);
-            if (processedElements.elements().size() == 1) {
-                String singleSuccessorId = processedElements.elements().get(0);
-
-                int newCellX = processedElements.predecessorPosition().x() + 1;
-                int newCellY = processedElements.predecessorPosition().y();
-                Collection<String> elementPredecessors = model.findPredecessors(singleSuccessorId);
-                if (elementPredecessors.size() > 1) {
-                    Result<Integer, String> findRowResult = findRowForElement(elementPredecessors, grid);
-                    if (findRowResult.isError()) {
-                        log.warn("Could not calculate row for element, predecessor with id '{}' is not in grid", findRowResult.getError());
-                    } else {
-                        newCellY = findRowForElement(elementPredecessors, grid).getValue();
-                    }
-                }
-                grid.addCell(new Cell(newCellX, newCellY, singleSuccessorId));
-                if (!alreadyVisitedElements.contains(singleSuccessorId)) {
-                    List<String> elementSuccessors = layoutedModel.findSuccessors(singleSuccessorId).stream().filter(id -> !alreadyVisitedElements.contains(id)).toList();
-                    boundary.add(new SuccessorsNotInGrid(new GridPosition(newCellX, newCellY), elementSuccessors));
-                    alreadyVisitedElements.add(singleSuccessorId);
-                }
-            } else {
-                int newCellX = processedElements.predecessorPosition().x() + 1;
-                int predecessorY = processedElements.predecessorPosition().y();
-                int currentYOffset = -1;
-                boolean insertAbove = true;
-                for (String successorId : processedElements.elements()) {
-                    if (alreadyVisitedElements.contains(successorId)) {
-                        continue;
-                    }
-
-                    if (predecessorY + currentYOffset < 0) {
-                        grid.shiftDown(-currentYOffset);
-                        predecessorY += -currentYOffset;
-                    }
-
-                    Cell newCell = new Cell(newCellX, predecessorY + currentYOffset, successorId);
-                    grid.addCell(newCell);
-                    if (!alreadyVisitedElements.contains(successorId)) {
-                        List<String> elementSuccessors = layoutedModel.findSuccessors(successorId).stream().filter(id -> !alreadyVisitedElements.contains(id)).toList();
-                        boundary.add(new SuccessorsNotInGrid(new GridPosition(newCell.x(), newCell.y()), elementSuccessors));
-                        alreadyVisitedElements.add(successorId);
-                    }
-
-                    if (insertAbove) {
-                        currentYOffset = -currentYOffset;
-                        insertAbove = false;
-                    } else {
-                        currentYOffset = -(currentYOffset + 1);
-                        insertAbove = true;
-                    }
-                }
+            String processedElementId = boundary.remove(0);
+            LinkedHashSet<String> elementSuccessors = model.findSuccessors(processedElementId);
+            Optional<Cell> elementGridCell = grid.findCellByIdOfElementInside(processedElementId);
+            if (elementGridCell.isPresent() && elementSuccessors.stream().allMatch(successiorId -> grid.findCellByIdOfElementInside(successiorId).map(successorCell -> successorCell.x() > elementGridCell.get().x()).orElse(false))) {
+                continue;
             }
+
+            LinkedHashSet<String> elementPredecessors = model.findPredecessors(processedElementId);
+            int numberOfPredecessorsInGrid = (int) elementPredecessors.stream().filter(predecessorId -> grid.findCellByIdOfElementInside(predecessorId).isPresent()).count();
+
+            if (numberOfPredecessorsInGrid == 1) {
+                String singlePredecessorId = elementPredecessors.iterator().next();
+                Optional<Cell> predecessorCellOptional = grid.findCellByIdOfElementInside(singlePredecessorId);
+                boolean isPartOfACycle = predecessorCellOptional.isEmpty();
+                if (!isPartOfACycle) {
+                    Cell predecessorCell = predecessorCellOptional.get();
+
+                    int newCellX = predecessorCell.x() + 1;
+                    int newCellY = predecessorCell.y();
+
+                    int overallShift = 0;
+                    while (grid.isCellOccupied(newCellX, newCellY)) {
+                        grid.shiftColumnInYAxis(newCellX, 2);
+                        overallShift += 2;
+                        GridPosition updatedPredecessorPosition = predecessorCell.gridPosition().withY((predecessorCell.gridPosition().y() + overallShift) / 2);
+                        grid.moveCell(predecessorCell.gridPosition(), updatedPredecessorPosition);
+                    }
+
+                    grid.addCell(new Cell(newCellX, newCellY, processedElementId));
+                }
+            } else if (numberOfPredecessorsInGrid > 1) {
+                int maxPredecessorX = elementPredecessors.stream()
+                        .mapToInt(elementId -> grid.findCellByIdOfElementInside(elementId).map(Cell::x).orElse(-1))
+                        .max()
+                        .getAsInt();
+                int newCellY = 0;
+                Result<Integer, String> findRowResult = findRowForElement(elementPredecessors, grid);
+                if (findRowResult.isError()) {
+                    log.warn("Could not calculate row for element, predecessor with id '{}' is not in grid", findRowResult.getError());
+                } else {
+                    newCellY = findRowResult.getValue();
+                }
+
+                grid.addCell(new Cell(maxPredecessorX + 1, newCellY, processedElementId));
+            }
+
+            boundary.addAll(elementSuccessors);
         }
 
         for (Cell cell : grid.allCells()) {
@@ -107,8 +97,5 @@ public class BpmnSemanticLayouting {
         }
 
         return Result.ok(maxPredecessorColumnIndex - (elementPredecessors.size() / 2));
-    }
-
-    private record SuccessorsNotInGrid(GridPosition predecessorPosition, List<String> elements) {
     }
 }

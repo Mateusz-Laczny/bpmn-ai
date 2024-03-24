@@ -70,7 +70,7 @@ class BpmnModelTest {
         BpmnModel model = new BpmnModel();
         String taskId = model.addTask("task", "taskModelFacingName");
 
-        String taskName = model.getModelFacingName(taskId);
+        String taskName = model.getModelFriendlyId(taskId);
         assertEquals("taskModelFacingName", taskName);
     }
 
@@ -79,7 +79,7 @@ class BpmnModelTest {
         BpmnModel model = new BpmnModel();
         String taskId = model.addGateway(EXCLUSIVE, "gateway");
 
-        String taskName = model.getModelFacingName(taskId);
+        String taskName = model.getModelFriendlyId(taskId);
         assertEquals("gateway", taskName);
     }
 

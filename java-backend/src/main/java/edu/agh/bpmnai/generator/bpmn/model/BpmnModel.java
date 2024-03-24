@@ -18,6 +18,7 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 import java.util.*;
 
+import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toSet;
 
 @Slf4j
@@ -83,6 +84,7 @@ public final class BpmnModel {
     }
 
     public String addTask(String taskName, String modelFriendlyId) {
+        log.trace("Adding task '{}' with model if '{}'", taskName, modelFriendlyId);
         Process process = modelInstance.getModelElementById(idOfDefaultProcess);
         String id = generateUniqueId();
         Task userTaskElement = createElementWithParent(process, id, Task.class);
@@ -156,6 +158,7 @@ public final class BpmnModel {
     }
 
     public String addGateway(BpmnGatewayType gatewayType, String name) {
+        log.trace("Adding gateway of type '{}' with name '{}'", gatewayType, name);
         return addGateway(new BpmnGateway(idOfDefaultProcess, name, gatewayType));
     }
 
@@ -270,10 +273,12 @@ public final class BpmnModel {
     }
 
     public String addUnlabelledSequenceFlow(String sourceElementId, String targetElementId) {
+        log.trace("Adding unlabelled sequence flow from '{}' to '{}'", getModelFriendlyId(sourceElementId), getModelFriendlyId(targetElementId));
         return addSequenceFlow(new BpmnSequenceFlow(idOfDefaultProcess, sourceElementId, targetElementId, null));
     }
 
     public String addLabelledSequenceFlow(String sourceElementId, String targetElementId, String label) {
+        log.trace("Adding labelled sequence flow from '{}' to '{}'", getModelFriendlyId(sourceElementId), getModelFriendlyId(targetElementId));
         return addSequenceFlow(new BpmnSequenceFlow(idOfDefaultProcess, sourceElementId, targetElementId, label));
     }
 
@@ -323,14 +328,14 @@ public final class BpmnModel {
         return Optional.ofNullable(idToModelFriendlyId.inverse().get(elementName));
     }
 
-    public Set<String> findPredecessors(String elementId) {
+    public LinkedHashSet<String> findPredecessors(String elementId) {
         FlowNode modelElementInstance = modelInstance.getModelElementById(elementId);
-        return modelElementInstance.getIncoming().stream().map(sequenceFlow -> sequenceFlow.getSource().getId()).collect(toSet());
+        return modelElementInstance.getIncoming().stream().map(sequenceFlow -> sequenceFlow.getSource().getId()).collect(toCollection(LinkedHashSet::new));
     }
 
-    public Set<String> findSuccessors(String elementId) {
+    public LinkedHashSet<String> findSuccessors(String elementId) {
         FlowNode modelElementInstance = modelInstance.getModelElementById(elementId);
-        return modelElementInstance.getOutgoing().stream().map(sequenceFlow -> sequenceFlow.getTarget().getId()).collect(toSet());
+        return modelElementInstance.getOutgoing().stream().map(sequenceFlow -> sequenceFlow.getTarget().getId()).collect(toCollection(LinkedHashSet::new));
     }
 
     public void clearSuccessors(String elementId) {
@@ -417,7 +422,7 @@ public final class BpmnModel {
         return findSuccessors(firstElementId).contains(secondElementId);
     }
 
-    public String getModelFacingName(String elementId) {
+    public String getModelFriendlyId(String elementId) {
         return idToModelFriendlyId.get(elementId);
     }
 }

@@ -8,8 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static edu.agh.bpmnai.generator.v2.functions.parameter.DuplicateHandlingStrategy.ADD_NEW_INSTANCE;
 import static edu.agh.bpmnai.generator.v2.functions.parameter.DuplicateHandlingStrategy.USE_EXISTING;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ActivityServiceTest {
 
@@ -28,6 +27,18 @@ class ActivityServiceTest {
 
         assertTrue(addResult.isOk());
         assertTrue(model.findElementByModelFriendlyId(addResult.getValue().modelFacingName()).isPresent());
+    }
+
+    @Test
+    void adds_new_instance_even_if_activity_with_given_name_exists_for_add_new_instance_strategy() {
+        var model = new BpmnModel();
+        String activityId = model.addTask("anActivity", "anActivity");
+
+        Result<ActivityIdAndName, String> addResult = activityService.addActivityToModel(model, new Activity("anActivity", ADD_NEW_INSTANCE));
+
+        assertTrue(addResult.isOk());
+        assertTrue(model.findElementByModelFriendlyId(addResult.getValue().modelFacingName()).isPresent());
+        assertNotEquals(activityId, model.findElementByModelFriendlyId(addResult.getValue().modelFacingName()).get());
     }
 
     @Test

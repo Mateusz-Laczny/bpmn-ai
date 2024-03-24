@@ -38,7 +38,7 @@ public class BpmnToGraphExporter {
 
                 elementsToVisit.add(elementSuccessorId);
                 if (!graph.containsNodeWithId(elementSuccessorId)) {
-                    graph.addNode(elementSuccessorId, model.getModelFacingName(elementSuccessorId));
+                    graph.addNode(elementSuccessorId, model.getModelFriendlyId(elementSuccessorId));
                 }
             }
         }
