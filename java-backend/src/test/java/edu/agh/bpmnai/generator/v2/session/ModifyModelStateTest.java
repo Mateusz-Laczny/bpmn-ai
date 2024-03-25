@@ -39,7 +39,7 @@ class ModifyModelStateTest {
     void returns_END_when_model_response_has_no_tool_calls() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var state = new ModifyModelState(mock(FunctionExecutionService.class), mockApi, aModel, sessionStateStore, mock(ConversationHistoryStore.class), chatMessageBuilder, mock(BpmnToStringExporter.class));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, null, null));
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, null));
 
         SessionStatus status = state.process("aUserRequest");
 
@@ -54,7 +54,7 @@ class ModifyModelStateTest {
         var state = new ModifyModelState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, mock(ConversationHistoryStore.class), chatMessageBuilder, mock(BpmnToStringExporter.class));
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto("aName", ""));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall), null));
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall)));
 
         SessionStatus status = state.process("aUserRequest");
 
@@ -71,7 +71,7 @@ class ModifyModelStateTest {
         var state = new ModifyModelState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, mock(ConversationHistoryStore.class), chatMessageBuilder, mock(BpmnToStringExporter.class));
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto("aName", ""));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall), null));
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall)));
 
         SessionStatus status = state.process("aUserRequest");
 
@@ -88,7 +88,7 @@ class ModifyModelStateTest {
         var state = new ModifyModelState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, mock(ConversationHistoryStore.class), chatMessageBuilder, mock(BpmnToStringExporter.class));
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto(FinishAskingQuestionsFunction.FUNCTION_NAME, ""));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall), null));
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall)));
 
         SessionStatus status = state.process("aUserRequest");
 

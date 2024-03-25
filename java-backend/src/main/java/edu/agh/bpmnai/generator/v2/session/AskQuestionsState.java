@@ -53,7 +53,8 @@ public class AskQuestionsState {
     }
 
     public SessionStatus process(String userRequestContent) {
-        userRequestContent =
+        conversationHistoryStore.appendMessage(userRequestContent);
+        String promptForModel =
                 "BEGIN USER REQUEST\n"
                 + userRequestContent
                 + "END USER REQUEST\n"
@@ -62,19 +63,18 @@ public class AskQuestionsState {
                 + "Current diagram state:\n" + bpmnToStringExporter.export(sessionStateStore.model())
                 + "\n"
                 + "END REQUEST CONTEXT";
-        log.info("Request text sent to LLM: '{}'", userRequestContent);
-
+        log.info("Request text sent to LLM: '{}'", promptForModel);
         if (sessionStateStore.numberOfMessages() > 0) {
             ChatMessageDto lastMessage = sessionStateStore.lastAddedMessage();
             if (lastMessage.hasToolCalls()) {
                 ToolCallDto toolCall = lastMessage.toolCalls().get(0);
-                var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(true, Map.of("response", userRequestContent)));
+                var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(true, Map.of("response", promptForModel)));
                 sessionStateStore.appendMessage(response);
             } else {
-                sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(userRequestContent));
+                sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(promptForModel));
             }
         } else {
-            sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(userRequestContent));
+            sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(promptForModel));
         }
 
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(usedModel, sessionStateStore.messages(), AVAILABLE_FUNCTIONS_IN_THIS_STATE, "auto");

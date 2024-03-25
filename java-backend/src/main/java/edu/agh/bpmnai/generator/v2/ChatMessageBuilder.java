@@ -8,10 +8,6 @@ import org.springframework.stereotype.Service;
 public class ChatMessageBuilder {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public ChatMessageDto buildAssistantMessage(String messageContent) {
-        return ChatMessageDto.userFacingMessage("assistant", messageContent);
-    }
-
     public ChatMessageDto buildUserMessage(String content) {
         return ChatMessageDto.userFacingMessage("user", content);
     }
