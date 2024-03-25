@@ -16,7 +16,7 @@ public class BpmnSemanticLayouting {
 
     private final int cellHeight;
 
-    public BpmnSemanticLayouting(@Value("100") int cellWidth, @Value("60") int cellHeight) {
+    public BpmnSemanticLayouting(@Value("150") int cellWidth, @Value("60") int cellHeight) {
         this.cellWidth = cellWidth;
         this.cellHeight = cellHeight;
     }
