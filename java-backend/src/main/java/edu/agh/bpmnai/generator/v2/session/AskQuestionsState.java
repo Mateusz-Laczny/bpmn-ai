@@ -35,16 +35,19 @@ public class AskQuestionsState {
 
     private final SessionStateStore sessionStateStore;
 
+    private final ConversationHistoryStore conversationHistoryStore;
+
     private final ChatMessageBuilder chatMessageBuilder;
 
     private final BpmnToStringExporter bpmnToStringExporter;
 
     @Autowired
-    public AskQuestionsState(FunctionExecutionService functionExecutionService, OpenAIChatCompletionApi chatCompletionApi, OpenAI.OpenAIModel usedModel, SessionStateStore sessionStateStore, ChatMessageBuilder chatMessageBuilder, BpmnToStringExporter bpmnToStringExporter) {
+    public AskQuestionsState(FunctionExecutionService functionExecutionService, OpenAIChatCompletionApi chatCompletionApi, OpenAI.OpenAIModel usedModel, SessionStateStore sessionStateStore, ConversationHistoryStore conversationHistoryStore, ChatMessageBuilder chatMessageBuilder, BpmnToStringExporter bpmnToStringExporter) {
         this.functionExecutionService = functionExecutionService;
         this.chatCompletionApi = chatCompletionApi;
         this.usedModel = usedModel;
         this.sessionStateStore = sessionStateStore;
+        this.conversationHistoryStore = conversationHistoryStore;
         this.chatMessageBuilder = chatMessageBuilder;
         this.bpmnToStringExporter = bpmnToStringExporter;
     }
@@ -75,11 +78,11 @@ public class AskQuestionsState {
         }
 
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(usedModel, sessionStateStore.messages(), AVAILABLE_FUNCTIONS_IN_THIS_STATE, "auto");
+        sessionStateStore.appendMessage(chatResponse);
 
         if (chatResponse.toolCalls() == null) {
             log.warn("No tools calls even though a tool call was expected");
-            sessionStateStore.appendMessage(chatResponse);
-            sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage("A function must be called in this step"));
+            sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage("Use the provided functions, do not provide a response using other means"));
             return ASK_QUESTIONS;
         }
 
@@ -96,10 +99,9 @@ public class AskQuestionsState {
         }
 
         if (calledFunctionName.equals(AskQuestionFunction.FUNCTION_NAME)) {
-            chatResponse = chatResponse.withUserFacingContent(functionCallResult.getValue());
+            conversationHistoryStore.appendMessage(functionCallResult.getValue());
         }
 
-        sessionStateStore.appendMessage(chatResponse);
         var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(true));
         sessionStateStore.appendMessage(response);
 

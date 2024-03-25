@@ -29,16 +29,19 @@ public class ModifyModelState {
 
     private final SessionStateStore sessionStateStore;
 
+    private final ConversationHistoryStore conversationHistoryStore;
+
     private final ChatMessageBuilder chatMessageBuilder;
 
     private final BpmnToStringExporter bpmnToStringExporter;
 
     @Autowired
-    public ModifyModelState(FunctionExecutionService functionExecutionService, OpenAIChatCompletionApi chatCompletionApi, OpenAI.OpenAIModel usedModel, SessionStateStore sessionStateStore, ChatMessageBuilder chatMessageBuilder, BpmnToStringExporter bpmnToStringExporter) {
+    public ModifyModelState(FunctionExecutionService functionExecutionService, OpenAIChatCompletionApi chatCompletionApi, OpenAI.OpenAIModel usedModel, SessionStateStore sessionStateStore, ConversationHistoryStore conversationHistoryStore, ChatMessageBuilder chatMessageBuilder, BpmnToStringExporter bpmnToStringExporter) {
         this.functionExecutionService = functionExecutionService;
         this.chatCompletionApi = chatCompletionApi;
         this.usedModel = usedModel;
         this.sessionStateStore = sessionStateStore;
+        this.conversationHistoryStore = conversationHistoryStore;
         this.chatMessageBuilder = chatMessageBuilder;
         this.bpmnToStringExporter = bpmnToStringExporter;
     }
@@ -49,8 +52,7 @@ public class ModifyModelState {
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(usedModel, sessionStateStore.messages(), FUNCTIONS_FOR_MODIFYING_THE_MODEL, "auto");
         sessionStateStore.appendMessage(chatResponse);
         if (chatResponse.toolCalls() == null || chatResponse.toolCalls().isEmpty()) {
-            var response = chatMessageBuilder.buildAssistantMessage(chatResponse.content());
-            sessionStateStore.appendMessage(response);
+            conversationHistoryStore.appendMessage(chatResponse.content());
             return END;
         }
 

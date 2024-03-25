@@ -16,6 +16,8 @@ public class LlmService {
 
     private final SessionStateStore sessionStateStore;
 
+    private final ConversationHistoryStore conversationHistoryStore;
+
     private final BpmnSemanticLayouting bpmnSemanticLayouting;
     private final AskQuestionsState askQuestionsState;
     private final ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState;
@@ -24,13 +26,14 @@ public class LlmService {
     private final ChatMessageBuilder chatMessageBuilder;
 
     @Autowired
-    public LlmService(SessionStateStore sessionStateStore,
+    public LlmService(SessionStateStore sessionStateStore, ConversationHistoryStore conversationHistoryStore,
                       BpmnSemanticLayouting bpmnSemanticLayouting,
                       AskQuestionsState askQuestionsState,
                       ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState,
                       ModifyModelState modifyModelState,
                       ChatMessageBuilder chatMessageBuilder) {
         this.sessionStateStore = sessionStateStore;
+        this.conversationHistoryStore = conversationHistoryStore;
         this.bpmnSemanticLayouting = bpmnSemanticLayouting;
         this.askQuestionsState = askQuestionsState;
         this.reasonAboutTasksAndProcessFlowState = reasonAboutTasksAndProcessFlowState;
@@ -52,11 +55,12 @@ public class LlmService {
         }
 
         BpmnModel layoutedModel = bpmnSemanticLayouting.layoutModel(sessionStateStore.model());
-        return new UserRequestResponse(sessionStateStore.lastAddedMessageWithUserFacingContent().content(), layoutedModel.asXmlString());
+        return new UserRequestResponse(conversationHistoryStore.getLastMessage().orElse(""), layoutedModel.asXmlString());
     }
 
     public void startNewConversation() {
         sessionStateStore.clearState();
+        conversationHistoryStore.clearMessages();
         sessionStateStore.appendMessage(chatMessageBuilder.buildSystemMessage(
                 "You are the world's best business process modelling specialist. " +
                 "When confronted with a user request, ask questions to gather as much necessary information as possible, " +
