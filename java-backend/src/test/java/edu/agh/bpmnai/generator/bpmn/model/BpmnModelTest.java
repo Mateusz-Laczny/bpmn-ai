@@ -99,4 +99,15 @@ class BpmnModelTest {
 
         assertFalse(model.areElementsDirectlyConnected(model.getStartEvent(), taskId));
     }
+
+    @Test
+    void finds_successors_connected_with_labelled_sequence_flows() {
+        BpmnModel model = new BpmnModel();
+
+        String taskId = model.addTask("task", "taskModelFacingName");
+        String secondTaskId = model.addTask("task2", "task2ModelFacingName");
+        model.addLabelledSequenceFlow(taskId, secondTaskId, "label");
+
+        assertEquals(Set.of(secondTaskId), model.findSuccessors(taskId));
+    }
 }

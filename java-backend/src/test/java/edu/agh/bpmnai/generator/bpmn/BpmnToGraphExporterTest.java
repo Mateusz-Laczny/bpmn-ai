@@ -44,4 +44,18 @@ class BpmnToGraphExporterTest {
         assertTrue(resultGraph.findNodeById(startEventId).isPresent());
         assertFalse(resultGraph.findNodeById(activityId).isPresent());
     }
+
+    @Test
+    void works_for_labelled_sequence_flows() {
+        var model = new BpmnModel();
+        String startEventId = model.getStartEvent();
+        String activityId = model.addTask("Some task", "");
+        model.addLabelledSequenceFlow(startEventId, activityId, "label");
+
+        Graph resultGraph = exporter.export(model);
+
+        assertTrue(resultGraph.findNodeById(startEventId).isPresent());
+        assertTrue(resultGraph.findNodeById(activityId).isPresent());
+        assertEquals(Set.of(new Node(activityId, "label")), resultGraph.getNeighboursOfNode(startEventId));
+    }
 }

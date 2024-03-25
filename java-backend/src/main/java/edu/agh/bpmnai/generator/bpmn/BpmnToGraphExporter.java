@@ -31,14 +31,12 @@ public class BpmnToGraphExporter {
             visitedElements.add(currentlyProcessedElement);
 
             for (String elementSuccessorId : model.findSuccessors(currentlyProcessedElement)) {
-                graph.addEdge(currentlyProcessedElement, elementSuccessorId);
-                if (visitedElements.contains(elementSuccessorId)) {
-                    continue;
-                }
-
-                elementsToVisit.add(elementSuccessorId);
                 if (!graph.containsNodeWithId(elementSuccessorId)) {
                     graph.addNode(elementSuccessorId, model.getModelFriendlyId(elementSuccessorId));
+                }
+                graph.addEdge(currentlyProcessedElement, elementSuccessorId);
+                if (!visitedElements.contains(elementSuccessorId)) {
+                    elementsToVisit.add(elementSuccessorId);
                 }
             }
         }
