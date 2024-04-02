@@ -5,7 +5,10 @@ import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.openai.OpenAI;
 import edu.agh.bpmnai.generator.openai.OpenAIChatCompletionApi;
 import edu.agh.bpmnai.generator.v2.*;
-import edu.agh.bpmnai.generator.v2.functions.*;
+import edu.agh.bpmnai.generator.v2.functions.AddSequenceFlowsFunction;
+import edu.agh.bpmnai.generator.v2.functions.ChatFunctionDto;
+import edu.agh.bpmnai.generator.v2.functions.RemoveElementsFunction;
+import edu.agh.bpmnai.generator.v2.functions.RemoveSequenceFlowsFunction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,59 +16,52 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 import java.util.Set;
 
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.END;
 import static edu.agh.bpmnai.generator.v2.session.SessionStatus.FIX_ERRORS;
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.MODIFY_MODEL;
 
 @Service
 @Slf4j
-public class ModifyModelState {
-    public static final Set<ChatFunctionDto> FUNCTIONS_FOR_MODIFYING_THE_MODEL = Set.of(
-            AddSequenceOfTasksFunction.FUNCTION_DTO, AddXorGatewayFunction.FUNCTION_DTO,
-            AddParallelGatewayFunction.FUNCTION_DTO, AddWhileLoopFunction.FUNCTION_DTO,
-            AddIfElseBranchingFunction.FUNCTION_DTO, RemoveElementsFunction.FUNCTION_DTO
+public class FixErrorsInModelState {
+    public static final Set<ChatFunctionDto> AVAILABLE_FUNCTIONS = Set.of(
+            RemoveSequenceFlowsFunction.FUNCTION_DTO, RemoveElementsFunction.FUNCTION_DTO,
+            AddSequenceFlowsFunction.FUNCTION_DTO
     );
-
+    private final SessionStateStore sessionStateStore;
+    private final ChatMessageBuilder chatMessageBuilder;
+    private final BpmnToStringExporter bpmnToStringExporter;
+    private final OpenAIChatCompletionApi chatCompletionApi;
+    private final OpenAI.OpenAIModel usedModel;
     private final FunctionExecutionService functionExecutionService;
 
-    private final OpenAIChatCompletionApi chatCompletionApi;
-
-    private final OpenAI.OpenAIModel usedModel;
-
-    private final SessionStateStore sessionStateStore;
-
-    private final ConversationHistoryStore conversationHistoryStore;
-
-    private final ChatMessageBuilder chatMessageBuilder;
-
-    private final BpmnToStringExporter bpmnToStringExporter;
-
     @Autowired
-    public ModifyModelState(
-            FunctionExecutionService functionExecutionService, OpenAIChatCompletionApi chatCompletionApi,
-            OpenAI.OpenAIModel usedModel, SessionStateStore sessionStateStore,
-            ConversationHistoryStore conversationHistoryStore, ChatMessageBuilder chatMessageBuilder,
-            BpmnToStringExporter bpmnToStringExporter
+    public FixErrorsInModelState(
+            SessionStateStore sessionStateStore,
+            ChatMessageBuilder chatMessageBuilder,
+            BpmnToStringExporter bpmnToStringExporter,
+            OpenAIChatCompletionApi chatCompletionApi,
+            OpenAI.OpenAIModel usedModel,
+            FunctionExecutionService functionExecutionService
     ) {
-        this.functionExecutionService = functionExecutionService;
-        this.chatCompletionApi = chatCompletionApi;
-        this.usedModel = usedModel;
         this.sessionStateStore = sessionStateStore;
-        this.conversationHistoryStore = conversationHistoryStore;
         this.chatMessageBuilder = chatMessageBuilder;
         this.bpmnToStringExporter = bpmnToStringExporter;
+        this.chatCompletionApi = chatCompletionApi;
+        this.usedModel = usedModel;
+        this.functionExecutionService = functionExecutionService;
     }
 
     public SessionStatus process(String userMessageContent) {
         sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(
-                "BEGIN REQUEST CONTEXT" + "\n" + "Current diagram state:\n" + bpmnToStringExporter.export(
+                "Think about possible errors in the model, and if there are any fix them using only the provided "
+                + "functions. If there are no errors respond \"No errors\"\n"
+                + "BEGIN REQUEST CONTEXT" + "\n" + "Current diagram state:\n" + bpmnToStringExporter.export(
                         sessionStateStore.model()) + "\n" + "END REQUEST CONTEXT"));
         log.info("Request text sent to LLM: '{}'", sessionStateStore.lastAddedMessage());
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(
-                usedModel, sessionStateStore.messages(), FUNCTIONS_FOR_MODIFYING_THE_MODEL, "auto");
+                usedModel, sessionStateStore.messages(), AVAILABLE_FUNCTIONS, "auto");
         sessionStateStore.appendMessage(chatResponse);
         if (chatResponse.toolCalls() == null || chatResponse.toolCalls().isEmpty()) {
-            conversationHistoryStore.appendMessage(chatResponse.content());
-            return FIX_ERRORS;
+            return END;
         }
 
         for (ToolCallDto toolCall : chatResponse.toolCalls()) {
@@ -79,7 +75,7 @@ public class ModifyModelState {
                         toolCall.id(), new FunctionCallResponseDto(false, Map.of("errors", functionCallResult.getError()
                                 .message())));
                 sessionStateStore.appendMessage(response);
-                return MODIFY_MODEL;
+                return FIX_ERRORS;
             }
 
             var response = chatMessageBuilder.buildToolCallResponseMessage(
@@ -90,6 +86,6 @@ public class ModifyModelState {
             sessionStateStore.appendMessage(response);
         }
 
-        return MODIFY_MODEL;
+        return FIX_ERRORS;
     }
 }

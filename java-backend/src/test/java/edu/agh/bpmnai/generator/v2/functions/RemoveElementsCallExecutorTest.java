@@ -3,7 +3,7 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.functions.execution.RemoveElementCallExecutor;
+import edu.agh.bpmnai.generator.v2.functions.execution.RemoveElementsCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
@@ -12,18 +12,18 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class RemoveElementCallExecutorTest {
+class RemoveElementsCallExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     SessionStateStore sessionStateStore;
 
     RetrospectiveSummary aRetrospectiveSummary;
-    private RemoveElementCallExecutor executor;
+    private RemoveElementsCallExecutor executor;
 
     @BeforeEach
     void setUp() {
         sessionStateStore = new SessionStateStore();
-        executor = new RemoveElementCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore);
+        executor = new RemoveElementsCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore);
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 

@@ -16,7 +16,7 @@ public class BpmnSemanticLayouting {
 
     private final int cellHeight;
 
-    public BpmnSemanticLayouting(@Value("150") int cellWidth, @Value("60") int cellHeight) {
+    public BpmnSemanticLayouting(@Value("150") int cellWidth, @Value("100") int cellHeight) {
         this.cellWidth = cellWidth;
         this.cellHeight = cellHeight;
     }
@@ -39,12 +39,16 @@ public class BpmnSemanticLayouting {
             String processedElementId = boundary.remove(0);
             LinkedHashSet<String> elementSuccessors = model.findSuccessors(processedElementId);
             Optional<Cell> elementGridCell = grid.findCellByIdOfElementInside(processedElementId);
-            if (elementGridCell.isPresent() && elementSuccessors.stream().allMatch(successiorId -> grid.findCellByIdOfElementInside(successiorId).map(successorCell -> successorCell.x() > elementGridCell.get().x()).orElse(false))) {
+            if (elementGridCell.isPresent() && elementSuccessors.stream().allMatch(
+                    successiorId -> grid.findCellByIdOfElementInside(successiorId)
+                            .map(successorCell -> successorCell.x() > elementGridCell.get().x())
+                            .orElse(false))) {
                 continue;
             }
 
             LinkedHashSet<String> elementPredecessors = model.findPredecessors(processedElementId);
-            int numberOfPredecessorsInGrid = (int) elementPredecessors.stream().filter(predecessorId -> grid.findCellByIdOfElementInside(predecessorId).isPresent()).count();
+            int numberOfPredecessorsInGrid = (int) elementPredecessors.stream().filter(
+                    predecessorId -> grid.findCellByIdOfElementInside(predecessorId).isPresent()).count();
 
             if (numberOfPredecessorsInGrid == 1) {
                 String singlePredecessorId = elementPredecessors.iterator().next();
@@ -60,21 +64,25 @@ public class BpmnSemanticLayouting {
                     while (grid.isCellOccupied(updatedCellX, updatedCellY)) {
                         grid.shiftColumnInYAxis(updatedCellX, 2);
                         overallShift += 2;
-                        GridPosition updatedPredecessorPosition = predecessorCell.gridPosition().withY((predecessorCell.gridPosition().y() + overallShift) / 2);
+                        GridPosition updatedPredecessorPosition = predecessorCell.gridPosition().withY(
+                                (predecessorCell.gridPosition().y() + overallShift) / 2);
                         grid.moveCell(predecessorCell.gridPosition(), updatedPredecessorPosition);
                     }
 
                     moveOrAddCellToGrid(grid, processedElementId, updatedCellX, updatedCellY);
                 }
             } else if (numberOfPredecessorsInGrid > 1) {
-                int maxPredecessorX = elementPredecessors.stream()
-                        .mapToInt(elementId -> grid.findCellByIdOfElementInside(elementId).map(Cell::x).orElse(-1))
-                        .max()
+                int maxPredecessorX = elementPredecessors.stream().mapToInt(
+                                elementId -> grid.findCellByIdOfElementInside(elementId).map(Cell::x).orElse(-1)).max()
                         .getAsInt();
                 int updatedCellY = 0;
-                Result<Integer, String> findRowResult = findRowForElementWithMultiplePredecessors(elementPredecessors, grid);
+                Result<Integer, String> findRowResult = findRowForElementWithMultiplePredecessors(
+                        elementPredecessors, grid);
                 if (findRowResult.isError()) {
-                    log.warn("Could not calculate row for element, predecessor with id '{}' is not in grid", findRowResult.getError());
+                    log.warn(
+                            "Could not calculate row for element, predecessor with id '{}' is not in grid",
+                            findRowResult.getError()
+                    );
                 } else {
                     updatedCellY = findRowResult.getValue();
                 }
@@ -92,7 +100,9 @@ public class BpmnSemanticLayouting {
         return layoutedModel;
     }
 
-    private Result<Integer, String> findRowForElementWithMultiplePredecessors(Collection<String> elementPredecessors, Grid grid) {
+    private Result<Integer, String> findRowForElementWithMultiplePredecessors(
+            Collection<String> elementPredecessors, Grid grid
+    ) {
         int maxPredecessorColumnIndex = -1;
         for (String elementPredecessor : elementPredecessors) {
             Optional<Cell> elementCell = grid.findCellByIdOfElementInside(elementPredecessor);

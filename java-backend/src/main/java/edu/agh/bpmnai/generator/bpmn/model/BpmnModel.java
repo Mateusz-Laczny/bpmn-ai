@@ -2,6 +2,7 @@ package edu.agh.bpmnai.generator.bpmn.model;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import edu.agh.bpmnai.generator.datatype.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -18,6 +19,7 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 import java.util.*;
 
+import static edu.agh.bpmnai.generator.bpmn.model.AddSequenceFlowError.*;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toSet;
 
@@ -56,14 +58,18 @@ public final class BpmnModel {
         Bpmn.validateModel(modelInstance);
     }
 
-    private static <T extends BpmnModelElementInstance> T createElementWithParent(BpmnModelElementInstance parentElement, String id, Class<T> elementClass) {
+    private static <T extends BpmnModelElementInstance> T createElementWithParent(
+            BpmnModelElementInstance parentElement, String id, Class<T> elementClass
+    ) {
         T element = parentElement.getModelInstance().newInstance(elementClass);
         element.setAttributeValue("id", id, true);
         parentElement.addChildElement(element);
         return element;
     }
 
-    private static <T extends BpmnModelElementInstance> T createElementWithParent(BpmnModelElementInstance parentElement, Class<T> elementClass) {
+    private static <T extends BpmnModelElementInstance> T createElementWithParent(
+            BpmnModelElementInstance parentElement, Class<T> elementClass
+    ) {
         T element = parentElement.getModelInstance().newInstance(elementClass);
         parentElement.addChildElement(element);
         return element;
@@ -230,11 +236,13 @@ public final class BpmnModel {
 
     public String addSequenceFlow(BpmnSequenceFlow sequenceFlow) {
         if (!doesIdExist(sequenceFlow.sourceElementId())) {
-            throw new IllegalArgumentException("Element with id \"" + sequenceFlow.sourceElementId() + "\" does not exist");
+            throw new IllegalArgumentException(
+                    "Element with id \"" + sequenceFlow.sourceElementId() + "\" does not exist");
         }
 
         if (!doesIdExist(sequenceFlow.targetElementId())) {
-            throw new IllegalArgumentException("Element with id \"" + sequenceFlow.targetElementId() + "\" does not exist");
+            throw new IllegalArgumentException(
+                    "Element with id \"" + sequenceFlow.targetElementId() + "\" does not exist");
         }
 
         Process process = modelInstance.getModelElementById(sequenceFlow.processId());
@@ -254,7 +262,9 @@ public final class BpmnModel {
         return id;
     }
 
-    private void addSequenceFlowDiagramElement(SequenceFlow sequenceFlowElement, FlowNode sourceElement, FlowNode targetElement) {
+    private void addSequenceFlowDiagramElement(
+            SequenceFlow sequenceFlowElement, FlowNode sourceElement, FlowNode targetElement
+    ) {
         String edgeElementId = generateUniqueId();
         BpmnEdge edgeElement = createElementWithParent(diagramPlane, edgeElementId, BpmnEdge.class);
         edgeElement.setBpmnElement(sequenceFlowElement);
@@ -272,13 +282,39 @@ public final class BpmnModel {
         targetWaypoint.setY(targetY);
     }
 
-    public String addUnlabelledSequenceFlow(String sourceElementId, String targetElementId) {
-        log.trace("Adding unlabelled sequence flow from '{}' to '{}'", getModelFriendlyId(sourceElementId), getModelFriendlyId(targetElementId));
-        return addSequenceFlow(new BpmnSequenceFlow(idOfDefaultProcess, sourceElementId, targetElementId, null));
+    public Result<String, AddSequenceFlowError> addUnlabelledSequenceFlow(
+            String sourceElementId,
+            String targetElementId
+    ) {
+        log.trace("Adding unlabelled sequence flow from '{}' to '{}'", getModelFriendlyId(sourceElementId),
+                  getModelFriendlyId(targetElementId)
+        );
+
+        Process process = modelInstance.getModelElementById(idOfDefaultProcess);
+
+        FlowNode sourceElement = modelInstance.getModelElementById(sourceElementId);
+        if (sourceElement == null) {
+            return Result.error(SOURCE_ELEMENT_DOES_NOT_EXIST);
+        }
+        FlowNode targetElement = modelInstance.getModelElementById(targetElementId);
+        if (targetElement == null) {
+            return Result.error(TARGET_ELEMENT_DOES_NOT_EXIST);
+        }
+
+        if (areElementsDirectlyConnected(sourceElementId, targetElementId)) {
+            return Result.error(ELEMENTS_ALREADY_CONNECTED);
+        }
+
+        String id = generateUniqueId();
+        SequenceFlow sequenceFlowElement = createSequenceFlow(process, id, sourceElement, targetElement);
+        addSequenceFlowDiagramElement(sequenceFlowElement, sourceElement, targetElement);
+        return Result.ok(id);
     }
 
     public String addLabelledSequenceFlow(String sourceElementId, String targetElementId, String label) {
-        log.trace("Adding labelled sequence flow from '{}' to '{}'", getModelFriendlyId(sourceElementId), getModelFriendlyId(targetElementId));
+        log.trace("Adding labelled sequence flow from '{}' to '{}'", getModelFriendlyId(sourceElementId),
+                  getModelFriendlyId(targetElementId)
+        );
         return addSequenceFlow(new BpmnSequenceFlow(idOfDefaultProcess, sourceElementId, targetElementId, label));
     }
 
@@ -288,7 +324,8 @@ public final class BpmnModel {
         }
 
         if (!doesIdExist(elementToRemove.processId())) {
-            throw new IllegalArgumentException("Element with id \"" + elementToRemove.processId() + "\" does not exist");
+            throw new IllegalArgumentException(
+                    "Element with id \"" + elementToRemove.processId() + "\" does not exist");
         }
 
         ModelElementInstance modelElement = modelInstance.getModelElementById(elementToRemove.id());
@@ -301,6 +338,29 @@ public final class BpmnModel {
 
     public void removeElement(String idOfElementToRemove) {
         removeElement(new ElementToRemove(idOfElementToRemove, idOfDefaultProcess));
+    }
+
+    public Result<Void, RemoveActivityError> removeFlowNode(String flowNodeId) {
+        ModelElementInstance elementInstance = modelInstance.getModelElementById(flowNodeId);
+        if (elementInstance == null) {
+            return Result.error(RemoveActivityError.ELEMENT_DOES_NOT_EXIST);
+        }
+
+        if (!(elementInstance instanceof FlowNode flowNodeInstance)) {
+            return Result.error(RemoveActivityError.ELEMENT_IS_NOT_A_FLOW_NODE);
+        }
+
+        for (SequenceFlow incomingSequenceFlow : flowNodeInstance.getIncoming()) {
+            removeElement(incomingSequenceFlow.getId());
+        }
+
+        for (SequenceFlow outgoingSequenceFlow : flowNodeInstance.getOutgoing()) {
+            removeElement(outgoingSequenceFlow.getId());
+        }
+
+        removeElement(flowNodeId);
+
+        return Result.ok(null);
     }
 
     public void cutOutElement(String elementId) {
@@ -330,12 +390,14 @@ public final class BpmnModel {
 
     public LinkedHashSet<String> findPredecessors(String elementId) {
         FlowNode modelElementInstance = modelInstance.getModelElementById(elementId);
-        return modelElementInstance.getIncoming().stream().map(sequenceFlow -> sequenceFlow.getSource().getId()).collect(toCollection(LinkedHashSet::new));
+        return modelElementInstance.getIncoming().stream().map(sequenceFlow -> sequenceFlow.getSource().getId())
+                .collect(toCollection(LinkedHashSet::new));
     }
 
     public LinkedHashSet<String> findSuccessors(String elementId) {
         FlowNode modelElementInstance = modelInstance.getModelElementById(elementId);
-        return modelElementInstance.getOutgoing().stream().map(sequenceFlow -> sequenceFlow.getTarget().getId()).collect(toCollection(LinkedHashSet::new));
+        return modelElementInstance.getOutgoing().stream().map(sequenceFlow -> sequenceFlow.getTarget().getId())
+                .collect(toCollection(LinkedHashSet::new));
     }
 
     public void clearSuccessors(String elementId) {
@@ -364,7 +426,9 @@ public final class BpmnModel {
         if (targetElement instanceof FlowNode targetFlowNode) {
             for (SequenceFlow incomingSequenceFlow : targetFlowNode.getIncoming()) {
                 removeElement(incomingSequenceFlow.getId());
-                addSequenceFlow(new BpmnSequenceFlow(idOfDefaultProcess, incomingSequenceFlow.getSource().getId(), targetFlowNode.getId(), incomingSequenceFlow.getName()));
+                addSequenceFlow(new BpmnSequenceFlow(idOfDefaultProcess, incomingSequenceFlow.getSource().getId(),
+                                                     targetFlowNode.getId(), incomingSequenceFlow.getName()
+                ));
             }
         }
     }
@@ -372,7 +436,9 @@ public final class BpmnModel {
     public Dimensions getElementDimensions(String elementId) {
         BaseElement targetElement = modelInstance.getModelElementById(elementId);
         Bounds targetElementBoundsElement = ((BpmnShape) targetElement.getDiagramElement()).getBounds();
-        return new Dimensions(targetElementBoundsElement.getX(), targetElementBoundsElement.getY(), targetElementBoundsElement.getWidth(), targetElementBoundsElement.getHeight());
+        return new Dimensions(targetElementBoundsElement.getX(), targetElementBoundsElement.getY(),
+                              targetElementBoundsElement.getWidth(), targetElementBoundsElement.getHeight()
+        );
     }
 
     public void setAlias(String elementId, String alias) {
@@ -381,8 +447,12 @@ public final class BpmnModel {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
         var that = (BpmnModel) obj;
         return Objects.equals(this.modelInstance, that.modelInstance);
     }
@@ -394,8 +464,7 @@ public final class BpmnModel {
 
     @Override
     public String toString() {
-        return "BpmnModel[" +
-               "modelInstance=" + modelInstance + ']';
+        return "BpmnModel[" + "modelInstance=" + modelInstance + ']';
     }
 
     public BpmnModel getCopy() {
@@ -407,7 +476,8 @@ public final class BpmnModel {
         String generatedId = null;
         while (!generatedUniqueId) {
             UUID uuid = UUID.randomUUID();
-            // For some reason, id's in bpmn.io (the library currently used in the frontend) have to start with a letter,
+            // For some reason, id's in bpmn.io (the library currently used in the frontend) have to start with a
+            // letter,
             // so we ensure that by concatenating a string to the beginning of the UUID
             generatedId = "id-" + uuid;
             if (!doesIdExist(generatedId)) {
@@ -424,5 +494,34 @@ public final class BpmnModel {
 
     public String getModelFriendlyId(String elementId) {
         return idToModelFriendlyId.get(elementId);
+    }
+
+    public Result<Void, RemoveSequenceFlowError> removeSequenceFlow(String sourceElementId, String targetElementId) {
+        ModelElementInstance sourceElement = modelInstance.getModelElementById(sourceElementId);
+        if (sourceElement == null) {
+            return Result.error(RemoveSequenceFlowError.SOURCE_ELEMENT_NOT_FOUND);
+        }
+
+        if (!(sourceElement instanceof FlowNode sourceFlowNode)) {
+            return Result.error(RemoveSequenceFlowError.SOURCE_ELEMENT_NOT_FLOW_NODE);
+        }
+
+        ModelElementInstance targetElement = modelInstance.getModelElementById(targetElementId);
+        if (targetElement == null) {
+            return Result.error(RemoveSequenceFlowError.TARGET_ELEMENT_NOT_FOUND);
+        }
+
+        if (!(targetElement instanceof FlowNode targetFlowNode)) {
+            return Result.error(RemoveSequenceFlowError.TARGET_ELEMENT_NOT_FLOW_NODE);
+        }
+
+        for (SequenceFlow sequenceFlow : sourceFlowNode.getOutgoing()) {
+            if (sequenceFlow.getTarget().equals(targetFlowNode)) {
+                removeElement(sequenceFlow.getId());
+                return Result.ok(null);
+            }
+        }
+
+        return Result.error(RemoveSequenceFlowError.ELEMENTS_NOT_CONNECTED);
     }
 }
