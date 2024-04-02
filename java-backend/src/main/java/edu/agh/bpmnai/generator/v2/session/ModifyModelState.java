@@ -21,8 +21,7 @@ import static edu.agh.bpmnai.generator.v2.session.SessionStatus.MODIFY_MODEL;
 public class ModifyModelState {
     public static final Set<ChatFunctionDto> FUNCTIONS_FOR_MODIFYING_THE_MODEL = Set.of(
             AddSequenceOfTasksFunction.FUNCTION_DTO, AddXorGatewayFunction.FUNCTION_DTO,
-            AddParallelGatewayFunction.FUNCTION_DTO, AddWhileLoopFunction.FUNCTION_DTO,
-            AddIfElseBranchingFunction.FUNCTION_DTO, RemoveElementsFunction.FUNCTION_DTO
+            AddParallelGatewayFunction.FUNCTION_DTO, AddWhileLoopFunction.FUNCTION_DTO
     );
 
     private final FunctionExecutionService functionExecutionService;
