@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.bpmn.layouting;
 
+import edu.agh.bpmnai.generator.bpmn.model.BpmnElementType;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.datatype.Result;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+
+import static edu.agh.bpmnai.generator.bpmn.diagram.DiagramDimensions.*;
 
 @Service
 @Slf4j
@@ -94,7 +97,32 @@ public class BpmnSemanticLayouting {
         }
 
         for (Cell cell : grid.allCells()) {
-            layoutedModel.setPositionOfElement(cell.idOfElementInside(), cellWidth * cell.x(), cellHeight * cell.y());
+            Optional<BpmnElementType> elementType = model.getElementType(cell.idOfElementInside());
+            if (elementType.isEmpty()) {
+                log.warn(
+                        "Cell contains element with id '{}' even though it does not exist in the model",
+                        cell.idOfElementInside()
+                );
+                continue;
+            }
+            double xPos;
+            double yPos;
+            switch (elementType.get()) {
+                case EVENT -> {
+                    xPos = cellWidth * cell.x();
+                    yPos = 0.5 * TASK_HEIGHT - (0.5 * EVENT_DIAMETER);
+                }
+                case ACTIVITY, OTHER_ELEMENT -> {
+                    xPos = cellWidth * cell.x();
+                    yPos = cellHeight * cell.y();
+                }
+                case GATEWAY -> {
+                    xPos = cellWidth * cell.x();
+                    yPos = 0.5 * TASK_HEIGHT - (0.5 * GATEWAY_DIAGONAL);
+                }
+                default -> throw new IllegalStateException("Unexpected element type: " + elementType.get());
+            }
+            layoutedModel.setPositionOfElement(cell.idOfElementInside(), xPos, yPos);
         }
 
         return layoutedModel;

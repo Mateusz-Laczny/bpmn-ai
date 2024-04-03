@@ -3,6 +3,7 @@ package edu.agh.bpmnai.generator.bpmn.model;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import edu.agh.bpmnai.generator.datatype.Result;
+import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -19,6 +20,7 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 import java.util.*;
 
+import static edu.agh.bpmnai.generator.bpmn.diagram.DiagramDimensions.*;
 import static edu.agh.bpmnai.generator.bpmn.model.AddSequenceFlowError.*;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toSet;
@@ -106,8 +108,8 @@ public final class BpmnModel {
         shape.setBpmnElement(taskElement);
         Bounds bounds = createElementWithParent(shape, Bounds.class);
         shape.setBounds(bounds);
-        bounds.setHeight(68);
-        bounds.setWidth(83);
+        bounds.setHeight(TASK_HEIGHT);
+        bounds.setWidth(TASK_WIDTH);
         bounds.setX(0);
         bounds.setY(0);
     }
@@ -159,8 +161,8 @@ public final class BpmnModel {
         Bounds bounds = createElementWithParent(shape, Bounds.class);
         bounds.setX(0);
         bounds.setY(0);
-        bounds.setHeight(42);
-        bounds.setWidth(42);
+        bounds.setHeight(GATEWAY_DIAGONAL);
+        bounds.setWidth(GATEWAY_DIAGONAL);
     }
 
     public String addGateway(BpmnGatewayType gatewayType, String name) {
@@ -182,8 +184,8 @@ public final class BpmnModel {
         BpmnShape shape = createElementWithParent(diagramPlane, shapeId, BpmnShape.class);
         shape.setBpmnElement(element);
         Bounds bounds = createElementWithParent(shape, Bounds.class);
-        bounds.setHeight(30);
-        bounds.setWidth(30);
+        bounds.setHeight(EVENT_DIAMETER);
+        bounds.setWidth(EVENT_DIAMETER);
         bounds.setX(0);
         bounds.setY(0);
     }
@@ -443,6 +445,23 @@ public final class BpmnModel {
 
     public void setAlias(String elementId, String alias) {
         idToModelFriendlyId.put(elementId, alias);
+    }
+
+    public Optional<BpmnElementType> getElementType(String elementId) {
+        @Nullable ModelElementInstance modelElement = modelInstance.getModelElementById(elementId);
+        if (modelElement == null) {
+            return Optional.empty();
+        }
+
+        if (modelElement instanceof Activity) {
+            return Optional.of(BpmnElementType.ACTIVITY);
+        } else if (modelElement instanceof Event) {
+            return Optional.of(BpmnElementType.EVENT);
+        } else if (modelElement instanceof Gateway) {
+            return Optional.of(BpmnElementType.GATEWAY);
+        } else {
+            return Optional.of(BpmnElementType.OTHER_ELEMENT);
+        }
     }
 
     @Override
