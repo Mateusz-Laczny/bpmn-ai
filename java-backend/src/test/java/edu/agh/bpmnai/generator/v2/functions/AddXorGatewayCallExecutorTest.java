@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.functions.execution.ActivityService;
-import edu.agh.bpmnai.generator.v2.functions.execution.AddXorGatewayExecutor;
+import edu.agh.bpmnai.generator.v2.functions.execution.AddXorGatewayCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.functions.parameter.XorGatewayDto;
@@ -20,12 +20,12 @@ import static edu.agh.bpmnai.generator.v2.functions.parameter.DuplicateHandlingS
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class AddXorGatewayExecutorTest {
+class AddXorGatewayCallExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     RetrospectiveSummary aRetrospectiveSummary;
     SessionStateStore sessionStateStore;
-    AddXorGatewayExecutor executor;
+    AddXorGatewayCallExecutor executor;
 
     ActivityService activityService;
 
@@ -33,7 +33,11 @@ class AddXorGatewayExecutorTest {
     void setUp() {
         sessionStateStore = new SessionStateStore();
         activityService = new ActivityService();
-        executor = new AddXorGatewayExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore, activityService);
+        executor = new AddXorGatewayCallExecutor(
+                new ToolCallArgumentsParser(mapper),
+                sessionStateStore,
+                activityService
+        );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 

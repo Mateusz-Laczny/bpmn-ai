@@ -20,7 +20,7 @@ import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
 
 @Service
 @Slf4j
-public class AddXorGatewayExecutor implements FunctionCallExecutor {
+public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
 
     private final ToolCallArgumentsParser callArgumentsParser;
 
@@ -29,7 +29,11 @@ public class AddXorGatewayExecutor implements FunctionCallExecutor {
     private final ActivityService activityService;
 
     @Autowired
-    public AddXorGatewayExecutor(ToolCallArgumentsParser callArgumentsParser, SessionStateStore sessionStateStore, ActivityService activityService) {
+    public AddXorGatewayCallExecutor(
+            ToolCallArgumentsParser callArgumentsParser,
+            SessionStateStore sessionStateStore,
+            ActivityService activityService
+    ) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
         this.activityService = activityService;
@@ -42,12 +46,20 @@ public class AddXorGatewayExecutor implements FunctionCallExecutor {
 
     @Override
     public Result<String, List<String>> executeCall(String callArgumentsJson) {
-        Result<XorGatewayDto, List<String>> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, XorGatewayDto.class);
+        Result<XorGatewayDto, List<String>> argumentsParsingResult = callArgumentsParser.parseArguments(
+                callArgumentsJson,
+                XorGatewayDto.class
+        );
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());
         }
 
         XorGatewayDto callArguments = argumentsParsingResult.getValue();
+
+        if (callArguments.activitiesInsideGateway().size() < 2) {
+            return Result.error(List.of("A gateway must contain at least 2 activities"));
+        }
+
         BpmnModel model = sessionStateStore.model();
         String checkTaskName = callArguments.checkActivity();
         Optional<String> optionalTaskElementId = model.findElementByModelFriendlyId(checkTaskName);
@@ -57,10 +69,12 @@ public class AddXorGatewayExecutor implements FunctionCallExecutor {
             checkTaskId = optionalTaskElementId.get();
             predecessorTaskSuccessorsBeforeModification = model.findSuccessors(checkTaskId);
         } else {
-            Optional<String> optionalPredecessorElementId = model.findElementByModelFriendlyId(callArguments.predecessorElement());
+            Optional<String> optionalPredecessorElementId =
+                    model.findElementByModelFriendlyId(callArguments.predecessorElement());
             if (optionalPredecessorElementId.isEmpty()) {
                 log.info("Predecessor element does not exist in the model");
-                return Result.error(List.of("Predecessor element does not exist in the model"));
+                return Result.error(List.of("Predecessor element '%s' does not exist in the model".formatted(
+                        callArguments.predecessorElement())));
             }
             String predecessorElementId = optionalPredecessorElementId.get();
             predecessorTaskSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
@@ -77,7 +91,10 @@ public class AddXorGatewayExecutor implements FunctionCallExecutor {
 
         Set<String> addedActivitiesNames = new HashSet<>();
         for (Activity activityInsideGateway : callArguments.activitiesInsideGateway()) {
-            Result<ActivityIdAndName, String> resultOfAddingActivity = activityService.addActivityToModel(model, activityInsideGateway);
+            Result<ActivityIdAndName, String> resultOfAddingActivity = activityService.addActivityToModel(
+                    model,
+                    activityInsideGateway
+            );
             if (resultOfAddingActivity.isError()) {
                 return Result.error(List.of(resultOfAddingActivity.getError()));
             }

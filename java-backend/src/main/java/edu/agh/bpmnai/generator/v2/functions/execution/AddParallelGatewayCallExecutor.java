@@ -49,11 +49,15 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
 
         ParallelGatewayDto callArguments = argumentsParsingResult.getValue();
 
+        if (callArguments.activitiesInsideGateway().size() < 2) {
+            return Result.error(List.of("A gateway must contain at least 2 activities"));
+        }
+
         BpmnModel model = sessionStateStore.model();
         Optional<String> optionalPredecessorElementId = model.findElementByModelFriendlyId(callArguments.predecessorElement());
         if (optionalPredecessorElementId.isEmpty()) {
             log.info("Predecessor element does not exist in the model");
-            return Result.error(List.of("Predecessor element does not exist in the model"));
+            return Result.error(List.of("Predecessor element '%s' does not exist in the model".formatted(callArguments.predecessorElement())));
         }
 
         String predecessorElementId = optionalPredecessorElementId.get();
