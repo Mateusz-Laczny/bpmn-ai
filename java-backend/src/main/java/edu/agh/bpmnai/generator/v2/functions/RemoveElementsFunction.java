@@ -1,6 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions;
 
-import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementsFunctionCallDto;
 
 import static edu.agh.bpmnai.generator.openai.OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto;
 
@@ -10,6 +10,6 @@ public class RemoveElementsFunction {
             .name(FUNCTION_NAME)
             .description("Removes the given element from the "
                          + "diagram. All incoming and outgoing sequence flows will be removed")
-            .parameters(getSchemaForParametersDto(RemoveElementDto.class))
+            .parameters(getSchemaForParametersDto(RemoveElementsFunctionCallDto.class))
             .build();
 }

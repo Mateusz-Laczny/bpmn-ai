@@ -4,11 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.functions.execution.RemoveElementsCallExecutor;
-import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementsFunctionCallDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -31,7 +33,9 @@ class RemoveElementsCallExecutorTest {
     void removes_task_from_the_model() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
         model.addTask("task", "");
-        RemoveElementDto callArguments = new RemoveElementDto(aRetrospectiveSummary, "", "task");
+        RemoveElementsFunctionCallDto callArguments = new RemoveElementsFunctionCallDto(aRetrospectiveSummary, "",
+                                                                                        List.of("task")
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 

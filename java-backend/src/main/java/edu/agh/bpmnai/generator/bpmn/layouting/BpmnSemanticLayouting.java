@@ -9,8 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-import static edu.agh.bpmnai.generator.bpmn.diagram.DiagramDimensions.*;
-
 @Service
 @Slf4j
 public class BpmnSemanticLayouting {
@@ -18,10 +16,16 @@ public class BpmnSemanticLayouting {
     private final int cellWidth;
 
     private final int cellHeight;
+    private final GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping;
 
-    public BpmnSemanticLayouting(@Value("150") int cellWidth, @Value("100") int cellHeight) {
+    public BpmnSemanticLayouting(
+            @Value("150") int cellWidth,
+            @Value("100") int cellHeight,
+            GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping
+    ) {
         this.cellWidth = cellWidth;
         this.cellHeight = cellHeight;
+        this.gridElementToDiagramPositionMapping = gridElementToDiagramPositionMapping;
     }
 
     private static void moveOrAddCellToGrid(Grid grid, String cellContent, int updatedCellX, int updatedCellY) {
@@ -105,24 +109,14 @@ public class BpmnSemanticLayouting {
                 );
                 continue;
             }
-            double xPos;
-            double yPos;
-            switch (elementType.get()) {
-                case EVENT -> {
-                    xPos = cellWidth * cell.x();
-                    yPos = 0.5 * TASK_HEIGHT - (0.5 * EVENT_DIAMETER);
-                }
-                case ACTIVITY, OTHER_ELEMENT -> {
-                    xPos = cellWidth * cell.x();
-                    yPos = cellHeight * cell.y();
-                }
-                case GATEWAY -> {
-                    xPos = cellWidth * cell.x();
-                    yPos = 0.5 * TASK_HEIGHT - (0.5 * GATEWAY_DIAGONAL);
-                }
-                default -> throw new IllegalStateException("Unexpected element type: " + elementType.get());
-            }
-            layoutedModel.setPositionOfElement(cell.idOfElementInside(), xPos, yPos);
+
+            Point2d finalElementPositionOnDiagram = gridElementToDiagramPositionMapping.apply(
+                    cellWidth,
+                    cellHeight,
+                    cell.gridPosition(),
+                    elementType.get()
+            );
+            layoutedModel.setPositionOfElement(cell.idOfElementInside(), finalElementPositionOnDiagram);
         }
 
         return layoutedModel;

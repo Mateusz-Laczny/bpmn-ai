@@ -33,7 +33,11 @@ class AddWhileLoopCallExecutorTest {
     void setUp() {
         sessionStateStore = new SessionStateStore();
         activityService = new ActivityService();
-        executor = new AddWhileLoopCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore, activityService);
+        executor = new AddWhileLoopCallExecutor(
+                new ToolCallArgumentsParser(mapper),
+                sessionStateStore,
+                activityService
+        );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
@@ -41,11 +45,13 @@ class AddWhileLoopCallExecutorTest {
     void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
         String checkTaskId = model.addTask("task", "task");
-        WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary,
+        WhileLoopDto callArguments = new WhileLoopDto(
+                aRetrospectiveSummary,
                 "someName",
                 "task",
                 null,
-                List.of(new Activity("task1", ADD_NEW_INSTANCE), new Activity("task2", ADD_NEW_INSTANCE)));
+                List.of(new Activity("task1", ADD_NEW_INSTANCE, false), new Activity("task2", ADD_NEW_INSTANCE, false))
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
@@ -71,11 +77,13 @@ class AddWhileLoopCallExecutorTest {
         BpmnModel model = sessionStateStore.model();
         model.addTask("task", "task");
 
-        WhileLoopDto callArguments = new WhileLoopDto(aRetrospectiveSummary,
+        WhileLoopDto callArguments = new WhileLoopDto(
+                aRetrospectiveSummary,
                 "someName",
                 "checkActivity",
                 "task",
-                List.of(new Activity("task1", ADD_NEW_INSTANCE), new Activity("task2", ADD_NEW_INSTANCE)));
+                List.of(new Activity("task1", ADD_NEW_INSTANCE, false), new Activity("task2", ADD_NEW_INSTANCE, false))
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 

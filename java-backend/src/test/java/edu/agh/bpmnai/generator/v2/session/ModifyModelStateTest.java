@@ -14,7 +14,7 @@ import java.util.List;
 
 import static edu.agh.bpmnai.generator.v2.CallErrorType.CALL_FAILED;
 import static edu.agh.bpmnai.generator.v2.CallErrorType.NO_EXECUTOR_FOUND;
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.END;
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.FIX_ERRORS;
 import static edu.agh.bpmnai.generator.v2.session.SessionStatus.MODIFY_MODEL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
@@ -36,25 +36,54 @@ class ModifyModelStateTest {
     }
 
     @Test
-    void returns_END_when_model_response_has_no_tool_calls() {
+    void returns_FIX_ERRORS_when_model_response_has_no_tool_calls() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
-        var state = new ModifyModelState(mock(FunctionExecutionService.class), mockApi, aModel, sessionStateStore, mock(ConversationHistoryStore.class), chatMessageBuilder, mock(BpmnToStringExporter.class));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, null));
+        var state = new ModifyModelState(
+                mock(FunctionExecutionService.class),
+                mockApi,
+                aModel,
+                sessionStateStore,
+                mock(ConversationHistoryStore.class),
+                chatMessageBuilder,
+                mock(BpmnToStringExporter.class)
+        );
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto(
+                "aRole",
+                "aContent",
+                null,
+                null
+        ));
 
         SessionStatus status = state.process("aUserRequest");
 
-        assertEquals(END, status);
+        assertEquals(FIX_ERRORS, status);
     }
 
     @Test
     void adds_error_response_to_conversation_when_called_function_does_not_exist() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
-        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.error(new CallError(NO_EXECUTOR_FOUND, "Error description")));
-        var state = new ModifyModelState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, mock(ConversationHistoryStore.class), chatMessageBuilder, mock(BpmnToStringExporter.class));
+        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.error(new CallError(
+                NO_EXECUTOR_FOUND,
+                "Error description"
+        )));
+        var state = new ModifyModelState(
+                mockFunctionExecutionService,
+                mockApi,
+                aModel,
+                sessionStateStore,
+                mock(ConversationHistoryStore.class),
+                chatMessageBuilder,
+                mock(BpmnToStringExporter.class)
+        );
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto("aName", ""));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall)));
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto(
+                "aRole",
+                "aContent",
+                null,
+                List.of(toolCall)
+        ));
 
         SessionStatus status = state.process("aUserRequest");
 
@@ -67,11 +96,27 @@ class ModifyModelStateTest {
     void adds_error_response_to_conversation_when_function_call_fails() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
-        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.error(new CallError(CALL_FAILED, "Error description")));
-        var state = new ModifyModelState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, mock(ConversationHistoryStore.class), chatMessageBuilder, mock(BpmnToStringExporter.class));
+        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.error(new CallError(
+                CALL_FAILED,
+                "Error description"
+        )));
+        var state = new ModifyModelState(
+                mockFunctionExecutionService,
+                mockApi,
+                aModel,
+                sessionStateStore,
+                mock(ConversationHistoryStore.class),
+                chatMessageBuilder,
+                mock(BpmnToStringExporter.class)
+        );
         var callId = "id";
         var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto("aName", ""));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall)));
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto(
+                "aRole",
+                "aContent",
+                null,
+                List.of(toolCall)
+        ));
 
         SessionStatus status = state.process("aUserRequest");
 
@@ -85,10 +130,27 @@ class ModifyModelStateTest {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
         when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.ok("some message"));
-        var state = new ModifyModelState(mockFunctionExecutionService, mockApi, aModel, sessionStateStore, mock(ConversationHistoryStore.class), chatMessageBuilder, mock(BpmnToStringExporter.class));
+        var state = new ModifyModelState(
+                mockFunctionExecutionService,
+                mockApi,
+                aModel,
+                sessionStateStore,
+                mock(ConversationHistoryStore.class),
+                chatMessageBuilder,
+                mock(BpmnToStringExporter.class)
+        );
         var callId = "id";
-        var toolCall = new ToolCallDto(callId, "function", new FunctionCallDto(FinishAskingQuestionsFunction.FUNCTION_NAME, ""));
-        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto("aRole", "aContent", null, List.of(toolCall)));
+        var toolCall = new ToolCallDto(
+                callId,
+                "function",
+                new FunctionCallDto(FinishAskingQuestionsFunction.FUNCTION_NAME, "")
+        );
+        when(mockApi.sendRequest(any(), anyList(), anySet(), any())).thenReturn(new ChatMessageDto(
+                "aRole",
+                "aContent",
+                null,
+                List.of(toolCall)
+        ));
 
         SessionStatus status = state.process("aUserRequest");
 

@@ -23,7 +23,14 @@ class ActivityServiceTest {
     void adds_new_instance_if_no_instance_exists() {
         var model = new BpmnModel();
 
-        Result<ActivityIdAndName, String> addResult = activityService.addActivityToModel(model, new Activity("anActivity", ADD_NEW_INSTANCE));
+        Result<ActivityIdAndName, String> addResult = activityService.addActivityToModel(
+                model,
+                new Activity(
+                        "anActivity",
+                        ADD_NEW_INSTANCE,
+                        false
+                )
+        );
 
         assertTrue(addResult.isOk());
         assertTrue(model.findElementByModelFriendlyId(addResult.getValue().modelFacingName()).isPresent());
@@ -34,7 +41,14 @@ class ActivityServiceTest {
         var model = new BpmnModel();
         String activityId = model.addTask("anActivity", "anActivity");
 
-        Result<ActivityIdAndName, String> addResult = activityService.addActivityToModel(model, new Activity("anActivity", ADD_NEW_INSTANCE));
+        Result<ActivityIdAndName, String> addResult = activityService.addActivityToModel(
+                model,
+                new Activity(
+                        "anActivity",
+                        ADD_NEW_INSTANCE,
+                        false
+                )
+        );
 
         assertTrue(addResult.isOk());
         assertTrue(model.findElementByModelFriendlyId(addResult.getValue().modelFacingName()).isPresent());
@@ -45,7 +59,14 @@ class ActivityServiceTest {
     void adds_new_instance_when_element_does_not_exist_for_use_existing_strategy() {
         var model = new BpmnModel();
 
-        Result<ActivityIdAndName, String> addResult = activityService.addActivityToModel(model, new Activity("anActivity", USE_EXISTING));
+        Result<ActivityIdAndName, String> addResult = activityService.addActivityToModel(
+                model,
+                new Activity(
+                        "anActivity",
+                        USE_EXISTING,
+                        false
+                )
+        );
 
         assertTrue(addResult.isOk());
         assertTrue(model.findElementByModelFriendlyId(addResult.getValue().modelFacingName()).isPresent());
@@ -56,7 +77,14 @@ class ActivityServiceTest {
         var model = new BpmnModel();
         String activityId = model.addTask("anActivity", "anActivityNameForModel");
 
-        Result<ActivityIdAndName, String> addResult = activityService.addActivityToModel(model, new Activity("anActivityNameForModel", USE_EXISTING));
+        Result<ActivityIdAndName, String> addResult = activityService.addActivityToModel(
+                model,
+                new Activity(
+                        "anActivityNameForModel",
+                        USE_EXISTING,
+                        false
+                )
+        );
 
         assertTrue(addResult.isOk());
         assertEquals(activityId, addResult.getValue().id());

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnElementType.EVENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -15,7 +16,9 @@ class BpmnSemanticLayoutingTest {
     void if_element_has_single_successor_inserts_it_in_the_same_row_and_next_column() {
         int cellWidth = 100;
         int cellHeight = 100;
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
+        GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping =
+                new GridElementToDiagramPositionMapping();
+        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
         String taskId = model.addTask("aTask", "");
         String startEventId = model.getStartEvent();
@@ -24,7 +27,8 @@ class BpmnSemanticLayoutingTest {
         BpmnModel layoutedModel = layouter.layoutModel(model);
         Dimensions startEventDimensions = layoutedModel.getElementDimensions(startEventId);
         assertEquals(0, startEventDimensions.x());
-        assertEquals(0, startEventDimensions.y());
+        assertEquals(gridElementToDiagramPositionMapping.apply(cellWidth, cellHeight, new GridPosition(0, 0), EVENT)
+                             .y(), startEventDimensions.y());
 
         Dimensions taskDimensions = layoutedModel.getElementDimensions(taskId);
         assertEquals(cellWidth, taskDimensions.x());
@@ -35,7 +39,7 @@ class BpmnSemanticLayoutingTest {
     void connected_elements_are_still_connected_after_layouting() {
         int cellWidth = 100;
         int cellHeight = 100;
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
+        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
         var model = new BpmnModel();
         String taskId = model.addTask("aTask", "aTask");
         String startEventId = model.getStartEvent();
@@ -49,7 +53,9 @@ class BpmnSemanticLayoutingTest {
     void if_element_has_multiple_successors_inserts_them_in_different_rows_in_the_next_column() {
         int cellWidth = 100;
         int cellHeight = 100;
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
+        GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping =
+                new GridElementToDiagramPositionMapping();
+        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
         String firstTaskId = model.addTask("aTask1", "aTask1");
         String secondTaskId = model.addTask("aTask2", "aTask2");
@@ -69,7 +75,10 @@ class BpmnSemanticLayoutingTest {
 
         Dimensions startEventDimensions = layoutedModel.getElementDimensions(startEventId);
         assertEquals(0, startEventDimensions.x());
-        assertEquals(cellHeight, startEventDimensions.y());
+        assertEquals(
+                gridElementToDiagramPositionMapping.apply(cellWidth, cellHeight, new GridPosition(0, 0), EVENT).y(),
+                startEventDimensions.y()
+        );
     }
 
     @Test
@@ -85,7 +94,9 @@ class BpmnSemanticLayoutingTest {
          */
         int cellWidth = 100;
         int cellHeight = 100;
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
+        GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping =
+                new GridElementToDiagramPositionMapping();
+        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
         String taskId = model.addTask("aTask1", "aTask1");
         String startEventId = model.getStartEvent();
@@ -100,14 +111,15 @@ class BpmnSemanticLayoutingTest {
 
         Dimensions startEventDimensions = layoutedModel.getElementDimensions(startEventId);
         assertEquals(0, startEventDimensions.x());
-        assertEquals(0, startEventDimensions.y());
+        assertEquals(gridElementToDiagramPositionMapping.apply(cellWidth, cellHeight, new GridPosition(0, 0), EVENT)
+                             .y(), startEventDimensions.y());
     }
 
     @Test
     void handles_complex_loops() {
         int cellWidth = 100;
         int cellHeight = 100;
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
+        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
         var model = new BpmnModel();
         String firstTaskId = model.addTask("firstTask", "firstTask");
         String secondTaskId = model.addTask("secondTask", "secondTaskI");
@@ -137,7 +149,9 @@ class BpmnSemanticLayoutingTest {
     void if_element_has_multiple_predecessors_inserts_it_between_them() {
         int cellWidth = 100;
         int cellHeight = 100;
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
+        GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping =
+                new GridElementToDiagramPositionMapping();
+        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
         String firstTaskId = model.addTask("aTask1", "aTask1");
         String secondTaskId = model.addTask("aTask2", "aTask2");
@@ -152,9 +166,8 @@ class BpmnSemanticLayoutingTest {
 
         BpmnModel layoutedModel = layouter.layoutModel(model);
 
-        Dimensions startEventDimensions = layoutedModel.getElementDimensions(startEventId);
         Dimensions successorTaskDimensions = layoutedModel.getElementDimensions(successorTaskId);
-        assertEquals(startEventDimensions.y(), successorTaskDimensions.y());
+        assertEquals(cellHeight, successorTaskDimensions.y());
     }
 
     @Test
@@ -168,13 +181,20 @@ class BpmnSemanticLayoutingTest {
                   │       │                         │          │                         │   │
                   │       └─────────────────────────┘          └─────────────────────────┘   │
                   │                                                                          │
-┌───────┐         │                                                                          │   ┌─────────────────────────┐
-│       │         │                                                                          │   │                         │
-│ start ├─────────┤                                                                          │   │                         │
-│       │         │                                                                  ┌───────┴───►     Common successor    │
-└───────┘         │                       ┌─────────────────────────┐                │           │                         │
-                  │                       │                         │                │           │                         │
-                  │                       │                         │                │           └─────────────────────────┘
+┌───────┐         │                                                                          │
+┌─────────────────────────┐
+│       │         │                                                                          │   │
+      │
+│ start ├─────────┤                                                                          │   │
+      │
+│       │         │                                                                  ┌───────┴───►     Common
+successor    │
+└───────┘         │                       ┌─────────────────────────┐                │           │
+      │
+                  │                       │                         │                │           │
+                        │
+                  │                       │                         │                │
+                  └─────────────────────────┘
                   └───────────────────────►       Third task        ├────────────────┘
                                           │                         │
                                           │                         │
@@ -182,7 +202,7 @@ class BpmnSemanticLayoutingTest {
  */
         int cellWidth = 100;
         int cellHeight = 100;
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight);
+        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
         var model = new BpmnModel();
         String firstTaskId = model.addTask("aTask1", "aTask1");
         String secondTaskId = model.addTask("aTask2", "aTask2");

@@ -34,7 +34,11 @@ class AddSequenceOfTasksCallExecutorTest {
     void setUp() {
         sessionStateStore = new SessionStateStore();
         activityService = new ActivityService();
-        executor = new AddSequenceOfTasksCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore, activityService);
+        executor = new AddSequenceOfTasksCallExecutor(
+                new ToolCallArgumentsParser(mapper),
+                sessionStateStore,
+                activityService
+        );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
@@ -42,10 +46,15 @@ class AddSequenceOfTasksCallExecutorTest {
     void works_as_expected() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
         String predecessorTaskId = model.addTask("task", "task");
-        SequenceOfTasksDto callArguments = new SequenceOfTasksDto(aRetrospectiveSummary,
+        SequenceOfTasksDto callArguments = new SequenceOfTasksDto(
+                aRetrospectiveSummary,
                 "",
                 "task",
-                List.of(new Activity("activity1", ADD_NEW_INSTANCE), new Activity("activity2", ADD_NEW_INSTANCE)));
+                List.of(
+                        new Activity("activity1", ADD_NEW_INSTANCE, false),
+                        new Activity("activity2", ADD_NEW_INSTANCE, false)
+                )
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
@@ -77,10 +86,15 @@ class AddSequenceOfTasksCallExecutorTest {
         model.addUnlabelledSequenceFlow(checkTaskId, gatewayId);
         model.addUnlabelledSequenceFlow(gatewayId, firstPathAfterGateway);
         model.addUnlabelledSequenceFlow(gatewayId, secondPathAfterGateway);
-        SequenceOfTasksDto callArguments = new SequenceOfTasksDto(aRetrospectiveSummary,
+        SequenceOfTasksDto callArguments = new SequenceOfTasksDto(
+                aRetrospectiveSummary,
                 "",
                 "path1",
-                List.of(new Activity("activity1", ADD_NEW_INSTANCE), new Activity("activity2", ADD_NEW_INSTANCE)));
+                List.of(
+                        new Activity("activity1", ADD_NEW_INSTANCE, false),
+                        new Activity("activity2", ADD_NEW_INSTANCE, false)
+                )
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 

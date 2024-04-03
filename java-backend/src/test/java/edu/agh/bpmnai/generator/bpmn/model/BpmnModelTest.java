@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.bpmn.model;
 
+import edu.agh.bpmnai.generator.bpmn.layouting.Point2d;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -46,7 +47,7 @@ class BpmnModelTest {
         BpmnModel model = new BpmnModel();
 
         String taskId = model.addTask("task", "");
-        model.setPositionOfElement(taskId, 10, 15);
+        model.setPositionOfElement(taskId, new Point2d(10, 15));
 
         Dimensions taskDimensions = model.getElementDimensions(taskId);
         assertEquals(10, taskDimensions.x());

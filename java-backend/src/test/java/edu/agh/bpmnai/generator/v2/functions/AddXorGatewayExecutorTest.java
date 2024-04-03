@@ -41,12 +41,14 @@ class AddXorGatewayExecutorTest {
     void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
         String checkTaskId = model.addTask("task", "task");
-        XorGatewayDto callArguments = new XorGatewayDto(aRetrospectiveSummary,
+        XorGatewayDto callArguments = new XorGatewayDto(
+                aRetrospectiveSummary,
                 "",
                 "elementName",
                 "task",
                 null,
-                List.of(new Activity("task1", ADD_NEW_INSTANCE), new Activity("task2", ADD_NEW_INSTANCE)));
+                List.of(new Activity("task1", ADD_NEW_INSTANCE, false), new Activity("task2", ADD_NEW_INSTANCE, false))
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
@@ -78,12 +80,14 @@ class AddXorGatewayExecutorTest {
     void should_work_as_expected_for_new_check_activity_task() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
         model.addTask("task", "task");
-        XorGatewayDto callArguments = new XorGatewayDto(aRetrospectiveSummary,
+        XorGatewayDto callArguments = new XorGatewayDto(
+                aRetrospectiveSummary,
                 "",
                 "elementName",
                 "checkActivity",
                 "task",
-                List.of(new Activity("task1", ADD_NEW_INSTANCE), new Activity("task2", ADD_NEW_INSTANCE)));
+                List.of(new Activity("task1", ADD_NEW_INSTANCE, false), new Activity("task2", ADD_NEW_INSTANCE, false))
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
@@ -119,12 +123,14 @@ class AddXorGatewayExecutorTest {
         String predecessorTaskId = model.addTask("predecessorTask", "predecessorTask");
         String successorTaskId = model.addTask("successorTask", "successorTask");
         model.addUnlabelledSequenceFlow(predecessorTaskId, successorTaskId);
-        XorGatewayDto callArguments = new XorGatewayDto(aRetrospectiveSummary,
+        XorGatewayDto callArguments = new XorGatewayDto(
+                aRetrospectiveSummary,
                 "",
                 "elementName",
                 "checkActivity",
                 "predecessorTask",
-                List.of(new Activity("task1", ADD_NEW_INSTANCE), new Activity("task2", ADD_NEW_INSTANCE)));
+                List.of(new Activity("task1", ADD_NEW_INSTANCE, false), new Activity("task2", ADD_NEW_INSTANCE, false))
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 

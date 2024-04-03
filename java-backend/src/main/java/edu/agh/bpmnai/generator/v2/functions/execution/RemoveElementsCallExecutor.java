@@ -5,7 +5,7 @@ import edu.agh.bpmnai.generator.bpmn.model.RemoveActivityError;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.RemoveElementsFunction;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
-import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementsFunctionCallDto;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,13 +38,13 @@ public class RemoveElementsCallExecutor implements FunctionCallExecutor {
 
     @Override
     public Result<String, List<String>> executeCall(String callArgumentsJson) {
-        Result<RemoveElementDto, List<String>> argumentsParsingResult = callArgumentsParser.parseArguments(
-                callArgumentsJson, RemoveElementDto.class);
+        Result<RemoveElementsFunctionCallDto, List<String>> argumentsParsingResult = callArgumentsParser.parseArguments(
+                callArgumentsJson, RemoveElementsFunctionCallDto.class);
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());
         }
 
-        RemoveElementDto callArguments = argumentsParsingResult.getValue();
+        RemoveElementsFunctionCallDto callArguments = argumentsParsingResult.getValue();
 
         BpmnModel model = sessionStateStore.model();
         StringBuilder removedElementsMessageBuilder = new StringBuilder("Following elements were removed:\n");

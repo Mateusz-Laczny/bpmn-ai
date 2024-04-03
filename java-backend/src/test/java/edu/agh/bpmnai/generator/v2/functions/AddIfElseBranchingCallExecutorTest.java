@@ -35,7 +35,11 @@ class AddIfElseBranchingCallExecutorTest {
     void setUp() {
         sessionStateStore = new SessionStateStore();
         activityService = new ActivityService();
-        executor = new AddIfElseBranchingCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore, activityService);
+        executor = new AddIfElseBranchingCallExecutor(
+                new ToolCallArgumentsParser(mapper),
+                sessionStateStore,
+                activityService
+        );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
@@ -43,13 +47,15 @@ class AddIfElseBranchingCallExecutorTest {
     void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
         String checkTaskId = model.addTask("task", "task");
-        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary,
+        IfElseBranchingDto callArguments = new IfElseBranchingDto(
+                aRetrospectiveSummary,
                 "",
                 "someName",
                 "task",
                 null,
-                new Activity("trueBranch", ADD_NEW_INSTANCE),
-                new Activity("falseBranch", ADD_NEW_INSTANCE));
+                new Activity("trueBranch", ADD_NEW_INSTANCE, false),
+                new Activity("falseBranch", ADD_NEW_INSTANCE, false)
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
@@ -71,13 +77,15 @@ class AddIfElseBranchingCallExecutorTest {
         BpmnModel model = sessionStateStore.model();
         model.addTask("task", "task");
 
-        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary,
+        IfElseBranchingDto callArguments = new IfElseBranchingDto(
+                aRetrospectiveSummary,
                 "",
                 "someName",
                 "checkActivity",
                 "task",
-                new Activity("trueBranch", ADD_NEW_INSTANCE),
-                new Activity("falseBranch", ADD_NEW_INSTANCE));
+                new Activity("trueBranch", ADD_NEW_INSTANCE, false),
+                new Activity("falseBranch", ADD_NEW_INSTANCE, false)
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 
@@ -100,13 +108,15 @@ class AddIfElseBranchingCallExecutorTest {
     void should_work_for_start_activity_as_predecessor() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
 
-        IfElseBranchingDto callArguments = new IfElseBranchingDto(aRetrospectiveSummary,
+        IfElseBranchingDto callArguments = new IfElseBranchingDto(
+                aRetrospectiveSummary,
                 "",
                 "someName",
                 "checkActivity",
                 "Start",
-                new Activity("trueBranch", ADD_NEW_INSTANCE),
-                new Activity("falseBranch", ADD_NEW_INSTANCE));
+                new Activity("trueBranch", ADD_NEW_INSTANCE, false),
+                new Activity("falseBranch", ADD_NEW_INSTANCE, false)
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 

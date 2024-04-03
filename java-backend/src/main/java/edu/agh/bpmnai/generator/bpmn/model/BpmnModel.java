@@ -2,6 +2,7 @@ package edu.agh.bpmnai.generator.bpmn.model;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import edu.agh.bpmnai.generator.bpmn.layouting.Point2d;
 import edu.agh.bpmnai.generator.datatype.Result;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
@@ -425,11 +426,11 @@ public final class BpmnModel {
         return modelInstance.getModelElementById(id) != null;
     }
 
-    public void setPositionOfElement(String elementId, double newX, double newY) {
+    public void setPositionOfElement(String elementId, Point2d newPosition) {
         BaseElement targetElement = modelInstance.getModelElementById(elementId);
         Bounds targetElementBoundsElement = ((BpmnShape) targetElement.getDiagramElement()).getBounds();
-        targetElementBoundsElement.setX(newX);
-        targetElementBoundsElement.setY(newY);
+        targetElementBoundsElement.setX(newPosition.x());
+        targetElementBoundsElement.setY(newPosition.y());
         if (targetElement instanceof FlowNode targetFlowNode) {
             for (SequenceFlow incomingSequenceFlow : targetFlowNode.getIncoming()) {
                 removeElement(incomingSequenceFlow.getId());

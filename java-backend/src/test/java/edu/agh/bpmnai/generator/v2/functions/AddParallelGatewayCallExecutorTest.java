@@ -36,7 +36,11 @@ class AddParallelGatewayCallExecutorTest {
     void setUp() {
         sessionStateStore = new SessionStateStore();
         activityService = new ActivityService();
-        executor = new AddParallelGatewayCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore, activityService);
+        executor = new AddParallelGatewayCallExecutor(
+                new ToolCallArgumentsParser(mapper),
+                sessionStateStore,
+                activityService
+        );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 
@@ -44,11 +48,16 @@ class AddParallelGatewayCallExecutorTest {
     void works_as_expected() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
         String predecessorTaskId = model.addTask("task", "task");
-        ParallelGatewayDto callArguments = new ParallelGatewayDto(aRetrospectiveSummary,
+        ParallelGatewayDto callArguments = new ParallelGatewayDto(
+                aRetrospectiveSummary,
                 "",
                 "elementName",
                 "task",
-                List.of(new Activity("activity1", ADD_NEW_INSTANCE), new Activity("activity2", ADD_NEW_INSTANCE)));
+                List.of(
+                        new Activity("activity1", ADD_NEW_INSTANCE, false),
+                        new Activity("activity2", ADD_NEW_INSTANCE, false)
+                )
+        );
 
         executor.executeCall(mapper.writeValueAsString(callArguments));
 

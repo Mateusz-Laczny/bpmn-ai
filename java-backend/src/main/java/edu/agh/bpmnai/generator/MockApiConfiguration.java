@@ -3,6 +3,7 @@ package edu.agh.bpmnai.generator;
 import edu.agh.bpmnai.generator.bpmn.BpmnProvider;
 import edu.agh.bpmnai.generator.bpmn.MockBpmnProvider;
 import edu.agh.bpmnai.generator.bpmn.layouting.BpmnSemanticLayouting;
+import edu.agh.bpmnai.generator.bpmn.layouting.GridElementToDiagramPositionMapping;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -17,8 +18,8 @@ public class MockApiConfiguration {
     }
 
     @Bean
-    BpmnSemanticLayouting bpmnSemanticLayouting() {
-        return new BpmnSemanticLayouting(100, 60);
+    BpmnSemanticLayouting bpmnSemanticLayouting(GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping) {
+        return new BpmnSemanticLayouting(100, 60, gridElementToDiagramPositionMapping);
     }
 
     @Bean
