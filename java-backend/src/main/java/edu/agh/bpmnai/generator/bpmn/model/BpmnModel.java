@@ -175,11 +175,20 @@ public final class BpmnModel {
         String id = generateUniqueId();
         StartEvent startEventElement = createElementWithParent(process, id, StartEvent.class);
         startEventElement.setAttributeValue("name", startEvent.name());
-        addStartEventDiagramElement(startEventElement);
+        addEventDiagramElement(startEventElement);
         return id;
     }
 
-    private void addStartEventDiagramElement(BaseElement element) {
+    public String addEndEvent(BpmnEndEvent endEvent) {
+        Process process = modelInstance.getModelElementById(endEvent.processId());
+        String id = generateUniqueId();
+        EndEvent endEventElement = createElementWithParent(process, id, EndEvent.class);
+        endEventElement.setAttributeValue("name", endEvent.name());
+        addEventDiagramElement(endEventElement);
+        return id;
+    }
+
+    private void addEventDiagramElement(Event element) {
         String shapeId = generateUniqueId();
         BpmnShape shape = createElementWithParent(diagramPlane, shapeId, BpmnShape.class);
         shape.setBpmnElement(element);
@@ -190,12 +199,8 @@ public final class BpmnModel {
         bounds.setY(0);
     }
 
-    public String addEndEvent(BpmnEndEvent endEvent) {
-        Process process = modelInstance.getModelElementById(endEvent.processId());
-        String id = generateUniqueId();
-        EndEvent endEventElement = createElementWithParent(process, id, EndEvent.class);
-        endEventElement.setAttributeValue("name", endEvent.name());
-        return id;
+    public String addEndEvent() {
+        return addEndEvent(new BpmnEndEvent(idOfDefaultProcess, null));
     }
 
     public String addIntermediateCatchEvent(BpmnIntermediateCatchEvent intermediateCatchEvent) {
