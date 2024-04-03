@@ -56,7 +56,10 @@ public class ModifyModelState {
 
     public SessionStatus process(String userMessageContent) {
         sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(
-                "BEGIN REQUEST CONTEXT" + "\n" + "Current diagram state:\n" + bpmnToStringExporter.export(
+                "Use the provided functions to modify the diagram. After you're done, provide a textual explanation of "
+                + "changes done to the diagram for the user.\n"
+                + "BEGIN REQUEST CONTEXT" + "\n"
+                + "Current diagram state:\n" + bpmnToStringExporter.export(
                         sessionStateStore.model()) + "\n" + "END REQUEST CONTEXT"));
         log.info("Request text sent to LLM: '{}'", sessionStateStore.lastAddedMessage());
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(
