@@ -27,20 +27,16 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
     private final SessionStateStore sessionStateStore;
 
-    private final ActivityService activityService;
-
     private final InsertElementIntoDiagram insertElementIntoDiagram;
 
     @Autowired
     public AddWhileLoopCallExecutor(
             ToolCallArgumentsParser callArgumentsParser,
             SessionStateStore sessionStateStore,
-            ActivityService activityService,
             InsertElementIntoDiagram insertElementIntoDiagram
     ) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
-        this.activityService = activityService;
         this.insertElementIntoDiagram = insertElementIntoDiagram;
     }
 
@@ -94,16 +90,12 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
         String previousElementInLoopId = gatewayId;
         for (Activity activityInLoop : callArguments.activitiesInLoop()) {
-            Result<ActivityIdAndName, String> activityAddResult = activityService.addActivityToModel(
-                    model,
-                    activityInLoop
-            );
-            if (activityAddResult.isError()) {
-                return Result.error(activityAddResult.getError());
+            if (model.findElementByModelFriendlyId(activityInLoop.activityName()).isPresent()) {
+                return Result.error("Element %s already exists in the model".formatted(activityInLoop.activityName()));
             }
 
-            String activityId = activityAddResult.getValue().id();
-            addedActivitiesNames.add(activityAddResult.getValue().modelFacingName());
+            String activityId = model.addTask(activityInLoop.activityName(), activityInLoop.activityName());
+            addedActivitiesNames.add(activityInLoop.activityName());
 
             if (!model.areElementsDirectlyConnected(previousElementInLoopId, activityId)) {
                 model.addUnlabelledSequenceFlow(previousElementInLoopId, activityId);

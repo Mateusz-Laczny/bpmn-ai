@@ -27,19 +27,16 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
 
     private final SessionStateStore sessionStateStore;
 
-    private final ActivityService activityService;
-
     private final InsertElementIntoDiagram insertElementIntoDiagram;
 
     @Autowired
     public AddXorGatewayCallExecutor(
             ToolCallArgumentsParser callArgumentsParser,
             SessionStateStore sessionStateStore,
-            ActivityService activityService, InsertElementIntoDiagram insertElementIntoDiagram
+            InsertElementIntoDiagram insertElementIntoDiagram
     ) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
-        this.activityService = activityService;
         this.insertElementIntoDiagram = insertElementIntoDiagram;
     }
 

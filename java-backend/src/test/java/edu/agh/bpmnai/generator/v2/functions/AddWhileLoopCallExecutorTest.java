@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.functions.execution.ActivityService;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddWhileLoopCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
@@ -17,7 +16,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static edu.agh.bpmnai.generator.v2.functions.parameter.DuplicateHandlingStrategy.ADD_NEW_INSTANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,16 +26,12 @@ class AddWhileLoopCallExecutorTest {
     SessionStateStore sessionStateStore;
     AddWhileLoopCallExecutor executor;
 
-    ActivityService activityService;
-
     @BeforeEach
     void setUp() {
         sessionStateStore = new SessionStateStore();
-        activityService = new ActivityService();
         executor = new AddWhileLoopCallExecutor(
                 new ToolCallArgumentsParser(mapper),
                 sessionStateStore,
-                activityService,
                 new InsertElementIntoDiagram()
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
@@ -52,7 +46,7 @@ class AddWhileLoopCallExecutorTest {
                 "someName",
                 "task",
                 null,
-                List.of(new Activity("task1", ADD_NEW_INSTANCE, false), new Activity("task2", ADD_NEW_INSTANCE, false))
+                List.of(new Activity("task1", false), new Activity("task2", false))
         );
 
         var modelReference = new BpmnManagedReference(model);
@@ -86,7 +80,7 @@ class AddWhileLoopCallExecutorTest {
                 "someName",
                 "checkActivity",
                 "task",
-                List.of(new Activity("task1", ADD_NEW_INSTANCE, false), new Activity("task2", ADD_NEW_INSTANCE, false))
+                List.of(new Activity("task1", false), new Activity("task2", false))
         );
 
         var modelReference = new BpmnManagedReference(model);

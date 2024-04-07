@@ -27,20 +27,16 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
 
     private final SessionStateStore sessionStateStore;
 
-    private final ActivityService activityService;
-
     private final InsertElementIntoDiagram insertElementIntoDiagram;
 
     @Autowired
     public AddParallelGatewayCallExecutor(
             ToolCallArgumentsParser callArgumentsParser,
             SessionStateStore sessionStateStore,
-            ActivityService activityService,
             InsertElementIntoDiagram insertElementIntoDiagram
     ) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
-        this.activityService = activityService;
         this.insertElementIntoDiagram = insertElementIntoDiagram;
     }
 

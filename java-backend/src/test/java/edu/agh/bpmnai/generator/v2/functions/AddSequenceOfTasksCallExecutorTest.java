@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.functions.execution.ActivityService;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddSequenceOfTasksCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
@@ -18,7 +17,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
-import static edu.agh.bpmnai.generator.v2.functions.parameter.DuplicateHandlingStrategy.ADD_NEW_INSTANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -29,16 +27,12 @@ class AddSequenceOfTasksCallExecutorTest {
     SessionStateStore sessionStateStore;
     AddSequenceOfTasksCallExecutor executor;
 
-    ActivityService activityService;
-
     @BeforeEach
     void setUp() {
         sessionStateStore = new SessionStateStore();
-        activityService = new ActivityService();
         executor = new AddSequenceOfTasksCallExecutor(
                 new ToolCallArgumentsParser(mapper),
                 sessionStateStore,
-                activityService,
                 new InsertElementIntoDiagram()
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
@@ -53,8 +47,8 @@ class AddSequenceOfTasksCallExecutorTest {
                 "",
                 "task",
                 List.of(
-                        new Activity("activity1", ADD_NEW_INSTANCE, false),
-                        new Activity("activity2", ADD_NEW_INSTANCE, false)
+                        new Activity("activity1", false),
+                        new Activity("activity2", false)
                 )
         );
 
@@ -95,8 +89,8 @@ class AddSequenceOfTasksCallExecutorTest {
                 "",
                 "path1",
                 List.of(
-                        new Activity("activity1", ADD_NEW_INSTANCE, false),
-                        new Activity("activity2", ADD_NEW_INSTANCE, false)
+                        new Activity("activity1", false),
+                        new Activity("activity2", false)
                 )
         );
 

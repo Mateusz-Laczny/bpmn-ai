@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.functions.execution.ActivityService;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddParallelGatewayCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.ParallelGatewayDto;
@@ -17,7 +16,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static edu.agh.bpmnai.generator.v2.functions.parameter.DuplicateHandlingStrategy.ADD_NEW_INSTANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -31,17 +29,13 @@ class AddParallelGatewayCallExecutorTest {
 
     SessionStateStore sessionStateStore;
 
-    ActivityService activityService;
-
     @BeforeEach
     void setUp() {
         sessionStateStore = new SessionStateStore();
-        activityService = new ActivityService();
 
         executor = new AddParallelGatewayCallExecutor(
                 new ToolCallArgumentsParser(mapper),
                 sessionStateStore,
-                activityService,
                 new InsertElementIntoDiagram()
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
@@ -57,8 +51,8 @@ class AddParallelGatewayCallExecutorTest {
                 "elementName",
                 "task",
                 List.of(
-                        new Activity("activity1", ADD_NEW_INSTANCE, false),
-                        new Activity("activity2", ADD_NEW_INSTANCE, false)
+                        new Activity("activity1", false),
+                        new Activity("activity2", false)
                 )
         );
 

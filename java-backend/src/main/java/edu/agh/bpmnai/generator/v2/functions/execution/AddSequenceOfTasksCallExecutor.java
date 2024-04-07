@@ -25,20 +25,16 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
     private final SessionStateStore sessionStateStore;
 
-    private final ActivityService activityService;
-
     private final InsertElementIntoDiagram insertElementIntoDiagram;
 
     @Autowired
     public AddSequenceOfTasksCallExecutor(
             ToolCallArgumentsParser callArgumentsParser,
             SessionStateStore sessionStateStore,
-            ActivityService activityService,
             InsertElementIntoDiagram insertElementIntoDiagram
     ) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
-        this.activityService = activityService;
         this.insertElementIntoDiagram = insertElementIntoDiagram;
     }
 
@@ -70,16 +66,12 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
         Set<String> addedActivitiesNames = new HashSet<>();
         String previousElementInSequenceId = null;
         for (Activity activityInSequence : callArguments.activitiesInSequence()) {
-            Result<ActivityIdAndName, String> activityAddResult = activityService.addActivityToModel(
-                    model,
-                    activityInSequence
-            );
-            if (activityAddResult.isError()) {
-                return Result.error(activityAddResult.getError());
+            if (model.findElementByModelFriendlyId(activityInSequence.activityName()).isPresent()) {
+                return Result.error("Element %s already exists in the model".formatted(activityInSequence.activityName()));
             }
 
-            String activityId = activityAddResult.getValue().id();
-            addedActivitiesNames.add(activityAddResult.getValue().modelFacingName());
+            String activityId = model.addTask(activityInSequence.activityName(), activityInSequence.activityName());
+            addedActivitiesNames.add(activityInSequence.activityName());
 
             if (previousElementInSequenceId != null && !model.areElementsDirectlyConnected(
                     previousElementInSequenceId,
