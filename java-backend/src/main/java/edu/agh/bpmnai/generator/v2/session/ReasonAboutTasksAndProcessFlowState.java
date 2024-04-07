@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import static edu.agh.bpmnai.generator.v2.session.ModifyModelState.FUNCTIONS_FOR_MODIFYING_THE_MODEL;
 import static edu.agh.bpmnai.generator.v2.session.SessionStatus.MODIFY_MODEL;
 
 @Service
@@ -38,16 +39,18 @@ public class ReasonAboutTasksAndProcessFlowState {
     public SessionStatus process(String userRequestContent) {
         sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(userRequestContent));
         var promptMessage = chatMessageBuilder.buildSystemMessage(
-                "Now, reason about and describe the plan of implementing the user request. Use at least 2000 "
-                + "characters. Create a description that can be used to generate a diagram, give specific steps. Use "
-                + "BPMN terminology. Remember to think about possible edge cases and paths different than the happy "
-                + "path. Don't try to create diagram, this will be done in the next step.");
+                "Now, reason about and describe how to fulfil the user request using the provided functions. Use at "
+                + "least 2000 "
+                + "characters. Remember to include possible edge cases and paths different than the happy "
+                + "path. Don't try to create diagram, this will be done in the next step."
+                + "After you finish the description, think of possible critiques and change your description to "
+                + "address them.");
         sessionStateStore.appendMessage(promptMessage);
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(
                 usedModel,
                 sessionStateStore.messages(),
-                null,
-                null
+                FUNCTIONS_FOR_MODIFYING_THE_MODEL,
+                "none"
         );
         log.info("Response: '{}'", chatResponse.content());
         sessionStateStore.appendMessage(chatResponse);
