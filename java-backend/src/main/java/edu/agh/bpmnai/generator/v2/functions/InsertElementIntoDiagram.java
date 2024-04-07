@@ -17,7 +17,7 @@ public class InsertElementIntoDiagram {
     public Result<Void, String> apply(
             String predecessorElementId,
             String elementStartId,
-            String elementEndId,
+            @Nullable String elementEndId,
             BpmnModel model
     ) {
         if (!model.doesIdExist(predecessorElementId)) {
@@ -57,7 +57,7 @@ public class InsertElementIntoDiagram {
             }
         }
 
-        if (predecessorElementSuccessor != null) {
+        if (predecessorElementSuccessor != null && elementEndId != null) {
             Result<String, AddSequenceFlowError> addEndSequenceFlowResult = model.addUnlabelledSequenceFlow(
                     elementEndId,
                     predecessorElementSuccessor

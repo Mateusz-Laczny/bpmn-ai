@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AddXorGatewayFunction;
@@ -48,7 +49,7 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
         Result<XorGatewayDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson,
                 XorGatewayDto.class
@@ -63,7 +64,7 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
             return Result.error("A gateway must contain at least 2 activities");
         }
 
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = modelReference.getCurrentValue();
         String checkTaskName = callArguments.checkActivity();
         Optional<String> optionalTaskElementId = model.findElementByModelFriendlyId(checkTaskName);
         String checkTaskId;
@@ -96,19 +97,20 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
 
         model.addUnlabelledSequenceFlow(checkTaskId, openingGatewayId);
 
-        for (Activity activityInsideGateway : callArguments.activitiesInsideGateway()) {
-            Result<ActivityIdAndName, String> resultOfAddingActivity = activityService.addActivityToModel(
-                    model,
-                    activityInsideGateway
-            );
-            if (resultOfAddingActivity.isError()) {
-                return Result.error(resultOfAddingActivity.getError());
+        for (Activity activityInGateway : callArguments.activitiesInsideGateway()) {
+            if (model.findElementByModelFriendlyId(activityInGateway.activityName()).isPresent()) {
+                return Result.error("Element with name %s already exists in the model".formatted(activityInGateway.activityName()));
             }
 
-            addedActivitiesNames.add(resultOfAddingActivity.getValue().modelFacingName());
-            String activityId = resultOfAddingActivity.getValue().id();
+            String activityId = model.addTask(activityInGateway.activityName(), activityInGateway.activityName());
+            addedActivitiesNames.add(activityInGateway.activityName());
             model.addUnlabelledSequenceFlow(openingGatewayId, activityId);
-            model.addUnlabelledSequenceFlow(activityId, closingGatewayId);
+            if (activityInGateway.isProcessEnd()) {
+                String endEventId = model.addEndEvent();
+                model.addUnlabelledSequenceFlow(activityId, endEventId);
+            } else {
+                model.addUnlabelledSequenceFlow(activityId, closingGatewayId);
+            }
         }
 
         Result<Void, String> elementInsertResult = insertElementIntoDiagram.apply(
@@ -121,6 +123,8 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
         if (elementInsertResult.isError()) {
             return Result.error(elementInsertResult.getError());
         }
+
+        modelReference.setValue(model);
 
         return Result.ok("Added activities: " + addedActivitiesNames);
     }

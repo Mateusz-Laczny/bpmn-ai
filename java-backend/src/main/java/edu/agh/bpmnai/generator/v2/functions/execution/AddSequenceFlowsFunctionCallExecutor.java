@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.AddSequenceFlowError;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.datatype.Result;
@@ -37,7 +38,7 @@ public class AddSequenceFlowsFunctionCallExecutor implements FunctionCallExecuto
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
         Result<AddSequenceFlowsCallParameterDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(
                         callArgumentsJson, AddSequenceFlowsCallParameterDto.class);
@@ -45,7 +46,7 @@ public class AddSequenceFlowsFunctionCallExecutor implements FunctionCallExecuto
             return Result.error(argumentsParsingResult.getError());
         }
 
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = modelReference.getCurrentValue();
 
         AddSequenceFlowsCallParameterDto callArguments = argumentsParsingResult.getValue();
         var responseMessageBuilder = new StringBuilder();
@@ -87,6 +88,8 @@ public class AddSequenceFlowsFunctionCallExecutor implements FunctionCallExecuto
             ));
             responseMessageBuilder.append('\n');
         }
+
+        modelReference.setValue(model);
 
         return Result.ok(responseMessageBuilder.toString());
     }

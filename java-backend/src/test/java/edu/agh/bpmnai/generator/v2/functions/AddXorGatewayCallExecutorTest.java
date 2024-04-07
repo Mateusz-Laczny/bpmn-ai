@@ -2,6 +2,7 @@ package edu.agh.bpmnai.generator.v2.functions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.functions.execution.ActivityService;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddXorGatewayCallExecutor;
@@ -55,7 +56,9 @@ class AddXorGatewayCallExecutorTest {
                 List.of(new Activity("task1", ADD_NEW_INSTANCE, false), new Activity("task2", ADD_NEW_INSTANCE, false))
         );
 
-        executor.executeCall(mapper.writeValueAsString(callArguments));
+        var modelReference = new BpmnManagedReference(model);
+        executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
+        model = modelReference.getCurrentValue();
 
         Optional<String> firstTaskId = model.findElementByModelFriendlyId("task1");
         assertTrue(firstTaskId.isPresent());
@@ -94,7 +97,9 @@ class AddXorGatewayCallExecutorTest {
                 List.of(new Activity("task1", ADD_NEW_INSTANCE, false), new Activity("task2", ADD_NEW_INSTANCE, false))
         );
 
-        executor.executeCall(mapper.writeValueAsString(callArguments));
+        var modelReference = new BpmnManagedReference(model);
+        executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
+        model = modelReference.getCurrentValue();
 
         Optional<String> checkTaskId = model.findElementByModelFriendlyId("checkActivity");
         assertTrue(checkTaskId.isPresent());
@@ -137,7 +142,9 @@ class AddXorGatewayCallExecutorTest {
                 List.of(new Activity("task1", ADD_NEW_INSTANCE, false), new Activity("task2", ADD_NEW_INSTANCE, false))
         );
 
-        executor.executeCall(mapper.writeValueAsString(callArguments));
+        var modelReference = new BpmnManagedReference(model);
+        executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
+        model = modelReference.getCurrentValue();
 
         Optional<String> checkTaskId = model.findElementByModelFriendlyId("checkActivity");
         assertTrue(checkTaskId.isPresent());

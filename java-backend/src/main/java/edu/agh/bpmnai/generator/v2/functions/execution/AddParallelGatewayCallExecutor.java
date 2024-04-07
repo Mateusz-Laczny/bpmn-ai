@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AddParallelGatewayFunction;
@@ -49,7 +50,7 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
         Result<ParallelGatewayDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson,
                 ParallelGatewayDto.class
@@ -64,7 +65,7 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
             return Result.error("A gateway must contain at least 2 activities");
         }
 
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = modelReference.getCurrentValue();
 
         Optional<String> predecessorElementId = model.findElementByModelFriendlyId(callArguments.predecessorElement());
         if (predecessorElementId.isEmpty()) {
@@ -76,18 +77,19 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
 
         Set<String> addedActivitiesNames = new HashSet<>();
         for (Activity activityInGateway : callArguments.activitiesInsideGateway()) {
-            Result<ActivityIdAndName, String> activityAddResult = activityService.addActivityToModel(
-                    model,
-                    activityInGateway
-            );
-            if (activityAddResult.isError()) {
-                return Result.error(activityAddResult.getError());
+            if (model.findElementByModelFriendlyId(activityInGateway.activityName()).isPresent()) {
+                return Result.error("Element with name %s already exists in the model".formatted(activityInGateway.activityName()));
             }
 
-            String activityId = activityAddResult.getValue().id();
-            addedActivitiesNames.add(activityAddResult.getValue().modelFacingName());
+            String activityId = model.addTask(activityInGateway.activityName(), activityInGateway.activityName());
+            addedActivitiesNames.add(activityInGateway.activityName());
             model.addUnlabelledSequenceFlow(openingGatewayId, activityId);
-            model.addUnlabelledSequenceFlow(activityId, closingGatewayId);
+            if (activityInGateway.isProcessEnd()) {
+                String endEventId = model.addEndEvent();
+                model.addUnlabelledSequenceFlow(activityId, endEventId);
+            } else {
+                model.addUnlabelledSequenceFlow(activityId, closingGatewayId);
+            }
         }
 
         Result<Void, String> insertSubdiagramResult = insertElementIntoDiagram.apply(
@@ -96,9 +98,13 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
                 closingGatewayId,
                 model
         );
+
         if (insertSubdiagramResult.isError()) {
             return Result.error(insertSubdiagramResult.getError());
         }
+
+        modelReference.setValue(model);
+
         return Result.ok("Added activities: " + addedActivitiesNames);
     }
 }

@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.layouting.BpmnSemanticLayouting;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.session.*;
@@ -27,6 +28,8 @@ public class LlmService {
 
     private final ChatMessageBuilder chatMessageBuilder;
 
+    private final ModelPostProcessing modelPostProcessing;
+
     @Autowired
     public LlmService(
             SessionStateStore sessionStateStore, ConversationHistoryStore conversationHistoryStore,
@@ -34,7 +37,7 @@ public class LlmService {
             AskQuestionsState askQuestionsState,
             ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState,
             ModifyModelState modifyModelState, FixErrorsInModelState fixErrorsInModelState,
-            ChatMessageBuilder chatMessageBuilder
+            ChatMessageBuilder chatMessageBuilder, ModelPostProcessing modelPostProcessing
     ) {
         this.sessionStateStore = sessionStateStore;
         this.conversationHistoryStore = conversationHistoryStore;
@@ -44,6 +47,7 @@ public class LlmService {
         this.modifyModelState = modifyModelState;
         this.fixErrorsInModelState = fixErrorsInModelState;
         this.chatMessageBuilder = chatMessageBuilder;
+        this.modelPostProcessing = modelPostProcessing;
     }
 
     public UserRequestResponse getResponse(String userMessageContent) {
@@ -60,7 +64,9 @@ public class LlmService {
             log.info("New state: '{}'", sessionState);
         }
 
-        BpmnModel layoutedModel = bpmnSemanticLayouting.layoutModel(sessionStateStore.model());
+        var modelReference = new BpmnManagedReference(sessionStateStore.model());
+        modelPostProcessing.apply(modelReference);
+        BpmnModel layoutedModel = bpmnSemanticLayouting.layoutModel(modelReference.getCurrentValue());
         return new UserRequestResponse(
                 conversationHistoryStore.getLastMessage().orElse(""),
                 layoutedModel.asXmlString()

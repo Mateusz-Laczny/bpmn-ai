@@ -2,6 +2,7 @@ package edu.agh.bpmnai.generator.v2.functions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.functions.execution.RemoveElementsCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementsFunctionCallDto;
@@ -37,7 +38,9 @@ class RemoveElementsCallExecutorTest {
                                                                                         List.of("task")
         );
 
-        executor.executeCall(mapper.writeValueAsString(callArguments));
+        var modelReference = new BpmnManagedReference(model);
+        executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
+        model = modelReference.getCurrentValue();
 
         assertTrue(model.findElementByModelFriendlyId("task").isEmpty());
     }

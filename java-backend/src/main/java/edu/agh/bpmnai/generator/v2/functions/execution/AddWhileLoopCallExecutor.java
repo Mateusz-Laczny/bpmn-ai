@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AddWhileLoopFunction;
@@ -49,7 +50,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
         Result<WhileLoopDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson,
                 WhileLoopDto.class
@@ -60,7 +61,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
         WhileLoopDto callArguments = argumentsParsingResult.getValue();
 
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = modelReference.getCurrentValue();
         String checkTaskName = callArguments.checkTask();
         Optional<String> optionalCheckTaskElementId = model.findElementByModelFriendlyId(checkTaskName);
         String checkTaskId;
@@ -125,6 +126,8 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         if (insertSubdiagramResult.isError()) {
             return Result.error(insertSubdiagramResult.getError());
         }
+
+        modelReference.setValue(model);
 
         return Result.ok("Added activities: " + addedActivitiesNames);
     }

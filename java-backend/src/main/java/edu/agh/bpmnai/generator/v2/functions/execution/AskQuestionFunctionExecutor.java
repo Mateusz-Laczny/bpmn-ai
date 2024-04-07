@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AskQuestionFunction;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
@@ -24,7 +25,7 @@ public class AskQuestionFunctionExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
         Result<AskQuestionFunctionParametersDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(callArgumentsJson, AskQuestionFunctionParametersDto.class);
         if (argumentsParsingResult.isError()) {

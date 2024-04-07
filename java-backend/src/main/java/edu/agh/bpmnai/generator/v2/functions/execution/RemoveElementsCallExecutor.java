@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.RemoveActivityError;
 import edu.agh.bpmnai.generator.datatype.Result;
@@ -36,7 +37,7 @@ public class RemoveElementsCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
         Result<RemoveElementsFunctionCallDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson, RemoveElementsFunctionCallDto.class);
         if (argumentsParsingResult.isError()) {
@@ -45,7 +46,7 @@ public class RemoveElementsCallExecutor implements FunctionCallExecutor {
 
         RemoveElementsFunctionCallDto callArguments = argumentsParsingResult.getValue();
 
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = modelReference.getCurrentValue();
         StringBuilder removedElementsMessageBuilder = new StringBuilder("Following elements were removed:\n");
         StringBuilder missingElementsMessageBuilder = new StringBuilder(
                 "Following elements are not present in the diagram:\n");
@@ -67,6 +68,8 @@ public class RemoveElementsCallExecutor implements FunctionCallExecutor {
                 }
             }
         }
+
+        modelReference.setValue(model);
 
         return Result.ok(removedElementsMessageBuilder.append('\n').append(missingElementsMessageBuilder).toString());
     }

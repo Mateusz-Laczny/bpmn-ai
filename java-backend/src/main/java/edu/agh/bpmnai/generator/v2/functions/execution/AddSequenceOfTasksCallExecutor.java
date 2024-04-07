@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AddSequenceOfTasksFunction;
@@ -47,7 +48,7 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
         Result<SequenceOfTasksDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson,
                 SequenceOfTasksDto.class
@@ -57,7 +58,7 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
         }
 
         SequenceOfTasksDto callArguments = argumentsParsingResult.getValue();
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = modelReference.getCurrentValue();
         Optional<String> optionalPredecessorElementId =
                 model.findElementByModelFriendlyId(callArguments.startOfSequence());
         if (optionalPredecessorElementId.isEmpty()) {
@@ -105,6 +106,8 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
         if (insertElementResult.isError()) {
             return Result.error(insertElementResult.getError());
         }
+
+        modelReference.setValue(model);
 
         return Result.ok("Added activities: " + addedActivitiesNames);
     }

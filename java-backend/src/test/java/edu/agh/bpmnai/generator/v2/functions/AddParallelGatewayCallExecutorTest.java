@@ -2,6 +2,7 @@ package edu.agh.bpmnai.generator.v2.functions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.functions.execution.ActivityService;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddParallelGatewayCallExecutor;
@@ -61,7 +62,9 @@ class AddParallelGatewayCallExecutorTest {
                 )
         );
 
-        executor.executeCall(mapper.writeValueAsString(callArguments));
+        var modelReference = new BpmnManagedReference(model);
+        executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
+        model = modelReference.getCurrentValue();
 
         Optional<String> firstTaskId = model.findElementByModelFriendlyId("activity1");
         assertTrue(firstTaskId.isPresent());

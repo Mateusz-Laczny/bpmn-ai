@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
+import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AddIfElseBranchingFunction;
@@ -43,7 +44,7 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
         Result<IfElseBranchingDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(callArgumentsJson, IfElseBranchingDto.class);
         if (argumentsParsingResult.isError()) {
@@ -51,7 +52,7 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
         }
 
         IfElseBranchingDto callArguments = argumentsParsingResult.getValue();
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = modelReference.getCurrentValue();
         String checkTaskName = callArguments.checkTask();
         Optional<String> optionalCheckTaskElementId = model.findElementByModelFriendlyId(checkTaskName);
         String checkTaskElementId;
@@ -109,6 +110,8 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
         model.addUnlabelledSequenceFlow(checkTaskElementId, gatewayId);
         model.addLabelledSequenceFlow(gatewayId, trueBranchBeginningElementId, "Yes");
         model.addLabelledSequenceFlow(gatewayId, falseBranchBeginningElementId, "No");
+
+        modelReference.setValue(model);
 
         return Result.ok("Added activities: " + addedActivitiesNames);
     }

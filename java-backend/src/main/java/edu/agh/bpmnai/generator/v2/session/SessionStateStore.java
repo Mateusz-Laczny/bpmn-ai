@@ -2,6 +2,7 @@ package edu.agh.bpmnai.generator.v2.session;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.ChatMessageDto;
+import lombok.Setter;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ public class SessionStateStore {
 
     private final List<ChatMessageDto> messages;
 
+    @Setter
     private BpmnModel model;
 
     public SessionStateStore() {

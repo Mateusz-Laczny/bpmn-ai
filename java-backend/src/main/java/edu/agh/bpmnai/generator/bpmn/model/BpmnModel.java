@@ -34,12 +34,13 @@ public final class BpmnModel {
 
     private final BpmnPlane diagramPlane;
 
-    private final BiMap<String, String> idToModelFriendlyId = HashBiMap.create();
+    private final BiMap<String, String> idToModelFriendlyId;
 
-    private BpmnModel(BpmnModelInstance modelInstanceToCopy, String idOfDefaultProcess) {
-        this.modelInstance = modelInstanceToCopy.clone();
-        this.idOfDefaultProcess = idOfDefaultProcess;
+    private BpmnModel(BpmnModel modelToCopy) {
+        this.modelInstance = modelToCopy.modelInstance.clone();
+        this.idOfDefaultProcess = modelToCopy.idOfDefaultProcess;
         diagramPlane = ((BpmnDiagram) modelInstance.getModelElementById("diagram")).getBpmnPlane();
+        idToModelFriendlyId = HashBiMap.create(modelToCopy.idToModelFriendlyId);
     }
 
     public BpmnModel() {
@@ -56,6 +57,7 @@ public final class BpmnModel {
         diagram.setBpmnPlane(diagramPlane);
 
         String startEventId = addStartEvent(new BpmnStartEvent(idOfDefaultProcess, "Start"));
+        idToModelFriendlyId = HashBiMap.create();
         idToModelFriendlyId.put(startEventId, "Start");
 
         Bpmn.validateModel(modelInstance);
@@ -495,7 +497,7 @@ public final class BpmnModel {
     }
 
     public BpmnModel getCopy() {
-        return new BpmnModel(modelInstance, idOfDefaultProcess);
+        return new BpmnModel(this);
     }
 
     private String generateUniqueId() {
@@ -550,5 +552,18 @@ public final class BpmnModel {
         }
 
         return Result.error(RemoveSequenceFlowError.ELEMENTS_NOT_CONNECTED);
+    }
+
+    public Set<String> findElementsOfType(BpmnElementType bpmnElementType) {
+        Set<String> foundElements = new HashSet<>();
+        for (ModelElementInstance modelElementInstance :
+                modelInstance.getModelElementsByType(ModelElementInstance.class)) {
+            String elementId = modelElementInstance.getAttributeValue("id");
+            if (getElementType(elementId).orElseThrow() == bpmnElementType) {
+                foundElements.add(elementId);
+            }
+        }
+
+        return foundElements;
     }
 }
