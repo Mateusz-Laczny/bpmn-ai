@@ -36,10 +36,12 @@ class AddParallelGatewayCallExecutorTest {
     void setUp() {
         sessionStateStore = new SessionStateStore();
         activityService = new ActivityService();
+
         executor = new AddParallelGatewayCallExecutor(
                 new ToolCallArgumentsParser(mapper),
                 sessionStateStore,
-                activityService
+                activityService,
+                new InsertElementIntoDiagram()
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }

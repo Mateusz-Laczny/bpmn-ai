@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -28,7 +27,11 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
     private final ActivityService activityService;
 
     @Autowired
-    public AddIfElseBranchingCallExecutor(ToolCallArgumentsParser callArgumentsParser, SessionStateStore sessionStateStore, ActivityService activityService) {
+    public AddIfElseBranchingCallExecutor(
+            ToolCallArgumentsParser callArgumentsParser,
+            SessionStateStore sessionStateStore,
+            ActivityService activityService
+    ) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
         this.activityService = activityService;
@@ -40,8 +43,9 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, List<String>> executeCall(String callArgumentsJson) {
-        Result<IfElseBranchingDto, List<String>> argumentsParsingResult = callArgumentsParser.parseArguments(callArgumentsJson, IfElseBranchingDto.class);
+    public Result<String, String> executeCall(String callArgumentsJson) {
+        Result<IfElseBranchingDto, String> argumentsParsingResult =
+                callArgumentsParser.parseArguments(callArgumentsJson, IfElseBranchingDto.class);
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());
         }
@@ -56,14 +60,17 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
             checkTaskElementId = optionalCheckTaskElementId.get();
         } else {
             if (callArguments.predecessorElement() == null) {
-                log.info("Check task does not exist in the model and predecessor element is null, tool call cannot proceed");
-                return Result.error(List.of("Check task does not exist in the model and predecessor element is null"));
+                log.info(
+                        "Check task does not exist in the model and predecessor element is null, tool call cannot "
+                        + "proceed");
+                return Result.error("Check task does not exist in the model and predecessor element is null");
             }
 
-            Optional<String> predecessorElementId = model.findElementByModelFriendlyId(callArguments.predecessorElement());
+            Optional<String> predecessorElementId =
+                    model.findElementByModelFriendlyId(callArguments.predecessorElement());
             if (predecessorElementId.isEmpty()) {
                 log.info("Predecessor element does not exist in the model");
-                return Result.error(List.of("Predecessor element does not exist in the model"));
+                return Result.error("Predecessor element does not exist in the model");
             }
 
             String previousElementId = predecessorElementId.get();
@@ -76,17 +83,23 @@ public class AddIfElseBranchingCallExecutor implements FunctionCallExecutor {
 
         model.clearSuccessors(checkTaskElementId);
 
-        Result<ActivityIdAndName, String> trueBranchBeginningAddResult = activityService.addActivityToModel(model, callArguments.trueBranchBeginningTask());
+        Result<ActivityIdAndName, String> trueBranchBeginningAddResult = activityService.addActivityToModel(
+                model,
+                callArguments.trueBranchBeginningTask()
+        );
         if (trueBranchBeginningAddResult.isError()) {
-            return Result.error(List.of(trueBranchBeginningAddResult.getError()));
+            return Result.error(trueBranchBeginningAddResult.getError());
         }
 
         String trueBranchBeginningElementId = trueBranchBeginningAddResult.getValue().id();
         addedActivitiesNames.add(trueBranchBeginningAddResult.getValue().modelFacingName());
 
-        Result<ActivityIdAndName, String> falseBranchBeginningAddResult = activityService.addActivityToModel(model, callArguments.falseBranchBeginningTask());
+        Result<ActivityIdAndName, String> falseBranchBeginningAddResult = activityService.addActivityToModel(
+                model,
+                callArguments.falseBranchBeginningTask()
+        );
         if (falseBranchBeginningAddResult.isError()) {
-            return Result.error(List.of(falseBranchBeginningAddResult.getError()));
+            return Result.error(falseBranchBeginningAddResult.getError());
         }
 
         String falseBranchBeginningElementId = falseBranchBeginningAddResult.getValue().id();

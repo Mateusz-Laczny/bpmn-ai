@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-import static edu.agh.bpmnai.generator.bpmn.model.BpmnElementType.EVENT;
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnElementType.START_EVENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -27,7 +27,12 @@ class BpmnSemanticLayoutingTest {
         BpmnModel layoutedModel = layouter.layoutModel(model);
         Dimensions startEventDimensions = layoutedModel.getElementDimensions(startEventId);
         assertEquals(0, startEventDimensions.x());
-        assertEquals(gridElementToDiagramPositionMapping.apply(cellWidth, cellHeight, new GridPosition(0, 0), EVENT)
+        assertEquals(gridElementToDiagramPositionMapping.apply(
+                        cellWidth,
+                        cellHeight,
+                        new GridPosition(0, 0),
+                        START_EVENT
+                )
                              .y(), startEventDimensions.y());
 
         Dimensions taskDimensions = layoutedModel.getElementDimensions(taskId);
@@ -76,7 +81,8 @@ class BpmnSemanticLayoutingTest {
         Dimensions startEventDimensions = layoutedModel.getElementDimensions(startEventId);
         assertEquals(0, startEventDimensions.x());
         assertEquals(
-                gridElementToDiagramPositionMapping.apply(cellWidth, cellHeight, new GridPosition(0, 0), EVENT).y(),
+                gridElementToDiagramPositionMapping.apply(cellWidth, cellHeight, new GridPosition(0, 0), START_EVENT)
+                        .y(),
                 startEventDimensions.y()
         );
     }
@@ -111,7 +117,12 @@ class BpmnSemanticLayoutingTest {
 
         Dimensions startEventDimensions = layoutedModel.getElementDimensions(startEventId);
         assertEquals(0, startEventDimensions.x());
-        assertEquals(gridElementToDiagramPositionMapping.apply(cellWidth, cellHeight, new GridPosition(0, 0), EVENT)
+        assertEquals(gridElementToDiagramPositionMapping.apply(
+                        cellWidth,
+                        cellHeight,
+                        new GridPosition(0, 0),
+                        START_EVENT
+                )
                              .y(), startEventDimensions.y());
     }
 

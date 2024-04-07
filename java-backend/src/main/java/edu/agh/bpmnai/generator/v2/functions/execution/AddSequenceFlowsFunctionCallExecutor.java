@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 import static edu.agh.bpmnai.generator.bpmn.model.AddSequenceFlowError.ELEMENTS_ALREADY_CONNECTED;
@@ -38,8 +37,8 @@ public class AddSequenceFlowsFunctionCallExecutor implements FunctionCallExecuto
     }
 
     @Override
-    public Result<String, List<String>> executeCall(String callArgumentsJson) {
-        Result<AddSequenceFlowsCallParameterDto, List<String>> argumentsParsingResult =
+    public Result<String, String> executeCall(String callArgumentsJson) {
+        Result<AddSequenceFlowsCallParameterDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(
                         callArgumentsJson, AddSequenceFlowsCallParameterDto.class);
         if (argumentsParsingResult.isError()) {
@@ -53,12 +52,12 @@ public class AddSequenceFlowsFunctionCallExecutor implements FunctionCallExecuto
         for (SequenceFlowDto sequenceFlowDto : callArguments.sequenceFlows()) {
             Optional<String> sourceId = model.findElementByModelFriendlyId(sequenceFlowDto.source());
             if (sourceId.isEmpty()) {
-                return Result.error(List.of("Element with id '%s' does not exist".formatted(sequenceFlowDto.source())));
+                return Result.error("Element with id '%s' does not exist".formatted(sequenceFlowDto.source()));
             }
 
             Optional<String> targetId = model.findElementByModelFriendlyId(sequenceFlowDto.target());
             if (targetId.isEmpty()) {
-                return Result.error(List.of("Element with id '%s' does not exist".formatted(sequenceFlowDto.target())));
+                return Result.error("Element with id '%s' does not exist".formatted(sequenceFlowDto.target()));
             }
             Result<String, AddSequenceFlowError> addSequenceFlowResult = model.addUnlabelledSequenceFlow(
                     sequenceFlowDto.source(),

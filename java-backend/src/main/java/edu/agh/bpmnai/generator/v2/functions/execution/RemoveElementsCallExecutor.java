@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -37,8 +36,8 @@ public class RemoveElementsCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, List<String>> executeCall(String callArgumentsJson) {
-        Result<RemoveElementsFunctionCallDto, List<String>> argumentsParsingResult = callArgumentsParser.parseArguments(
+    public Result<String, String> executeCall(String callArgumentsJson) {
+        Result<RemoveElementsFunctionCallDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson, RemoveElementsFunctionCallDto.class);
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());

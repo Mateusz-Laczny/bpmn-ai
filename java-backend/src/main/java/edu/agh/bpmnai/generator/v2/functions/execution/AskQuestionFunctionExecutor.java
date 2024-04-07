@@ -8,8 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 @Slf4j
 public class AskQuestionFunctionExecutor implements FunctionCallExecutor {
@@ -26,8 +24,8 @@ public class AskQuestionFunctionExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, List<String>> executeCall(String callArgumentsJson) {
-        Result<AskQuestionFunctionParametersDto, List<String>> argumentsParsingResult =
+    public Result<String, String> executeCall(String callArgumentsJson) {
+        Result<AskQuestionFunctionParametersDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(callArgumentsJson, AskQuestionFunctionParametersDto.class);
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());

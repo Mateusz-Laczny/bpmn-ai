@@ -7,8 +7,6 @@ import edu.agh.bpmnai.generator.v2.functions.parameter.RespondWithoutModifyingDi
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 public class RespondWithoutModifyingDiagramFunctionCallExecutor implements FunctionCallExecutor {
     private final ToolCallArgumentsParser callArgumentsParser;
@@ -24,9 +22,12 @@ public class RespondWithoutModifyingDiagramFunctionCallExecutor implements Funct
     }
 
     @Override
-    public Result<String, List<String>> executeCall(String callArgumentsJson) {
-        Result<RespondWithoutModifyingDiagramParametersDto, List<String>> argumentsParsingResult =
-                callArgumentsParser.parseArguments(callArgumentsJson, RespondWithoutModifyingDiagramParametersDto.class);
+    public Result<String, String> executeCall(String callArgumentsJson) {
+        Result<RespondWithoutModifyingDiagramParametersDto, String> argumentsParsingResult =
+                callArgumentsParser.parseArguments(
+                        callArgumentsJson,
+                        RespondWithoutModifyingDiagramParametersDto.class
+                );
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());
         }

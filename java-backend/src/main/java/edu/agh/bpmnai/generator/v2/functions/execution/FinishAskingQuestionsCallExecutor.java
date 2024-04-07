@@ -7,8 +7,6 @@ import edu.agh.bpmnai.generator.v2.functions.parameter.FinishAskingQuestionsDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 public class FinishAskingQuestionsCallExecutor implements FunctionCallExecutor {
     private final ToolCallArgumentsParser callArgumentsParser;
@@ -24,8 +22,8 @@ public class FinishAskingQuestionsCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, List<String>> executeCall(String callArgumentsJson) {
-        Result<FinishAskingQuestionsDto, List<String>> argumentsParsingResult =
+    public Result<String, String> executeCall(String callArgumentsJson) {
+        Result<FinishAskingQuestionsDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(callArgumentsJson, FinishAskingQuestionsDto.class);
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());

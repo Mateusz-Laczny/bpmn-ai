@@ -7,8 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 @Slf4j
 public class ToolCallArgumentsParser {
@@ -20,13 +18,13 @@ public class ToolCallArgumentsParser {
         this.objectMapper = objectMapper;
     }
 
-    public <T> Result<T, List<String>> parseArguments(String argumentsJson, Class<T> targetClass) {
+    public <T> Result<T, String> parseArguments(String argumentsJson, Class<T> targetClass) {
         try {
             T parsedValue = objectMapper.readValue(argumentsJson, targetClass);
             return Result.ok(parsedValue);
         } catch (JsonProcessingException e) {
             log.info("Failed parsing call arguments", e);
-            return Result.error(List.of("The tool call arguments could not be parsed: '%s'".formatted(e.getMessage())));
+            return Result.error("The tool call arguments could not be parsed: '%s'".formatted(e.getMessage()));
         }
     }
 }

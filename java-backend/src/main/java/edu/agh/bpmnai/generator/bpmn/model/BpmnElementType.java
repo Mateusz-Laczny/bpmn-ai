@@ -1,7 +1,6 @@
 package edu.agh.bpmnai.generator.bpmn.model;
 
 public enum BpmnElementType {
-    EVENT,
     ACTIVITY,
-    OTHER_ELEMENT, GATEWAY
+    OTHER_ELEMENT, START_EVENT, END_EVENT, GATEWAY
 }

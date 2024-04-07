@@ -36,7 +36,8 @@ class AddWhileLoopCallExecutorTest {
         executor = new AddWhileLoopCallExecutor(
                 new ToolCallArgumentsParser(mapper),
                 sessionStateStore,
-                activityService
+                activityService,
+                new InsertElementIntoDiagram()
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
@@ -75,7 +76,7 @@ class AddWhileLoopCallExecutorTest {
     @Test
     void should_work_as_expected_for_new_check_activity_task() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        model.addTask("task", "task");
+        String predecessorTaskId = model.addTask("task", "task");
 
         WhileLoopDto callArguments = new WhileLoopDto(
                 aRetrospectiveSummary,

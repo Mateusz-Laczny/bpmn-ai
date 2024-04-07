@@ -37,7 +37,8 @@ class AddSequenceOfTasksCallExecutorTest {
         executor = new AddSequenceOfTasksCallExecutor(
                 new ToolCallArgumentsParser(mapper),
                 sessionStateStore,
-                activityService
+                activityService,
+                new InsertElementIntoDiagram()
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }

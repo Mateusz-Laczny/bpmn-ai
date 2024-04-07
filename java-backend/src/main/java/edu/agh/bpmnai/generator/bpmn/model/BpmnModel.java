@@ -461,8 +461,10 @@ public final class BpmnModel {
 
         if (modelElement instanceof Activity) {
             return Optional.of(BpmnElementType.ACTIVITY);
-        } else if (modelElement instanceof Event) {
-            return Optional.of(BpmnElementType.EVENT);
+        } else if (modelElement instanceof StartEvent) {
+            return Optional.of(BpmnElementType.START_EVENT);
+        } else if (modelElement instanceof EndEvent) {
+            return Optional.of(BpmnElementType.END_EVENT);
         } else if (modelElement instanceof Gateway) {
             return Optional.of(BpmnElementType.GATEWAY);
         } else {

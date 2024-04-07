@@ -11,7 +11,7 @@ public class GridElementToDiagramPositionMapping {
         double xPos;
         double yPos;
         switch (elementType) {
-            case EVENT -> {
+            case START_EVENT, END_EVENT -> {
                 xPos = cellWidth * cellPosition.x();
                 yPos = 0.5 * TASK_HEIGHT - (0.5 * EVENT_DIAMETER);
             }

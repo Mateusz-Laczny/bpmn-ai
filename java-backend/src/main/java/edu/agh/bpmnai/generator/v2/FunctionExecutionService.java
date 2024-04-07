@@ -28,12 +28,16 @@ public class FunctionExecutionService {
     public Result<String, CallError> executeFunctionCall(ToolCallDto functionCall) {
         String calledFunctionName = functionCall.functionCallProperties().name();
         if (!functionNameToExecutor.containsKey(calledFunctionName)) {
-            return Result.error(new CallError(NO_EXECUTOR_FOUND, "No executor for function with name '%s'".formatted(calledFunctionName)));
+            return Result.error(new CallError(
+                    NO_EXECUTOR_FOUND,
+                    "No executor for function with name '%s'".formatted(calledFunctionName)
+            ));
         }
         FunctionCallExecutor executorFunction = functionNameToExecutor.get(calledFunctionName);
-        Result<String, List<String>> callResult = executorFunction.executeCall(functionCall.functionCallProperties().argumentsJson());
+        Result<String, String> callResult = executorFunction.executeCall(functionCall.functionCallProperties()
+                                                                                 .argumentsJson());
         if (callResult.isError()) {
-            return Result.error(new CallError(CALL_FAILED, callResult.getError().toString()));
+            return Result.error(new CallError(CALL_FAILED, callResult.getError()));
         }
 
         return Result.ok(callResult.getValue());

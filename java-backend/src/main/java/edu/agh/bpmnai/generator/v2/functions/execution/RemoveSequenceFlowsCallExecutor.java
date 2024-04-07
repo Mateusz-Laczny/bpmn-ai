@@ -37,8 +37,8 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, List<String>> executeCall(String callArgumentsJson) {
-        Result<RemoveSequenceFlowsCallParameterDto, List<String>> argumentsParsingResult =
+    public Result<String, String> executeCall(String callArgumentsJson) {
+        Result<RemoveSequenceFlowsCallParameterDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(callArgumentsJson, RemoveSequenceFlowsCallParameterDto.class);
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());
@@ -54,15 +54,15 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
             Optional<String> sequenceFlowSourceId = model.findElementByModelFriendlyId(
                     sequenceFlowDto.source());
             if (sequenceFlowSourceId.isEmpty()) {
-                return Result.error(List.of("Element with id '%s' does not exist in the diagram".formatted(
-                        sequenceFlowDto.source())));
+                return Result.error("Element with id '%s' does not exist in the diagram".formatted(
+                        sequenceFlowDto.source()));
             }
 
             Optional<String> sequenceFlowTargetId = model.findElementByModelFriendlyId(
                     sequenceFlowDto.target());
             if (sequenceFlowTargetId.isEmpty()) {
-                return Result.error(List.of("Element with id '%s' does not exist in the diagram".formatted(
-                        sequenceFlowDto.target())));
+                return Result.error("Element with id '%s' does not exist in the diagram".formatted(
+                        sequenceFlowDto.target()));
             }
 
             Result<Void, RemoveSequenceFlowError> removeResult = model.removeSequenceFlow(
@@ -71,20 +71,20 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
             if (removeResult.isError()) {
                 switch (removeResult.getError()) {
                     case SOURCE_ELEMENT_NOT_FOUND -> {
-                        return Result.error(List.of("Could not find element with id '%s'".formatted(
-                                sequenceFlowDto.source())));
+                        return Result.error("Could not find element with id '%s'".formatted(
+                                sequenceFlowDto.source()));
                     }
                     case TARGET_ELEMENT_NOT_FOUND -> {
-                        return Result.error(List.of("Could not find element with id '%s'".formatted(
-                                sequenceFlowDto.target())));
+                        return Result.error("Could not find element with id '%s'".formatted(
+                                sequenceFlowDto.target()));
                     }
                     case SOURCE_ELEMENT_NOT_FLOW_NODE -> {
-                        return Result.error(List.of("Element '%s' is not a valid sequence flow source".formatted(
-                                sequenceFlowDto.source())));
+                        return Result.error("Element '%s' is not a valid sequence flow source".formatted(
+                                sequenceFlowDto.source()));
                     }
                     case TARGET_ELEMENT_NOT_FLOW_NODE -> {
-                        return Result.error(List.of("Element '%s' is not a valid sequence flow target".formatted(
-                                sequenceFlowDto.target())));
+                        return Result.error("Element '%s' is not a valid sequence flow target".formatted(
+                                sequenceFlowDto.target()));
                     }
                     case ELEMENTS_NOT_CONNECTED -> missingFlowsMessageBuilder.append(sequenceFlowDto.source())
                             .append(" -> ")
