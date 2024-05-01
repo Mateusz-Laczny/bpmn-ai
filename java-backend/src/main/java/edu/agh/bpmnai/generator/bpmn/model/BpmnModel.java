@@ -556,8 +556,8 @@ public final class BpmnModel {
 
     public Set<String> findElementsOfType(BpmnElementType bpmnElementType) {
         Set<String> foundElements = new HashSet<>();
-        for (ModelElementInstance modelElementInstance :
-                modelInstance.getModelElementsByType(ModelElementInstance.class)) {
+        for (BaseElement modelElementInstance :
+                modelInstance.getModelElementsByType(BaseElement.class)) {
             String elementId = modelElementInstance.getAttributeValue("id");
             if (getElementType(elementId).orElseThrow() == bpmnElementType) {
                 foundElements.add(elementId);
