@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 import java.util.Set;
 
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnElementType.GATEWAY;
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.PARALLEL;
 import static org.junit.jupiter.api.Assertions.*;
@@ -110,5 +111,14 @@ class BpmnModelTest {
         model.addLabelledSequenceFlow(taskId, secondTaskId, "label");
 
         assertEquals(Set.of(secondTaskId), model.findSuccessors(taskId));
+    }
+
+    @Test
+    void findElementsOfType_returns_all_gateways() {
+        BpmnModel model = new BpmnModel();
+        String gatewayId = model.addGateway(EXCLUSIVE, "gateway");
+        String anotherGatewayId = model.addGateway(PARALLEL, "anotherGateway");
+
+        assertEquals(Set.of(gatewayId, anotherGatewayId), model.findElementsOfType(GATEWAY));
     }
 }

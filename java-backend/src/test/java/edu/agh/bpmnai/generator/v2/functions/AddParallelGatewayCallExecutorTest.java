@@ -6,6 +6,7 @@ import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddParallelGatewayCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
+import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
 import edu.agh.bpmnai.generator.v2.functions.parameter.ParallelGatewayDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
@@ -34,7 +35,7 @@ class AddParallelGatewayCallExecutorTest {
         sessionStateStore = new SessionStateStore();
 
         executor = new AddParallelGatewayCallExecutor(
-                new ToolCallArgumentsParser(mapper),
+                new ToolCallArgumentsParser(mapper, new NullabilityCheck()),
                 sessionStateStore,
                 new InsertElementIntoDiagram()
         );

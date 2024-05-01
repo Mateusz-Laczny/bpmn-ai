@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.functions.execution.RemoveElementsCallExecutor;
+import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementsFunctionCallDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
@@ -26,7 +27,10 @@ class RemoveElementsCallExecutorTest {
     @BeforeEach
     void setUp() {
         sessionStateStore = new SessionStateStore();
-        executor = new RemoveElementsCallExecutor(new ToolCallArgumentsParser(mapper), sessionStateStore);
+        executor = new RemoveElementsCallExecutor(
+                new ToolCallArgumentsParser(mapper, new NullabilityCheck()),
+                sessionStateStore
+        );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
 

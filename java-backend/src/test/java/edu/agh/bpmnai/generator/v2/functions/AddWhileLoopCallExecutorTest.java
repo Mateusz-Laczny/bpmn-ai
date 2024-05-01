@@ -6,6 +6,7 @@ import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddWhileLoopCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
+import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.functions.parameter.WhileLoopDto;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
@@ -30,7 +31,7 @@ class AddWhileLoopCallExecutorTest {
     void setUp() {
         sessionStateStore = new SessionStateStore();
         executor = new AddWhileLoopCallExecutor(
-                new ToolCallArgumentsParser(mapper),
+                new ToolCallArgumentsParser(mapper, new NullabilityCheck()),
                 sessionStateStore,
                 new InsertElementIntoDiagram()
         );

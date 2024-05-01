@@ -6,6 +6,7 @@ import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddSequenceOfTasksCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
+import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.functions.parameter.SequenceOfTasksDto;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
@@ -31,7 +32,7 @@ class AddSequenceOfTasksCallExecutorTest {
     void setUp() {
         sessionStateStore = new SessionStateStore();
         executor = new AddSequenceOfTasksCallExecutor(
-                new ToolCallArgumentsParser(mapper),
+                new ToolCallArgumentsParser(mapper, new NullabilityCheck()),
                 sessionStateStore,
                 new InsertElementIntoDiagram()
         );
