@@ -86,7 +86,14 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
         String sequenceStartElementId = model.findElementByModelFriendlyId(callArguments.activitiesInSequence()
                                                                                    .get(0)
                                                                                    .activityName()).orElseThrow();
-        String sequenceEndElementId = previousElementInSequenceId;
+        String lastElementInSequenceId = previousElementInSequenceId;
+        String sequenceEndElementId = null;
+        if (!callArguments.activitiesInSequence().get(callArguments.activitiesInSequence().size() - 1).isProcessEnd()) {
+            sequenceEndElementId = lastElementInSequenceId;
+        } else {
+            String endEventId = model.addEndEvent();
+            model.addUnlabelledSequenceFlow(lastElementInSequenceId, endEventId);
+        }
 
         Result<Void, String> insertElementResult = insertElementIntoDiagram.apply(
                 predecessorElementId,
