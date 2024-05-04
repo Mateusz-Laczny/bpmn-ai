@@ -19,6 +19,8 @@ import org.camunda.bpm.model.bpmn.instance.di.DiagramElement;
 import org.camunda.bpm.model.bpmn.instance.di.Waypoint;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.*;
 
 import static edu.agh.bpmnai.generator.bpmn.diagram.DiagramDimensions.*;
@@ -61,6 +63,15 @@ public final class BpmnModel {
         idToModelFriendlyId.put(startEventId, "Start");
 
         Bpmn.validateModel(modelInstance);
+    }
+
+    public BpmnModel(String bpmnXml) {
+        byte[] bytes = bpmnXml.getBytes();
+        InputStream inputStream = new ByteArrayInputStream(bytes);
+        modelInstance = Bpmn.readModelFromStream(inputStream);
+        idOfDefaultProcess = modelInstance.getModelElementsByType(Process.class).iterator().next().getId();
+        diagramPlane = modelInstance.getModelElementsByType(BpmnDiagram.class).iterator().next().getBpmnPlane();
+        idToModelFriendlyId = HashBiMap.create();
     }
 
     private static <T extends BpmnModelElementInstance> T createElementWithParent(
@@ -565,5 +576,46 @@ public final class BpmnModel {
         }
 
         return foundElements;
+    }
+
+    public Set<DirectedEdge> getOutgoingSequenceFlows(String elementId) {
+        FlowNode elementNode = modelInstance.getModelElementById(elementId);
+        return elementNode.getOutgoing().stream().map(sequenceFlow -> new DirectedEdge(
+                sequenceFlow.getId(),
+                elementId,
+                sequenceFlow.getTarget().getId()
+        )).collect(toSet());
+    }
+
+    public Set<DirectedEdge> getIncomingSequenceFlows(String elementId) {
+        FlowNode elementNode = modelInstance.getModelElementById(elementId);
+        return elementNode.getIncoming().stream().map(sequenceFlow -> new DirectedEdge(
+                sequenceFlow.getId(),
+                elementId,
+                sequenceFlow.getTarget().getId()
+        )).collect(toSet());
+    }
+
+    public Set<String> getFlowNodes() {
+        return modelInstance.getModelElementsByType(FlowNode.class).stream().map(BaseElement::getId).collect(toSet());
+    }
+
+    public Set<DirectedEdge> getSequenceFlows() {
+        return modelInstance.getModelElementsByType(SequenceFlow.class).stream().map(sequenceFlow -> new DirectedEdge(
+                sequenceFlow.getId(),
+                sequenceFlow.getSource().getId(),
+                sequenceFlow.getTarget().getId()
+        )).collect(toSet());
+    }
+
+    public void setWaypointsOfFlow(String flowId, List<Point2d> waypoints) {
+        BpmnEdge edgeElement = ((SequenceFlow) modelInstance.getModelElementById(flowId)).getDiagramElement();
+        edgeElement.getWaypoints().clear();
+
+        for (Point2d waypointPosition : waypoints) {
+            Waypoint waypoint = createElementWithParent(edgeElement, Waypoint.class);
+            waypoint.setX(waypointPosition.x());
+            waypoint.setY(waypointPosition.y());
+        }
     }
 }

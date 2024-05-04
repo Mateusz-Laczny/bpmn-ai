@@ -11,14 +11,14 @@ import java.util.*;
 
 @Service
 @Slf4j
-public class BpmnSemanticLayouting {
+public class GridBasedBpmnLayouting {
 
     private final int cellWidth;
 
     private final int cellHeight;
     private final GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping;
 
-    public BpmnSemanticLayouting(
+    public GridBasedBpmnLayouting(
             @Value("150") int cellWidth,
             @Value("100") int cellHeight,
             GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping

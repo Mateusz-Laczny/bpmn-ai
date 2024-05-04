@@ -10,7 +10,7 @@ import static edu.agh.bpmnai.generator.bpmn.model.BpmnElementType.START_EVENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class BpmnSemanticLayoutingTest {
+class GridBasedBpmnLayoutingTest {
 
     @Test
     void if_element_has_single_successor_inserts_it_in_the_same_row_and_next_column() {
@@ -18,7 +18,7 @@ class BpmnSemanticLayoutingTest {
         int cellHeight = 100;
         GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping =
                 new GridElementToDiagramPositionMapping();
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
+        var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
         String taskId = model.addTask("aTask", "");
         String startEventId = model.getStartEvent();
@@ -44,7 +44,7 @@ class BpmnSemanticLayoutingTest {
     void connected_elements_are_still_connected_after_layouting() {
         int cellWidth = 100;
         int cellHeight = 100;
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
+        var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
         var model = new BpmnModel();
         String taskId = model.addTask("aTask", "aTask");
         String startEventId = model.getStartEvent();
@@ -60,7 +60,7 @@ class BpmnSemanticLayoutingTest {
         int cellHeight = 100;
         GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping =
                 new GridElementToDiagramPositionMapping();
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
+        var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
         String firstTaskId = model.addTask("aTask1", "aTask1");
         String secondTaskId = model.addTask("aTask2", "aTask2");
@@ -102,7 +102,7 @@ class BpmnSemanticLayoutingTest {
         int cellHeight = 100;
         GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping =
                 new GridElementToDiagramPositionMapping();
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
+        var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
         String taskId = model.addTask("aTask1", "aTask1");
         String startEventId = model.getStartEvent();
@@ -130,7 +130,7 @@ class BpmnSemanticLayoutingTest {
     void handles_complex_loops() {
         int cellWidth = 100;
         int cellHeight = 100;
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
+        var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
         var model = new BpmnModel();
         String firstTaskId = model.addTask("firstTask", "firstTask");
         String secondTaskId = model.addTask("secondTask", "secondTaskI");
@@ -162,7 +162,7 @@ class BpmnSemanticLayoutingTest {
         int cellHeight = 100;
         GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping =
                 new GridElementToDiagramPositionMapping();
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
+        var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
         String firstTaskId = model.addTask("aTask1", "aTask1");
         String secondTaskId = model.addTask("aTask2", "aTask2");
@@ -213,7 +213,7 @@ successor    │
  */
         int cellWidth = 100;
         int cellHeight = 100;
-        var layouter = new BpmnSemanticLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
+        var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
         var model = new BpmnModel();
         String firstTaskId = model.addTask("aTask1", "aTask1");
         String secondTaskId = model.addTask("aTask2", "aTask2");

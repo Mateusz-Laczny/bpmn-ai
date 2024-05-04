@@ -71,4 +71,12 @@ public class Grid {
         addCell(movedCell);
         return Result.ok(null);
     }
+
+    public int getNumberOfRows() {
+        return gridTable.columnKeySet().stream().max(Integer::compareTo).orElse(0);
+    }
+
+    public void shiftElementinYAxis(String key, int i) {
+        
+    }
 }

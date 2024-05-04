@@ -1,15 +1,15 @@
 package edu.agh.bpmnai.generator.v2;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
-import edu.agh.bpmnai.generator.bpmn.layouting.BpmnSemanticLayouting;
+import edu.agh.bpmnai.generator.bpmn.layouting.GridBasedBpmnLayouting;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.session.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.ASK_QUESTIONS;
 import static edu.agh.bpmnai.generator.v2.session.SessionStatus.END;
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.REASON_ABOUT_TASKS_AND_PROCESS_FLOW;
 
 @Service
 @Slf4j
@@ -19,7 +19,7 @@ public class LlmService {
 
     private final ConversationHistoryStore conversationHistoryStore;
 
-    private final BpmnSemanticLayouting bpmnSemanticLayouting;
+    private final GridBasedBpmnLayouting gridBasedBpmnLayouting;
     private final AskQuestionsState askQuestionsState;
     private final ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState;
     private final ModifyModelState modifyModelState;
@@ -33,7 +33,7 @@ public class LlmService {
     @Autowired
     public LlmService(
             SessionStateStore sessionStateStore, ConversationHistoryStore conversationHistoryStore,
-            BpmnSemanticLayouting bpmnSemanticLayouting,
+            GridBasedBpmnLayouting gridBasedBpmnLayouting,
             AskQuestionsState askQuestionsState,
             ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState,
             ModifyModelState modifyModelState, FixErrorsInModelState fixErrorsInModelState,
@@ -41,7 +41,7 @@ public class LlmService {
     ) {
         this.sessionStateStore = sessionStateStore;
         this.conversationHistoryStore = conversationHistoryStore;
-        this.bpmnSemanticLayouting = bpmnSemanticLayouting;
+        this.gridBasedBpmnLayouting = gridBasedBpmnLayouting;
         this.askQuestionsState = askQuestionsState;
         this.reasonAboutTasksAndProcessFlowState = reasonAboutTasksAndProcessFlowState;
         this.modifyModelState = modifyModelState;
@@ -51,7 +51,7 @@ public class LlmService {
     }
 
     public UserRequestResponse getResponse(String userMessageContent) {
-        SessionStatus sessionState = ASK_QUESTIONS;
+        SessionStatus sessionState = REASON_ABOUT_TASKS_AND_PROCESS_FLOW;
         while (sessionState != END) {
             sessionState = switch (sessionState) {
                 case ASK_QUESTIONS -> askQuestionsState.process(userMessageContent);
@@ -66,7 +66,7 @@ public class LlmService {
 
         var modelReference = new BpmnManagedReference(sessionStateStore.model());
         modelPostProcessing.apply(modelReference);
-        BpmnModel layoutedModel = bpmnSemanticLayouting.layoutModel(modelReference.getCurrentValue());
+        BpmnModel layoutedModel = gridBasedBpmnLayouting.layoutModel(modelReference.getCurrentValue());
         return new UserRequestResponse(
                 conversationHistoryStore.getLastMessage().orElse(""),
                 layoutedModel.asXmlString()
