@@ -51,14 +51,18 @@ public final class BpmnModel {
         definitions.setTargetNamespace("http://camunda.org/examples");
         modelInstance.setDefinitions(definitions);
 
-        idOfDefaultProcess = addProcess(new BpmnProcess("default"));
+        String processId = generateUniqueId();
+        Process processElement = createElementWithParent(modelInstance.getDefinitions(), processId, Process.class);
+        processElement.setAttributeValue("name", "default");
+
+        idOfDefaultProcess = processId;
 
         String diagramId = "diagram";
         BpmnDiagram diagram = createElementWithParent(definitions, diagramId, BpmnDiagram.class);
         diagramPlane = createElementWithParent(diagram, "id", BpmnPlane.class);
         diagram.setBpmnPlane(diagramPlane);
 
-        String startEventId = addStartEvent(new BpmnStartEvent(idOfDefaultProcess, "Start"));
+        String startEventId = addLabelledStartEvent("Start");
         idToModelFriendlyId = HashBiMap.create();
         idToModelFriendlyId.put(startEventId, "Start");
 
@@ -109,9 +113,9 @@ public final class BpmnModel {
         log.trace("Adding task '{}' with model if '{}'", taskName, modelFriendlyId);
         Process process = modelInstance.getModelElementById(idOfDefaultProcess);
         String id = generateUniqueId();
-        Task userTaskElement = createElementWithParent(process, id, Task.class);
-        userTaskElement.setAttributeValue("name", taskName);
-        addTaskDiagramElement(userTaskElement);
+        Task taskElement = createElementWithParent(process, id, Task.class);
+        taskElement.setAttributeValue("name", taskName);
+        addTaskDiagramElement(taskElement);
         idToModelFriendlyId.put(id, modelFriendlyId);
         return id;
     }
@@ -128,46 +132,6 @@ public final class BpmnModel {
         bounds.setY(0);
     }
 
-    public String addUserTask(BpmnUserTask userTask) {
-        Process process = modelInstance.getModelElementById(userTask.processId());
-        String id = generateUniqueId();
-        UserTask userTaskElement = createElementWithParent(process, id, UserTask.class);
-        userTaskElement.setAttributeValue("name", userTask.name());
-        userTaskElement.setCamundaAssignee(userTask.assignee());
-        return id;
-    }
-
-    public String addServiceTask(BpmnServiceTask serviceTask) {
-        Process process = modelInstance.getModelElementById(serviceTask.processId());
-        String id = generateUniqueId();
-        ServiceTask serviceTaskElement = createElementWithParent(process, id, ServiceTask.class);
-        serviceTaskElement.setAttributeValue("name", serviceTask.name());
-        return id;
-    }
-
-    public String addProcess(BpmnProcess process) {
-        String id = generateUniqueId();
-        Process processElement = createElementWithParent(modelInstance.getDefinitions(), id, Process.class);
-        processElement.setAttributeValue("name", process.name());
-        return id;
-    }
-
-    public String addGateway(BpmnGateway gateway) {
-        Process process = modelInstance.getModelElementById(gateway.processId());
-        Gateway gatewayElement;
-        final String id = generateUniqueId();
-        switch (gateway.type()) {
-            case EXCLUSIVE -> gatewayElement = createElementWithParent(process, id, ExclusiveGateway.class);
-            case PARALLEL -> gatewayElement = createElementWithParent(process, id, ParallelGateway.class);
-            default -> throw new IllegalStateException("Unexpected gateway type value: " + gateway.type());
-        }
-
-        gatewayElement.setAttributeValue("name", gateway.name());
-        idToModelFriendlyId.put(id, gateway.name());
-        addGatewayDiagramElement(gatewayElement);
-        return id;
-    }
-
     private void addGatewayDiagramElement(Gateway gatewayElement) {
         String shapeId = generateUniqueId();
         BpmnShape shape = createElementWithParent(diagramPlane, shapeId, BpmnShape.class);
@@ -181,14 +145,26 @@ public final class BpmnModel {
 
     public String addGateway(BpmnGatewayType gatewayType, String name) {
         log.trace("Adding gateway of type '{}' with name '{}'", gatewayType, name);
-        return addGateway(new BpmnGateway(idOfDefaultProcess, name, gatewayType));
+        Process process = modelInstance.getModelElementById(idOfDefaultProcess);
+        Gateway gatewayElement;
+        final String id = generateUniqueId();
+        switch (gatewayType) {
+            case EXCLUSIVE -> gatewayElement = createElementWithParent(process, id, ExclusiveGateway.class);
+            case PARALLEL -> gatewayElement = createElementWithParent(process, id, ParallelGateway.class);
+            default -> throw new IllegalStateException("Unexpected gateway type value: " + gatewayType);
+        }
+
+        gatewayElement.setAttributeValue("name", name);
+        idToModelFriendlyId.put(id, name);
+        addGatewayDiagramElement(gatewayElement);
+        return id;
     }
 
-    public String addStartEvent(BpmnStartEvent startEvent) {
-        Process process = modelInstance.getModelElementById(startEvent.processId());
+    public String addLabelledStartEvent(String label) {
+        Process process = modelInstance.getModelElementById(idOfDefaultProcess);
         String id = generateUniqueId();
         StartEvent startEventElement = createElementWithParent(process, id, StartEvent.class);
-        startEventElement.setAttributeValue("name", startEvent.name());
+        startEventElement.setAttributeValue("name", label);
         addEventDiagramElement(startEventElement);
         return id;
     }
@@ -215,72 +191,6 @@ public final class BpmnModel {
 
     public String addEndEvent() {
         return addEndEvent(new BpmnEndEvent(idOfDefaultProcess, null));
-    }
-
-    public String addIntermediateCatchEvent(BpmnIntermediateCatchEvent intermediateCatchEvent) {
-        Process process = modelInstance.getModelElementById(intermediateCatchEvent.processId());
-        String id = generateUniqueId();
-        IntermediateCatchEvent catchEventElement = createElementWithParent(process, id, IntermediateCatchEvent.class);
-        catchEventElement.setAttributeValue("name", intermediateCatchEvent.name());
-
-        String eventId = generateUniqueId();
-        switch (intermediateCatchEvent.eventType()) {
-            case MESSAGE -> createElementWithParent(catchEventElement, eventId, MessageEventDefinition.class);
-            case TIMER -> createElementWithParent(catchEventElement, eventId, TimerEventDefinition.class);
-            case CONDITIONAL -> createElementWithParent(catchEventElement, eventId, ConditionalEventDefinition.class);
-            case LINK -> createElementWithParent(catchEventElement, eventId, LinkEventDefinition.class);
-            case SIGNAL -> createElementWithParent(catchEventElement, eventId, SignalEventDefinition.class);
-        }
-
-        return id;
-    }
-
-    public String addIntermediateThrowEvent(BpmnIntermediateThrowEvent intermediateThrowEvent) {
-        Process process = modelInstance.getModelElementById(intermediateThrowEvent.processId());
-        String id = generateUniqueId();
-        IntermediateThrowEvent catchEventElement = createElementWithParent(process, id, IntermediateThrowEvent.class);
-        catchEventElement.setAttributeValue("name", intermediateThrowEvent.name());
-
-        String eventId = generateUniqueId();
-        switch (intermediateThrowEvent.eventType()) {
-            case EMPTY -> {
-            }
-            case MESSAGE -> createElementWithParent(catchEventElement, eventId, MessageEventDefinition.class);
-            case ESCALATION -> createElementWithParent(catchEventElement, eventId, EscalationEventDefinition.class);
-            case LINK -> createElementWithParent(catchEventElement, eventId, LinkEventDefinition.class);
-            case COMPENSATION -> createElementWithParent(catchEventElement, eventId, CompensateEventDefinition.class);
-            case SIGNAL -> createElementWithParent(catchEventElement, eventId, SignalEventDefinition.class);
-        }
-
-        return id;
-    }
-
-    public String addSequenceFlow(BpmnSequenceFlow sequenceFlow) {
-        if (!doesIdExist(sequenceFlow.sourceElementId())) {
-            throw new IllegalArgumentException(
-                    "Element with id \"" + sequenceFlow.sourceElementId() + "\" does not exist");
-        }
-
-        if (!doesIdExist(sequenceFlow.targetElementId())) {
-            throw new IllegalArgumentException(
-                    "Element with id \"" + sequenceFlow.targetElementId() + "\" does not exist");
-        }
-
-        Process process = modelInstance.getModelElementById(sequenceFlow.processId());
-
-        FlowNode sourceElement;
-        if (sequenceFlow.sourceElementId() == null) {
-            sourceElement = modelInstance.getModelElementsByType(StartEvent.class).iterator().next();
-        } else {
-            sourceElement = modelInstance.getModelElementById(sequenceFlow.sourceElementId());
-        }
-
-        FlowNode targetElement = modelInstance.getModelElementById(sequenceFlow.targetElementId());
-        String id = generateUniqueId();
-        SequenceFlow sequenceFlowElement = createSequenceFlow(process, id, sourceElement, targetElement);
-        sequenceFlowElement.setAttributeValue("name", sequenceFlow.name());
-        addSequenceFlowDiagramElement(sequenceFlowElement, sourceElement, targetElement);
-        return id;
     }
 
     private void addSequenceFlowDiagramElement(
@@ -332,33 +242,41 @@ public final class BpmnModel {
         return Result.ok(id);
     }
 
-    public String addLabelledSequenceFlow(String sourceElementId, String targetElementId, String label) {
+    public Result<String, AddSequenceFlowError> addLabelledSequenceFlow(
+            String sourceElementId,
+            String targetElementId,
+            String label
+    ) {
         log.trace("Adding labelled sequence flow from '{}' to '{}'", getModelFriendlyId(sourceElementId),
                   getModelFriendlyId(targetElementId)
         );
-        return addSequenceFlow(new BpmnSequenceFlow(idOfDefaultProcess, sourceElementId, targetElementId, label));
-    }
 
-    public void removeElement(ElementToRemove elementToRemove) {
-        if (!doesIdExist(elementToRemove.id())) {
-            throw new IllegalArgumentException("Element with id \"" + elementToRemove.id() + "\" does not exist");
+        Result<String, AddSequenceFlowError> addSequenceFlowResult = addUnlabelledSequenceFlow(
+                sourceElementId,
+                targetElementId
+        );
+
+        if (addSequenceFlowResult.isError()) {
+            return addSequenceFlowResult;
         }
 
-        if (!doesIdExist(elementToRemove.processId())) {
-            throw new IllegalArgumentException(
-                    "Element with id \"" + elementToRemove.processId() + "\" does not exist");
-        }
-
-        ModelElementInstance modelElement = modelInstance.getModelElementById(elementToRemove.id());
-        DiagramElement diagramElement = ((BaseElement) modelElement).getDiagramElement();
-        diagramElement.getParentElement().removeChildElement(diagramElement);
-
-        ModelElementInstance parentElement = modelInstance.getModelElementById(elementToRemove.processId());
-        parentElement.removeChildElement(modelInstance.getModelElementById(elementToRemove.id()));
+        String sequenceFlowId = addSequenceFlowResult.getValue();
+        SequenceFlow sequenceFlow = modelInstance.getModelElementById(sequenceFlowId);
+        sequenceFlow.setAttributeValue("name", label);
+        return addSequenceFlowResult;
     }
 
     public void removeElement(String idOfElementToRemove) {
-        removeElement(new ElementToRemove(idOfElementToRemove, idOfDefaultProcess));
+        if (!doesIdExist(idOfElementToRemove)) {
+            throw new IllegalArgumentException("Element with id \"" + idOfElementToRemove + "\" does not exist");
+        }
+
+        ModelElementInstance modelElement = modelInstance.getModelElementById(idOfElementToRemove);
+        DiagramElement diagramElement = ((BaseElement) modelElement).getDiagramElement();
+        diagramElement.getParentElement().removeChildElement(diagramElement);
+
+        ModelElementInstance parentElement = modelInstance.getModelElementById(idOfDefaultProcess);
+        parentElement.removeChildElement(modelInstance.getModelElementById(idOfElementToRemove));
     }
 
     public Result<Void, RemoveActivityError> removeFlowNode(String flowNodeId) {
@@ -382,27 +300,6 @@ public final class BpmnModel {
         removeElement(flowNodeId);
 
         return Result.ok(null);
-    }
-
-    public void cutOutElement(String elementId) {
-        FlowNode element = modelInstance.getModelElementById(elementId);
-        Set<FlowNode> predecessors = element.getIncoming().stream().map(SequenceFlow::getSource).collect(toSet());
-        Set<FlowNode> successors = element.getOutgoing().stream().map(SequenceFlow::getTarget).collect(toSet());
-        for (SequenceFlow incomingSequenceFlow : element.getIncoming()) {
-            removeElement(incomingSequenceFlow.getId());
-        }
-
-        for (SequenceFlow outgoingSequenceFlow : element.getOutgoing()) {
-            removeElement(outgoingSequenceFlow.getId());
-        }
-
-        for (FlowNode predecessor : predecessors) {
-            for (FlowNode successor : successors) {
-                addUnlabelledSequenceFlow(predecessor.getId(), successor.getId());
-            }
-        }
-
-        removeElement(elementId);
     }
 
     public Optional<String> findElementByModelFriendlyId(String elementName) {
@@ -447,9 +344,15 @@ public final class BpmnModel {
         if (targetElement instanceof FlowNode targetFlowNode) {
             for (SequenceFlow incomingSequenceFlow : targetFlowNode.getIncoming()) {
                 removeElement(incomingSequenceFlow.getId());
-                addSequenceFlow(new BpmnSequenceFlow(idOfDefaultProcess, incomingSequenceFlow.getSource().getId(),
-                                                     targetFlowNode.getId(), incomingSequenceFlow.getName()
-                ));
+                if (incomingSequenceFlow.getName() != null) {
+                    addLabelledSequenceFlow(
+                            incomingSequenceFlow.getSource().getId(),
+                            targetFlowNode.getId(),
+                            incomingSequenceFlow.getName()
+                    );
+                } else {
+                    addUnlabelledSequenceFlow(incomingSequenceFlow.getSource().getId(), targetFlowNode.getId());
+                }
             }
         }
     }
@@ -460,10 +363,6 @@ public final class BpmnModel {
         return new Dimensions(targetElementBoundsElement.getX(), targetElementBoundsElement.getY(),
                               targetElementBoundsElement.getWidth(), targetElementBoundsElement.getHeight()
         );
-    }
-
-    public void setAlias(String elementId, String alias) {
-        idToModelFriendlyId.put(elementId, alias);
     }
 
     public Optional<BpmnElementType> getElementType(String elementId) {
