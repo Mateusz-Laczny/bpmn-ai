@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddXorGatewayCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
@@ -41,12 +42,12 @@ class AddXorGatewayCallExecutorTest {
     @Test
     void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        String checkTaskId = model.addTask("task", "task");
+        String checkTaskId = model.addTask("task");
         XorGatewayDto callArguments = new XorGatewayDto(
                 aRetrospectiveSummary,
                 "",
                 "elementName",
-                "task",
+                new HumanReadableId("task", checkTaskId).asString(),
                 null,
                 List.of(new Activity("task1", false), new Activity("task2", false))
         );
@@ -55,9 +56,9 @@ class AddXorGatewayCallExecutorTest {
         executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
         model = modelReference.getCurrentValue();
 
-        Optional<String> firstTaskId = model.findElementByModelFriendlyId("task1");
+        Optional<String> firstTaskId = model.findElementByName("task1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findElementByModelFriendlyId("task2");
+        Optional<String> secondTaskId = model.findElementByName("task2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> checkTaskSuccessors = model.findSuccessors(checkTaskId);
@@ -82,13 +83,13 @@ class AddXorGatewayCallExecutorTest {
     @Test
     void should_work_as_expected_for_new_check_activity_task() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        model.addTask("task", "task");
+        String taskId = model.addTask("task");
         XorGatewayDto callArguments = new XorGatewayDto(
                 aRetrospectiveSummary,
                 "",
                 "elementName",
-                "checkActivity",
-                "task",
+                "checkTask",
+                new HumanReadableId("task", taskId),
                 List.of(new Activity("task1", false), new Activity("task2", false))
         );
 
@@ -96,11 +97,11 @@ class AddXorGatewayCallExecutorTest {
         executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
         model = modelReference.getCurrentValue();
 
-        Optional<String> checkTaskId = model.findElementByModelFriendlyId("checkActivity");
+        Optional<String> checkTaskId = model.findElementByName("checkTask");
         assertTrue(checkTaskId.isPresent());
-        Optional<String> firstTaskId = model.findElementByModelFriendlyId("task1");
+        Optional<String> firstTaskId = model.findElementByName("task1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findElementByModelFriendlyId("task2");
+        Optional<String> secondTaskId = model.findElementByName("task2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> checkTaskSuccessors = model.findSuccessors(checkTaskId.get());
@@ -125,15 +126,15 @@ class AddXorGatewayCallExecutorTest {
     @Test
     void should_work_as_expected_when_inserting_between_existing_tasks() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        String predecessorTaskId = model.addTask("predecessorTask", "predecessorTask");
-        String successorTaskId = model.addTask("successorTask", "successorTask");
+        String predecessorTaskId = model.addTask("predecessorTask");
+        String successorTaskId = model.addTask("successorTask");
         model.addUnlabelledSequenceFlow(predecessorTaskId, successorTaskId);
         XorGatewayDto callArguments = new XorGatewayDto(
                 aRetrospectiveSummary,
                 "",
                 "elementName",
-                "checkActivity",
-                "predecessorTask",
+                "checkTask",
+                new HumanReadableId("predecessorTask", predecessorTaskId),
                 List.of(new Activity("task1", false), new Activity("task2", false))
         );
 
@@ -141,11 +142,11 @@ class AddXorGatewayCallExecutorTest {
         executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
         model = modelReference.getCurrentValue();
 
-        Optional<String> checkTaskId = model.findElementByModelFriendlyId("checkActivity");
+        Optional<String> checkTaskId = model.findElementByName("checkTask");
         assertTrue(checkTaskId.isPresent());
-        Optional<String> firstTaskId = model.findElementByModelFriendlyId("task1");
+        Optional<String> firstTaskId = model.findElementByName("task1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findElementByModelFriendlyId("task2");
+        Optional<String> secondTaskId = model.findElementByName("task2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> checkTaskSuccessors = model.findSuccessors(checkTaskId.get());

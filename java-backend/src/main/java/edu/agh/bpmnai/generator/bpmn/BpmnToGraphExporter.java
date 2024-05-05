@@ -20,7 +20,10 @@ public class BpmnToGraphExporter {
         elementsToVisit.add(startEventId);
         Set<String> visitedElements = new HashSet<>();
 
-        boolean nodeAdded = graph.addNode(startEventId, "Start");
+        boolean nodeAdded = graph.addNode(
+                startEventId,
+                model.getHumanReadableId(model.getStartEvent()).orElseThrow().asString()
+        );
         if (!nodeAdded) {
             log.warn("Start event already has a corresponding node in the graph");
         }
@@ -32,7 +35,10 @@ public class BpmnToGraphExporter {
 
             for (String elementSuccessorId : model.findSuccessors(currentlyProcessedElement)) {
                 if (!graph.containsNodeWithId(elementSuccessorId)) {
-                    graph.addNode(elementSuccessorId, model.getModelFriendlyId(elementSuccessorId));
+                    graph.addNode(
+                            elementSuccessorId,
+                            model.getHumanReadableId(elementSuccessorId).orElseThrow().asString()
+                    );
                 }
                 graph.addEdge(currentlyProcessedElement, elementSuccessorId);
                 if (!visitedElements.contains(elementSuccessorId)) {

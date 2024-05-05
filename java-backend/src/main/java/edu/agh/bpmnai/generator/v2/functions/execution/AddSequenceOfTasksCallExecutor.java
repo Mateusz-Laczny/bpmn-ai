@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -55,22 +54,20 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
         SequenceOfTasksDto callArguments = argumentsParsingResult.getValue();
         BpmnModel model = modelReference.getCurrentValue();
-        Optional<String> optionalPredecessorElementId =
-                model.findElementByModelFriendlyId(callArguments.startOfSequence());
-        if (optionalPredecessorElementId.isEmpty()) {
+        if (!model.doesIdExist(callArguments.startOfSequence().id())) {
             log.info("Predecessor element does not exist in the model");
             return Result.error("Predecessor element does not exist in the model");
         }
 
-        String predecessorElementId = optionalPredecessorElementId.get();
+        String predecessorElementId = callArguments.startOfSequence().id();
         Set<String> addedActivitiesNames = new HashSet<>();
         String previousElementInSequenceId = null;
         for (Activity activityInSequence : callArguments.activitiesInSequence()) {
-            if (model.findElementByModelFriendlyId(activityInSequence.activityName()).isPresent()) {
+            if (model.findElementByName(activityInSequence.activityName()).isPresent()) {
                 return Result.error("Element %s already exists in the model".formatted(activityInSequence.activityName()));
             }
 
-            String activityId = model.addTask(activityInSequence.activityName(), activityInSequence.activityName());
+            String activityId = model.addTask(activityInSequence.activityName());
             addedActivitiesNames.add(activityInSequence.activityName());
 
             if (previousElementInSequenceId != null && !model.areElementsDirectlyConnected(
@@ -83,9 +80,9 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
             previousElementInSequenceId = activityId;
         }
 
-        String sequenceStartElementId = model.findElementByModelFriendlyId(callArguments.activitiesInSequence()
-                                                                                   .get(0)
-                                                                                   .activityName()).orElseThrow();
+        String sequenceStartElementId = model.findElementByName(callArguments.activitiesInSequence()
+                                                                        .get(0)
+                                                                        .activityName()).orElseThrow();
         String lastElementInSequenceId = previousElementInSequenceId;
         String sequenceEndElementId = null;
         if (!callArguments.activitiesInSequence().get(callArguments.activitiesInSequence().size() - 1).isProcessEnd()) {

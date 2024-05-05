@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddSequenceOfTasksCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
@@ -42,11 +43,11 @@ class AddSequenceOfTasksCallExecutorTest {
     @Test
     void works_as_expected() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        String predecessorTaskId = model.addTask("task", "task");
+        String predecessorTaskId = model.addTask("task");
         SequenceOfTasksDto callArguments = new SequenceOfTasksDto(
                 aRetrospectiveSummary,
                 "",
-                "task",
+                new HumanReadableId("task", predecessorTaskId),
                 List.of(
                         new Activity("activity1", false),
                         new Activity("activity2", false)
@@ -57,9 +58,9 @@ class AddSequenceOfTasksCallExecutorTest {
         executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
         model = modelReference.getCurrentValue();
 
-        Optional<String> firstTaskId = model.findElementByModelFriendlyId("activity1");
+        Optional<String> firstTaskId = model.findElementByName("activity1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findElementByModelFriendlyId("activity2");
+        Optional<String> secondTaskId = model.findElementByName("activity2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(predecessorTaskId);
@@ -77,10 +78,10 @@ class AddSequenceOfTasksCallExecutorTest {
     @Test
     void works_as_expected_when_inserting_the_sequence_into_an_existing_model() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        String checkTaskId = model.addTask("task", "task");
+        String checkTaskId = model.addTask("task");
         String gatewayId = model.addGateway(EXCLUSIVE, "gateway");
-        String firstPathAfterGateway = model.addTask("path1", "path1");
-        String secondPathAfterGateway = model.addTask("path2", "path2");
+        String firstPathAfterGateway = model.addTask("path1");
+        String secondPathAfterGateway = model.addTask("path2");
         model.addUnlabelledSequenceFlow(model.getStartEvent(), checkTaskId);
         model.addUnlabelledSequenceFlow(checkTaskId, gatewayId);
         model.addUnlabelledSequenceFlow(gatewayId, firstPathAfterGateway);
@@ -88,7 +89,7 @@ class AddSequenceOfTasksCallExecutorTest {
         SequenceOfTasksDto callArguments = new SequenceOfTasksDto(
                 aRetrospectiveSummary,
                 "",
-                "path1",
+                new HumanReadableId("path1", firstPathAfterGateway),
                 List.of(
                         new Activity("activity1", false),
                         new Activity("activity2", false)
@@ -99,9 +100,9 @@ class AddSequenceOfTasksCallExecutorTest {
         executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
         model = modelReference.getCurrentValue();
 
-        Optional<String> firstTaskId = model.findElementByModelFriendlyId("activity1");
+        Optional<String> firstTaskId = model.findElementByName("activity1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findElementByModelFriendlyId("activity2");
+        Optional<String> secondTaskId = model.findElementByName("activity2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(firstPathAfterGateway);

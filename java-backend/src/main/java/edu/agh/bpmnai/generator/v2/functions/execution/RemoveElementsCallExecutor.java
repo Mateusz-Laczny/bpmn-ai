@@ -2,6 +2,7 @@ package edu.agh.bpmnai.generator.v2.functions.execution;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.bpmn.model.RemoveActivityError;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.RemoveElementsFunction;
@@ -11,8 +12,6 @@ import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -50,20 +49,20 @@ public class RemoveElementsCallExecutor implements FunctionCallExecutor {
         StringBuilder removedElementsMessageBuilder = new StringBuilder("Following elements were removed:\n");
         StringBuilder missingElementsMessageBuilder = new StringBuilder(
                 "Following elements are not present in the diagram:\n");
-        for (String elementToRemoveModelId : callArguments.elementsToRemove()) {
-            Optional<String> elementToRemoveId = model.findElementByModelFriendlyId(elementToRemoveModelId);
-            if (elementToRemoveId.isEmpty()) {
-                missingElementsMessageBuilder.append(elementToRemoveModelId).append(", ");
+        for (HumanReadableId elementToRemove : callArguments.elementsToRemove()) {
+            String elementToRemoveId = elementToRemove.id();
+            if (!model.doesIdExist(elementToRemoveId)) {
+                missingElementsMessageBuilder.append(elementToRemove).append(", ");
             } else {
                 Result<Void, RemoveActivityError> removeFlowNodeResult =
-                        model.removeFlowNode(elementToRemoveId.get());
+                        model.removeFlowNode(elementToRemoveId);
                 if (removeFlowNodeResult.isOk()) {
-                    removedElementsMessageBuilder.append(elementToRemoveModelId).append(", ");
+                    removedElementsMessageBuilder.append(elementToRemove).append(", ");
                 } else {
                     log.warn(
                             "Unexpected error '{}' when removing element with model ID '{}'",
                             removeFlowNodeResult.getError(),
-                            elementToRemoveModelId
+                            elementToRemove
                     );
                 }
             }

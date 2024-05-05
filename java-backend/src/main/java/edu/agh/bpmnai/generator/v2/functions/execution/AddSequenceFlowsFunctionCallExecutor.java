@@ -51,12 +51,12 @@ public class AddSequenceFlowsFunctionCallExecutor implements FunctionCallExecuto
         AddSequenceFlowsCallParameterDto callArguments = argumentsParsingResult.getValue();
         var responseMessageBuilder = new StringBuilder();
         for (SequenceFlowDto sequenceFlowDto : callArguments.sequenceFlows()) {
-            Optional<String> sourceId = model.findElementByModelFriendlyId(sequenceFlowDto.source());
+            Optional<String> sourceId = model.findElementByName(sequenceFlowDto.source());
             if (sourceId.isEmpty()) {
                 return Result.error("Element with id '%s' does not exist".formatted(sequenceFlowDto.source()));
             }
 
-            Optional<String> targetId = model.findElementByModelFriendlyId(sequenceFlowDto.target());
+            Optional<String> targetId = model.findElementByName(sequenceFlowDto.target());
             if (targetId.isEmpty()) {
                 return Result.error("Element with id '%s' does not exist".formatted(sequenceFlowDto.target()));
             }

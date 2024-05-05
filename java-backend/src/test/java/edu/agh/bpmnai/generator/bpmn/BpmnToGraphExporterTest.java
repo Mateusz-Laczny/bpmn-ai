@@ -23,7 +23,7 @@ class BpmnToGraphExporterTest {
     void adds_all_existing_elements_as_graph_nodes() {
         var model = new BpmnModel();
         String startEventId = model.getStartEvent();
-        String activityId = model.addTask("Some task", "");
+        String activityId = model.addTask("Some task");
         model.addUnlabelledSequenceFlow(startEventId, activityId);
 
         Graph resultGraph = exporter.export(model);
@@ -37,7 +37,7 @@ class BpmnToGraphExporterTest {
     void adds_disjoint_elements_to_the_graph() {
         var model = new BpmnModel();
         String startEventId = model.getStartEvent();
-        String activityId = model.addTask("Some task", "");
+        String activityId = model.addTask("Some task");
 
         Graph resultGraph = exporter.export(model);
 
@@ -49,7 +49,7 @@ class BpmnToGraphExporterTest {
     void works_for_labelled_sequence_flows() {
         var model = new BpmnModel();
         String startEventId = model.getStartEvent();
-        String activityId = model.addTask("Some task", "");
+        String activityId = model.addTask("Some task");
         model.addLabelledSequenceFlow(startEventId, activityId, "label");
 
         Graph resultGraph = exporter.export(model);

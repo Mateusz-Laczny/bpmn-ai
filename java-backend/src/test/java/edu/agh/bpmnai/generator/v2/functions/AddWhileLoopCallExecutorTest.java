@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddWhileLoopCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
@@ -41,11 +42,11 @@ class AddWhileLoopCallExecutorTest {
     @Test
     void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        String checkTaskId = model.addTask("task", "task");
+        String checkTaskId = model.addTask("task");
         WhileLoopDto callArguments = new WhileLoopDto(
                 aRetrospectiveSummary,
                 "someName",
-                "task",
+                new HumanReadableId("task", checkTaskId).toString(),
                 null,
                 List.of(new Activity("task1", false), new Activity("task2", false))
         );
@@ -54,9 +55,9 @@ class AddWhileLoopCallExecutorTest {
         executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
         model = modelReference.getCurrentValue();
 
-        Optional<String> firstTaskId = model.findElementByModelFriendlyId("task1");
+        Optional<String> firstTaskId = model.findElementByName("task1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findElementByModelFriendlyId("task2");
+        Optional<String> secondTaskId = model.findElementByName("task2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(checkTaskId);
@@ -74,13 +75,13 @@ class AddWhileLoopCallExecutorTest {
     @Test
     void should_work_as_expected_for_new_check_activity_task() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        String predecessorTaskId = model.addTask("task", "task");
+        String predecessorTaskId = model.addTask("task");
 
         WhileLoopDto callArguments = new WhileLoopDto(
                 aRetrospectiveSummary,
                 "someName",
-                "checkActivity",
-                "task",
+                "checkTask",
+                new HumanReadableId("task", predecessorTaskId),
                 List.of(new Activity("task1", false), new Activity("task2", false))
         );
 
@@ -88,11 +89,11 @@ class AddWhileLoopCallExecutorTest {
         executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
         model = modelReference.getCurrentValue();
 
-        Optional<String> checkTaskId = model.findElementByModelFriendlyId("checkActivity");
+        Optional<String> checkTaskId = model.findElementByName("checkTask");
         assertTrue(checkTaskId.isPresent());
-        Optional<String> firstTaskId = model.findElementByModelFriendlyId("task1");
+        Optional<String> firstTaskId = model.findElementByName("task1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findElementByModelFriendlyId("task2");
+        Optional<String> secondTaskId = model.findElementByName("task2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(checkTaskId.get());

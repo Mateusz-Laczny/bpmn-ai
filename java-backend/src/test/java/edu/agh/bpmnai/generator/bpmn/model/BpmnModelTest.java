@@ -17,9 +17,9 @@ class BpmnModelTest {
     void correctly_adds_task_to_the_model() {
         BpmnModel model = new BpmnModel();
 
-        String taskId = model.addTask("task", "taskModelFacingName");
+        String taskId = model.addTask("task");
 
-        Optional<String> taskIdFromModel = model.findElementByModelFriendlyId("taskModelFacingName");
+        Optional<String> taskIdFromModel = model.findElementByName("task");
         assertTrue(taskIdFromModel.isPresent());
         assertEquals(taskId, taskIdFromModel.get());
         Dimensions taskDimensions = model.getElementDimensions(taskId);
@@ -47,7 +47,7 @@ class BpmnModelTest {
     void correctly_updates_the_position_of_the_element() {
         BpmnModel model = new BpmnModel();
 
-        String taskId = model.addTask("task", "");
+        String taskId = model.addTask("task");
         model.setPositionOfElement(taskId, new Point2d(10, 15));
 
         Dimensions taskDimensions = model.getElementDimensions(taskId);
@@ -59,8 +59,8 @@ class BpmnModelTest {
     void correctly_clears_successors_of_the_element() {
         BpmnModel model = new BpmnModel();
 
-        String taskId = model.addTask("task", "taskModelFacingName");
-        String secondTaskId = model.addTask("task2", "task2ModelFacingName");
+        String taskId = model.addTask("task");
+        String secondTaskId = model.addTask("task2");
         model.addUnlabelledSequenceFlow(taskId, secondTaskId);
 
         model.clearSuccessors(taskId);
@@ -70,10 +70,10 @@ class BpmnModelTest {
     @Test
     void getName_returns_correct_name_for_task() {
         BpmnModel model = new BpmnModel();
-        String taskId = model.addTask("task", "taskModelFacingName");
+        String taskId = model.addTask("task");
 
-        String taskName = model.getModelFriendlyId(taskId);
-        assertEquals("taskModelFacingName", taskName);
+        String taskName = model.getName(taskId).orElseThrow();
+        assertEquals("task", taskName);
     }
 
     @Test
@@ -81,14 +81,14 @@ class BpmnModelTest {
         BpmnModel model = new BpmnModel();
         String taskId = model.addGateway(EXCLUSIVE, "gateway");
 
-        String taskName = model.getModelFriendlyId(taskId);
+        String taskName = model.getName(taskId).orElseThrow();
         assertEquals("gateway", taskName);
     }
 
     @Test
     void areElementsDirectlyConnected_returns_true_if_elements_are_connected() {
         BpmnModel model = new BpmnModel();
-        String taskId = model.addTask("", "task");
+        String taskId = model.addTask("");
         model.addUnlabelledSequenceFlow(model.getStartEvent(), taskId);
 
         assertTrue(model.areElementsDirectlyConnected(model.getStartEvent(), taskId));
@@ -97,7 +97,7 @@ class BpmnModelTest {
     @Test
     void areElementsDirectlyConnected_returns_false_if_elements_are_not_connected() {
         BpmnModel model = new BpmnModel();
-        String taskId = model.addTask("", "task");
+        String taskId = model.addTask("");
 
         assertFalse(model.areElementsDirectlyConnected(model.getStartEvent(), taskId));
     }
@@ -106,8 +106,8 @@ class BpmnModelTest {
     void finds_successors_connected_with_labelled_sequence_flows() {
         BpmnModel model = new BpmnModel();
 
-        String taskId = model.addTask("task", "taskModelFacingName");
-        String secondTaskId = model.addTask("task2", "task2ModelFacingName");
+        String taskId = model.addTask("task");
+        String secondTaskId = model.addTask("task2");
         model.addLabelledSequenceFlow(taskId, secondTaskId, "label");
 
         assertEquals(Set.of(secondTaskId), model.findSuccessors(taskId));

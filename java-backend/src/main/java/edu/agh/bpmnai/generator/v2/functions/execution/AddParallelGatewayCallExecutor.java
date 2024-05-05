@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.PARALLEL;
@@ -63,8 +62,8 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
 
         BpmnModel model = modelReference.getCurrentValue();
 
-        Optional<String> predecessorElementId = model.findElementByModelFriendlyId(callArguments.predecessorElement());
-        if (predecessorElementId.isEmpty()) {
+        String predecessorElementId = callArguments.predecessorElement().id();
+        if (!model.doesIdExist(predecessorElementId)) {
             return Result.error("Predecessor element '%s' does not exist in the model".formatted(callArguments.predecessorElement()));
         }
 
@@ -73,11 +72,11 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
 
         Set<String> addedActivitiesNames = new HashSet<>();
         for (Activity activityInGateway : callArguments.activitiesInsideGateway()) {
-            if (model.findElementByModelFriendlyId(activityInGateway.activityName()).isPresent()) {
+            if (model.findElementByName(activityInGateway.activityName()).isPresent()) {
                 return Result.error("Element with name %s already exists in the model".formatted(activityInGateway.activityName()));
             }
 
-            String activityId = model.addTask(activityInGateway.activityName(), activityInGateway.activityName());
+            String activityId = model.addTask(activityInGateway.activityName());
             addedActivitiesNames.add(activityInGateway.activityName());
             model.addUnlabelledSequenceFlow(openingGatewayId, activityId);
             if (activityInGateway.isProcessEnd()) {
@@ -89,7 +88,7 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
         }
 
         Result<Void, String> insertSubdiagramResult = insertElementIntoDiagram.apply(
-                predecessorElementId.get(),
+                predecessorElementId,
                 openingGatewayId,
                 closingGatewayId,
                 model

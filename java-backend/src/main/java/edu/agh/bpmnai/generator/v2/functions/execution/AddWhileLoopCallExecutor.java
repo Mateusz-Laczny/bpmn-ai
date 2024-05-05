@@ -2,6 +2,7 @@ package edu.agh.bpmnai.generator.v2.functions.execution;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AddWhileLoopFunction;
 import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
@@ -14,10 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
+import static edu.agh.bpmnai.generator.bpmn.model.HumanReadableId.isHumanReadableIdentifier;
 
 @Service
 @Slf4j
@@ -58,27 +59,35 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         WhileLoopDto callArguments = argumentsParsingResult.getValue();
 
         BpmnModel model = modelReference.getCurrentValue();
-        String checkTaskName = callArguments.checkTask();
-        Optional<String> optionalCheckTaskElementId = model.findElementByModelFriendlyId(checkTaskName);
         String checkTaskId;
+        boolean checkTaskExistsInTheModel;
+        if (isHumanReadableIdentifier(callArguments.checkTask())) {
+            checkTaskId = HumanReadableId.fromString(callArguments.checkTask()).id();
+            if (!model.doesIdExist(checkTaskId)) {
+                return Result.error("Check task '%s' does not exist in the model".formatted(callArguments.checkTask()));
+            }
+            checkTaskExistsInTheModel = true;
+        } else {
+            checkTaskId = model.addTask(callArguments.checkTask());
+            checkTaskExistsInTheModel = false;
+        }
         String subdiagramPredecessorElement;
         String subdiagramStartElement = null;
         Set<String> addedActivitiesNames = new HashSet<>();
-        if (optionalCheckTaskElementId.isPresent()) {
-            checkTaskId = optionalCheckTaskElementId.get();
+        if (checkTaskExistsInTheModel) {
             subdiagramPredecessorElement = checkTaskId;
         } else {
-            Optional<String> optionalPredecessorElementId =
-                    model.findElementByModelFriendlyId(callArguments.predecessorElement());
-            if (optionalPredecessorElementId.isEmpty()) {
-                log.warn("Call unsuccessful, predecessor element does not exist in the model");
-                return Result.error("Predecessor element does not exist in the model");
+            if (!model.doesIdExist(callArguments.predecessorElement().id())) {
+                log.warn(
+                        "Call unsuccessful, predecessor element '{}' does not exist in the model",
+                        callArguments.predecessorElement()
+                );
+                return Result.error("Predecessor element %s does not exist in the model".formatted(callArguments.predecessorElement()));
             }
 
-            subdiagramPredecessorElement = optionalPredecessorElementId.get();
-            checkTaskId = model.addTask(checkTaskName, checkTaskName);
+            subdiagramPredecessorElement = callArguments.predecessorElement().id();
             subdiagramStartElement = checkTaskId;
-            addedActivitiesNames.add(checkTaskName);
+            addedActivitiesNames.add(callArguments.checkTask());
         }
 
         String gatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " gateway");
@@ -90,11 +99,11 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
         String previousElementInLoopId = gatewayId;
         for (Activity activityInLoop : callArguments.activitiesInLoop()) {
-            if (model.findElementByModelFriendlyId(activityInLoop.activityName()).isPresent()) {
+            if (model.findElementByName(activityInLoop.activityName()).isPresent()) {
                 return Result.error("Element %s already exists in the model".formatted(activityInLoop.activityName()));
             }
 
-            String activityId = model.addTask(activityInLoop.activityName(), activityInLoop.activityName());
+            String activityId = model.addTask(activityInLoop.activityName());
             addedActivitiesNames.add(activityInLoop.activityName());
 
             if (!model.areElementsDirectlyConnected(previousElementInLoopId, activityId)) {

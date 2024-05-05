@@ -1,7 +1,5 @@
 package edu.agh.bpmnai.generator;
 
-import edu.agh.bpmnai.generator.bpmn.BpmnProvider;
-import edu.agh.bpmnai.generator.bpmn.model.BpmnFile;
 import edu.agh.bpmnai.generator.v2.FileExporter;
 import edu.agh.bpmnai.generator.v2.LlmService;
 import edu.agh.bpmnai.generator.v2.UserRequestResponse;
@@ -18,8 +16,6 @@ import java.nio.file.Path;
 @Slf4j
 public class GenerationController {
 
-    private final BpmnProvider bpmnProvider;
-
     private final LlmService llmService;
 
     private final FileExporter fileExporter;
@@ -27,16 +23,14 @@ public class GenerationController {
     private final Path bpmnLogFilepath;
 
     @Autowired
-    public GenerationController(BpmnProvider bpmnProvider, LlmService llmService, FileExporter fileExporter, @Value("${logging.apiResponses.bpmnLogFilepath}") Path bpmnLogFilepath) {
-        this.bpmnProvider = bpmnProvider;
+    public GenerationController(
+            LlmService llmService,
+            FileExporter fileExporter,
+            @Value("${logging.apiResponses.bpmnLogFilepath}") Path bpmnLogFilepath
+    ) {
         this.llmService = llmService;
         this.fileExporter = fileExporter;
         this.bpmnLogFilepath = bpmnLogFilepath;
-    }
-
-    @PostMapping("/from/text")
-    public BpmnFile generateFromTextPrompt(@RequestBody TextPrompt prompt) {
-        return bpmnProvider.provideForTextPrompt(prompt);
     }
 
     @PostMapping("v2/send/message")

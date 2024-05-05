@@ -52,14 +52,14 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
         StringBuilder missingFlowsMessageBuilder = new StringBuilder(
                 "Following sequence flows are not present in the diagram:\n");
         for (SequenceFlowDto sequenceFlowDto : sequenceFlowDtos) {
-            Optional<String> sequenceFlowSourceId = model.findElementByModelFriendlyId(
+            Optional<String> sequenceFlowSourceId = model.findElementByName(
                     sequenceFlowDto.source());
             if (sequenceFlowSourceId.isEmpty()) {
                 return Result.error("Element with id '%s' does not exist in the diagram".formatted(
                         sequenceFlowDto.source()));
             }
 
-            Optional<String> sequenceFlowTargetId = model.findElementByModelFriendlyId(
+            Optional<String> sequenceFlowTargetId = model.findElementByName(
                     sequenceFlowDto.target());
             if (sequenceFlowTargetId.isEmpty()) {
                 return Result.error("Element with id '%s' does not exist in the diagram".formatted(

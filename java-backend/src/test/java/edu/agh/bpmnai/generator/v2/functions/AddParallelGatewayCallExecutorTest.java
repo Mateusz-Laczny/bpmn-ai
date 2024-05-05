@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddParallelGatewayCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
@@ -45,12 +46,12 @@ class AddParallelGatewayCallExecutorTest {
     @Test
     void works_as_expected() throws JsonProcessingException {
         BpmnModel model = sessionStateStore.model();
-        String predecessorTaskId = model.addTask("task", "task");
+        String predecessorTaskId = model.addTask("task");
         ParallelGatewayDto callArguments = new ParallelGatewayDto(
                 aRetrospectiveSummary,
                 "",
                 "elementName",
-                "task",
+                new HumanReadableId("task", predecessorTaskId),
                 List.of(
                         new Activity("activity1", false),
                         new Activity("activity2", false)
@@ -61,9 +62,9 @@ class AddParallelGatewayCallExecutorTest {
         executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
         model = modelReference.getCurrentValue();
 
-        Optional<String> firstTaskId = model.findElementByModelFriendlyId("activity1");
+        Optional<String> firstTaskId = model.findElementByName("activity1");
         assertTrue(firstTaskId.isPresent());
-        Optional<String> secondTaskId = model.findElementByModelFriendlyId("activity2");
+        Optional<String> secondTaskId = model.findElementByName("activity2");
         assertTrue(secondTaskId.isPresent());
 
         Set<String> predecessorTaskSuccessors = model.findSuccessors(predecessorTaskId);

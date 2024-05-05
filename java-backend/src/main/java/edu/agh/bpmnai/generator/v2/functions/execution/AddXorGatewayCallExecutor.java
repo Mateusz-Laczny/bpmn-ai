@@ -2,6 +2,7 @@ package edu.agh.bpmnai.generator.v2.functions.execution;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AddXorGatewayFunction;
 import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
@@ -14,10 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
+import static edu.agh.bpmnai.generator.bpmn.model.HumanReadableId.isHumanReadableIdentifier;
 
 @Service
 @Slf4j
@@ -62,26 +63,32 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
         }
 
         BpmnModel model = modelReference.getCurrentValue();
-        String checkTaskName = callArguments.checkActivity();
-        Optional<String> optionalTaskElementId = model.findElementByModelFriendlyId(checkTaskName);
         String checkTaskId;
+        boolean checkTaskExistsInTheModel;
+        Set<String> addedActivitiesNames = new HashSet<>();
+        if (isHumanReadableIdentifier(callArguments.checkTask())) {
+            checkTaskId = HumanReadableId.fromString(callArguments.checkTask()).id();
+            if (!model.doesIdExist(checkTaskId)) {
+                return Result.error("Check task '%s' does not exist in the model".formatted(callArguments.checkTask()));
+            }
+            checkTaskExistsInTheModel = true;
+        } else {
+            checkTaskId = model.addTask(callArguments.checkTask());
+            addedActivitiesNames.add(callArguments.checkTask());
+            checkTaskExistsInTheModel = false;
+        }
+
         String subdiagramPredecessorElement;
         String subdiagramStartElement = null;
-        Set<String> addedActivitiesNames = new HashSet<>();
-        if (optionalTaskElementId.isPresent()) {
-            checkTaskId = optionalTaskElementId.get();
+        if (checkTaskExistsInTheModel) {
             subdiagramPredecessorElement = checkTaskId;
         } else {
-            Optional<String> optionalPredecessorElementId =
-                    model.findElementByModelFriendlyId(callArguments.predecessorElement());
-            if (optionalPredecessorElementId.isEmpty()) {
+            if (!model.doesIdExist(callArguments.predecessorElement().id())) {
                 log.warn("Call unsuccessful, predecessor element does not exist in the model");
                 return Result.error("Predecessor element does not exist in the model");
             }
 
-            subdiagramPredecessorElement = optionalPredecessorElementId.get();
-            checkTaskId = model.addTask(checkTaskName, checkTaskName);
-            addedActivitiesNames.add(checkTaskName);
+            subdiagramPredecessorElement = callArguments.predecessorElement().id();
             subdiagramStartElement = checkTaskId;
         }
 
@@ -95,11 +102,11 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
         model.addUnlabelledSequenceFlow(checkTaskId, openingGatewayId);
 
         for (Activity activityInGateway : callArguments.activitiesInsideGateway()) {
-            if (model.findElementByModelFriendlyId(activityInGateway.activityName()).isPresent()) {
+            if (model.findElementByName(activityInGateway.activityName()).isPresent()) {
                 return Result.error("Element with name %s already exists in the model".formatted(activityInGateway.activityName()));
             }
 
-            String activityId = model.addTask(activityInGateway.activityName(), activityInGateway.activityName());
+            String activityId = model.addTask(activityInGateway.activityName());
             addedActivitiesNames.add(activityInGateway.activityName());
             model.addUnlabelledSequenceFlow(openingGatewayId, activityId);
             if (activityInGateway.isProcessEnd()) {

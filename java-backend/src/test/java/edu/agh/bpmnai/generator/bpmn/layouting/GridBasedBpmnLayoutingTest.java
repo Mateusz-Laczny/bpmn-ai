@@ -20,7 +20,7 @@ class GridBasedBpmnLayoutingTest {
                 new GridElementToDiagramPositionMapping();
         var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
-        String taskId = model.addTask("aTask", "");
+        String taskId = model.addTask("aTask");
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, taskId);
 
@@ -46,7 +46,7 @@ class GridBasedBpmnLayoutingTest {
         int cellHeight = 100;
         var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
         var model = new BpmnModel();
-        String taskId = model.addTask("aTask", "aTask");
+        String taskId = model.addTask("aTask");
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, taskId);
 
@@ -62,8 +62,8 @@ class GridBasedBpmnLayoutingTest {
                 new GridElementToDiagramPositionMapping();
         var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
-        String firstTaskId = model.addTask("aTask1", "aTask1");
-        String secondTaskId = model.addTask("aTask2", "aTask2");
+        String firstTaskId = model.addTask("aTask1");
+        String secondTaskId = model.addTask("aTask2");
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, firstTaskId);
         model.addUnlabelledSequenceFlow(startEventId, secondTaskId);
@@ -104,7 +104,7 @@ class GridBasedBpmnLayoutingTest {
                 new GridElementToDiagramPositionMapping();
         var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
-        String taskId = model.addTask("aTask1", "aTask1");
+        String taskId = model.addTask("aTask1");
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, taskId);
         model.addUnlabelledSequenceFlow(taskId, startEventId);
@@ -132,9 +132,9 @@ class GridBasedBpmnLayoutingTest {
         int cellHeight = 100;
         var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
         var model = new BpmnModel();
-        String firstTaskId = model.addTask("firstTask", "firstTask");
-        String secondTaskId = model.addTask("secondTask", "secondTaskI");
-        String loopedTaskId = model.addTask("loopedTask", "loopedTask");
+        String firstTaskId = model.addTask("firstTask");
+        String secondTaskId = model.addTask("secondTask");
+        String loopedTaskId = model.addTask("loopedTask");
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, firstTaskId);
         model.addUnlabelledSequenceFlow(firstTaskId, secondTaskId);
@@ -164,14 +164,14 @@ class GridBasedBpmnLayoutingTest {
                 new GridElementToDiagramPositionMapping();
         var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, gridElementToDiagramPositionMapping);
         var model = new BpmnModel();
-        String firstTaskId = model.addTask("aTask1", "aTask1");
-        String secondTaskId = model.addTask("aTask2", "aTask2");
+        String firstTaskId = model.addTask("aTask1");
+        String secondTaskId = model.addTask("aTask2");
 
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, firstTaskId);
         model.addUnlabelledSequenceFlow(startEventId, secondTaskId);
 
-        String successorTaskId = model.addTask("successorTask", "successorTask");
+        String successorTaskId = model.addTask("successorTask");
         model.addUnlabelledSequenceFlow(firstTaskId, successorTaskId);
         model.addUnlabelledSequenceFlow(secondTaskId, successorTaskId);
 
@@ -215,10 +215,10 @@ successor    │
         int cellHeight = 100;
         var layouter = new GridBasedBpmnLayouting(cellWidth, cellHeight, new GridElementToDiagramPositionMapping());
         var model = new BpmnModel();
-        String firstTaskId = model.addTask("aTask1", "aTask1");
-        String secondTaskId = model.addTask("aTask2", "aTask2");
-        String thirdTaskId = model.addTask("aTask3", "aTask3");
-        String commonSuccessorId = model.addTask("commonSuccessor", "commonSuccessor");
+        String firstTaskId = model.addTask("aTask1");
+        String secondTaskId = model.addTask("aTask2");
+        String thirdTaskId = model.addTask("aTask3");
+        String commonSuccessorId = model.addTask("commonSuccessor");
 
         String startEventId = model.getStartEvent();
         model.addUnlabelledSequenceFlow(startEventId, firstTaskId);
