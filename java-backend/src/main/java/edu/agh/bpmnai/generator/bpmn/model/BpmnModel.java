@@ -72,6 +72,9 @@ public final class BpmnModel {
         defaultProcess = modelInstance.getModelElementsByType(Process.class).iterator().next();
         diagramPlane = modelInstance.getModelElementsByType(BpmnDiagram.class).iterator().next().getBpmnPlane();
         idToName = new HashMap<>();
+        for (String flowNode : getFlowNodes()) {
+            idToName.put(flowNode, modelInstance.getModelElementById(flowNode).getAttributeValue("name"));
+        }
     }
 
     private static <T extends BpmnModelElementInstance> T createElementWithParent(
@@ -177,6 +180,7 @@ public final class BpmnModel {
     public String addEndEvent() {
         String id = generateUniqueId();
         EndEvent endEventElement = createElementWithParent(defaultProcess, id, EndEvent.class);
+        endEventElement.setAttributeValue("name", "End");
         addEventDiagramElement(endEventElement);
         idToName.put(id, "End");
         return id;
@@ -209,8 +213,8 @@ public final class BpmnModel {
     ) {
         log.trace(
                 "Adding unlabelled sequence flow from '{}' to '{}'",
-                getHumanReadableId(sourceElementId).orElseThrow(),
-                getHumanReadableId(targetElementId).orElseThrow()
+                getHumanReadableId(sourceElementId).orElse(null),
+                getHumanReadableId(targetElementId).orElse(null)
         );
 
         FlowNode sourceElement = modelInstance.getModelElementById(sourceElementId);
@@ -466,6 +470,13 @@ public final class BpmnModel {
         }
 
         return Result.error(RemoveSequenceFlowError.ELEMENTS_NOT_CONNECTED);
+    }
+
+    public void removeSequenceFlow(String sequenceFlowId) {
+        SequenceFlow sequenceFlow = modelInstance.getModelElementById(sequenceFlowId);
+        sequenceFlow.getSource().getOutgoing().remove(sequenceFlow);
+        sequenceFlow.getTarget().getIncoming().remove(sequenceFlow);
+        removeElement(sequenceFlowId);
     }
 
     public Set<String> findElementsOfType(BpmnElementType bpmnElementType) {

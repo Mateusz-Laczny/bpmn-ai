@@ -13,7 +13,7 @@ public class GridElementToDiagramPositionMapping {
         switch (elementType) {
             case START_EVENT, END_EVENT -> {
                 xPos = cellWidth * cellPosition.x();
-                yPos = 0.5 * TASK_HEIGHT - (0.5 * EVENT_DIAMETER);
+                yPos = cellHeight * cellPosition.y() + (0.5 * TASK_HEIGHT - (0.5 * EVENT_DIAMETER));
             }
             case ACTIVITY, OTHER_ELEMENT -> {
                 xPos = cellWidth * cellPosition.x();
@@ -21,7 +21,7 @@ public class GridElementToDiagramPositionMapping {
             }
             case GATEWAY -> {
                 xPos = cellWidth * cellPosition.x();
-                yPos = 0.5 * TASK_HEIGHT - (0.5 * GATEWAY_DIAGONAL);
+                yPos = cellHeight * cellPosition.y() + (0.5 * TASK_HEIGHT - (0.5 * GATEWAY_DIAGONAL));
             }
             default -> throw new IllegalStateException("Unexpected element type: " + elementType);
         }

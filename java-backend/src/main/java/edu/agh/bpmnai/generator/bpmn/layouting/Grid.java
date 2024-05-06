@@ -22,6 +22,16 @@ public class Grid {
     }
 
     public void addCell(Cell newCell) {
+        if (gridTable.contains(newCell.x(), newCell.y())) {
+            throw new IllegalArgumentException("Cell %s:%s is already occupied by %s".formatted(
+                    newCell.x(),
+                    newCell.y(),
+                    gridTable.get(
+                            newCell.x(),
+                            newCell.y()
+                    ).idOfElementInside()
+            ));
+        }
         gridTable.put(newCell.x(), newCell.y(), newCell);
         elementIdToCell.put(newCell.idOfElementInside(), newCell);
     }
@@ -77,6 +87,6 @@ public class Grid {
     }
 
     public void shiftElementinYAxis(String key, int i) {
-        
+
     }
 }

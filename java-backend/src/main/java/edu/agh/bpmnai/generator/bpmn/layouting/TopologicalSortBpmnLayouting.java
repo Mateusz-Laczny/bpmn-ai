@@ -4,10 +4,7 @@ import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.Dimensions;
 import edu.agh.bpmnai.generator.bpmn.model.DirectedEdge;
 import jakarta.annotation.Nullable;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -50,7 +47,7 @@ public class TopologicalSortBpmnLayouting {
         Set<String> visited = new HashSet<>();
         Set<DirectedEdge> backEdges = new HashSet<>();
         boolean reversedEdge = true;
-        log.trace("Finding edges to reverse");
+        log.info("Finding edges to reverse");
         while (reversedEdge) {
             Set<DirectedEdge> currentIterationBackEdges = new HashSet<>();
             for (String startEventId : startEventsIds) {
@@ -75,7 +72,12 @@ public class TopologicalSortBpmnLayouting {
             }
         }
 
+        log.info("Reversed edges: '{}'", backEdges);
+
         List<String> sortedNodes = topologicalSort(model);
+
+        log.info("Sorted nodes: '{}", sortedNodes.stream().map(model::getHumanReadableId).toList());
+
         return gridLayout(model, sortedNodes, backEdges);
     }
 
@@ -185,15 +187,22 @@ public class TopologicalSortBpmnLayouting {
         for (Cell cell : grid.allCells()) {
             GridPosition cellPosition = cell.gridPosition();
             String elementId = cell.idOfElementInside();
+            Point2d diagramPlanePosition = gridElementToDiagramPositionMapping.apply(
+                    150,
+                    150,
+                    cellPosition,
+                    model.getElementType(elementId)
+                            .orElseThrow()
+            );
+            log.info(
+                    "Setting position of element '{}' at cell '{}' to '{}'",
+                    cellPosition,
+                    model.getHumanReadableId(elementId).get(),
+                    diagramPlanePosition
+            );
             model.setPositionOfElement(
                     elementId,
-                    gridElementToDiagramPositionMapping.apply(
-                            150,
-                            150,
-                            cellPosition,
-                            model.getElementType(elementId)
-                                    .orElseThrow()
-                    )
+                    diagramPlanePosition
             );
         }
 
@@ -211,12 +220,17 @@ public class TopologicalSortBpmnLayouting {
             Map<String, List<Integer>> pathsToElements,
             Map<DirectedEdge, Integer> flowsOffsets
     ) {
+        log.info("Placing element '{}'", model.getHumanReadableId(element).get());
         int numberOfPredecessors = model.findPredecessors(element).size();
         GridPosition finalPosition;
         if (numberOfPredecessors == 0) {
-            finalPosition = new GridPosition(0, grid.getNumberOfRows() + 1);
+            log.info("Element has no predecessors");
+            finalPosition = new GridPosition(0, grid.getNumberOfRows());
+            pathsToElements.put(element, new ArrayList<>(List.of(finalPosition.y())));
             grid.addCell(new Cell(finalPosition, element));
+            log.info("Final position: '{}'", finalPosition);
         } else if (numberOfPredecessors == 1) {
+            log.info("Element has a single predecessor");
             Set<String> backEdgesIds = backEdges.stream().map(DirectedEdge::targetId).collect(Collectors.toSet());
             insertElementWithSinglePredecessorIntoTheGrid(
                     element,
@@ -227,38 +241,41 @@ public class TopologicalSortBpmnLayouting {
                     pathsToElements
             );
         } else {
+            log.info("Element is a join");
             insertJoinElementIntoGrid(element, model, grid, flowsOffsets, splitIdToInfo, pathsToElements);
         }
 
         int numberOfSuccessors = model.findSuccessors(element).size();
         boolean elementIsSplit = numberOfSuccessors >= 2;
         if (elementIsSplit) {
+            log.info("Element is a split");
             List<Integer> pathToCurrentElement = pathsToElements.get(element);
-            SplitInfo splitInfo = splitIdToInfo.get(element);
-            splitInfo.setNextFreeBranch(0);
-            splitInfo.setCenterBranchFree(true);
-            if (numberOfSuccessors % 2 == 0 && pathToCurrentElement.get(pathToCurrentElement.size() - 1) != 0
-                && pathToCurrentElement.size() >= 2) {
-                splitInfo.setCenterBranchNumber(numberOfSuccessors / 2 - 1);
+            int centerBranchNumber;
+            if (numberOfSuccessors % 2 == 0 && !(pathToCurrentElement.get(pathToCurrentElement.size() - 1) == 0
+                                                 && pathToCurrentElement.size() >= 2)) {
+                centerBranchNumber = numberOfSuccessors / 2 - 1;
             } else {
-                splitInfo.setCenterBranchNumber(numberOfSuccessors / 2);
+                centerBranchNumber = numberOfSuccessors / 2;
             }
 
-            splitInfo.setCorrespondingJoin(null);
+            String correspondingJoin = null;
             if (numberOfPredecessors != 0) {
                 DirectedEdge firstIncomingFlow = model.getIncomingSequenceFlows(element).iterator().next();
                 for (DirectedEdge outgoingEdge : model.getOutgoingSequenceFlows(element)) {
                     boolean successorIsJoin = model.findPredecessors(outgoingEdge.targetId()).size() >= 2;
                     if (successorIsJoin) {
                         boolean incomingEdgeAndOutgoingEdgeBothReversedOrNot =
-                                backEdges.contains(firstIncomingFlow) ^ backEdges.contains(outgoingEdge);
+                                backEdges.contains(firstIncomingFlow) == backEdges.contains(outgoingEdge);
                         if (incomingEdgeAndOutgoingEdgeBothReversedOrNot) {
-                            splitInfo.setCorrespondingJoin(outgoingEdge.targetId());
+                            correspondingJoin = outgoingEdge.targetId();
                             break;
                         }
                     }
                 }
             }
+
+            SplitInfo splitInfo = new SplitInfo(element, true, centerBranchNumber, correspondingJoin, 0);
+            splitIdToInfo.put(element, splitInfo);
         }
     }
 
@@ -271,21 +288,27 @@ public class TopologicalSortBpmnLayouting {
             Map<String, List<Integer>> elementIdToPathFromStartEvent
     ) {
         var rightmostPredecessorPosition = new GridPosition(0, 0);
+        int rightmostPredecessorX = -1;
+        String rightmostPredecessor = null;
         LinkedHashSet<String> predecessors = model.findPredecessors(element);
         for (String predecessor : predecessors) {
             GridPosition predecessorPosition =
                     grid.findCellByIdOfElementInside(predecessor).orElseThrow().gridPosition();
-            if (predecessorPosition.x() > rightmostPredecessorPosition.x()) {
+            if (predecessorPosition.x() > rightmostPredecessorX) {
                 rightmostPredecessorPosition = predecessorPosition;
+                rightmostPredecessorX = predecessorPosition.x();
+                rightmostPredecessor = predecessor;
             }
         }
 
+        log.info("Rightmost predecessor: '{}' at position '{}'", rightmostPredecessor, rightmostPredecessorPosition);
+
         int forks = 1;
         boolean found = true;
-        String foundSplit = predecessors.iterator().next();
+        String correspondingSplit = predecessors.iterator().next();
         do {
-            Set<String> elementPredecessors = model.findPredecessors(foundSplit);
-            Set<String> elementSuccessors = model.findSuccessors(foundSplit);
+            Set<String> elementPredecessors = model.findPredecessors(correspondingSplit);
+            Set<String> elementSuccessors = model.findSuccessors(correspondingSplit);
 
             if (elementPredecessors.size() >= 2) {
                 forks += 1;
@@ -296,7 +319,7 @@ public class TopologicalSortBpmnLayouting {
             }
 
             if (!elementPredecessors.isEmpty()) {
-                foundSplit = elementPredecessors.iterator().next();
+                correspondingSplit = elementPredecessors.iterator().next();
             } else {
                 found = false;
                 break;
@@ -305,8 +328,10 @@ public class TopologicalSortBpmnLayouting {
 
         int finalRow;
         if (found) {
-            finalRow = grid.findCellByIdOfElementInside(foundSplit).orElseThrow().y();
+            log.info("Found corresponding split '{}'", model.getHumanReadableId(correspondingSplit).get());
+            finalRow = grid.findCellByIdOfElementInside(correspondingSplit).orElseThrow().y();
         } else {
+            log.info("no corresponding split");
             int rowNumberSum = 0;
             for (String predecessor : predecessors) {
                 rowNumberSum += grid.findCellByIdOfElementInside(predecessor).orElseThrow().y();
@@ -315,13 +340,14 @@ public class TopologicalSortBpmnLayouting {
             finalRow = rowNumberSum / predecessors.size();
         }
 
-        List<Integer> pathToCurrentElement = elementIdToPathFromStartEvent.get(foundSplit);
+        List<Integer> pathToCurrentElement = elementIdToPathFromStartEvent.get(correspondingSplit);
         elementIdToPathFromStartEvent.put(element, pathToCurrentElement);
-        grid.addCell(new Cell(new GridPosition(rightmostPredecessorPosition.x(), finalRow), element));
+        grid.addCell(new Cell(new GridPosition(rightmostPredecessorPosition.x() + 1, finalRow), element));
 
         for (DirectedEdge incomingSequenceFlow : model.getIncomingSequenceFlows(element)) {
-            SplitInfo splitInfo = splitIdToInfo.get(foundSplit);
-            if (incomingSequenceFlow.sourceId().equals(foundSplit) && splitInfo.getCorrespondingJoin() != null) {
+            SplitInfo splitInfo = splitIdToInfo.get(correspondingSplit);
+            if (incomingSequenceFlow.sourceId().equals(correspondingSplit)
+                && splitInfo.getCorrespondingJoin() != null) {
                 flowToBranchOffset.put(
                         incomingSequenceFlow,
                         splitInfo.getNextFreeBranch() - splitInfo.getCenterBranchNumber()
@@ -350,25 +376,35 @@ public class TopologicalSortBpmnLayouting {
                 grid.findCellByIdOfElementInside(elementPredecessor).orElseThrow().gridPosition();
         Set<String> predecessorElementSuccessors = model.findSuccessors(elementPredecessor);
         boolean predecessorElementIsNotASplit = predecessorElementSuccessors.size() == 1;
+        List<Integer> pathToPredecessor = pathsToElements.get(elementPredecessor);
+        log.info("Path to predecessor: '{}'", pathToPredecessor);
         GridPosition finalPosition;
         if (predecessorElementIsNotASplit) {
+            log.info("Predecessor element '{}' is not a split", model.getHumanReadableId(elementPredecessor).get());
             finalPosition = predecessorPosition.withX(predecessorPosition.x() + 1);
-            List<Integer> pathToPredecessor = pathsToElements.get(elementPredecessor);
             pathsToElements.put(element, pathToPredecessor);
+
             grid.addCell(new Cell(finalPosition, element));
+            log.info("Final position: '{}'", finalPosition);
         } else {
+            log.info("Predecessor element '{}' is a split", model.getHumanReadableId(elementPredecessor).get());
             DirectedEdge sequenceFlowBeforeSplit = model.getIncomingSequenceFlows(elementPredecessor).iterator().next();
             DirectedEdge elementsIncomingSequenceFlow = model.getIncomingSequenceFlows(element).iterator().next();
             SplitInfo splitInfo = splitInfos.get(elementPredecessor);
+            log.info("Predecessor split info: '{}'", splitInfo);
             boolean flowBeforeSplitAndFlowBetweenSplitAndElementAreOfTheSameType = backEdgesIds.contains(
-                    sequenceFlowBeforeSplit.edgeId()) ^ backEdgesIds.contains(elementsIncomingSequenceFlow.edgeId());
+                    sequenceFlowBeforeSplit.edgeId()) == backEdgesIds.contains(elementsIncomingSequenceFlow.edgeId());
             if (splitInfo.isCenterBranchFree() && splitInfo.getCorrespondingJoin() == null
                 && flowBeforeSplitAndFlowBetweenSplitAndElementAreOfTheSameType) {
-                List<Integer> pathToCurrentElement = new ArrayList<>(pathsToElements.get(elementPredecessor));
+                log.info(
+                        "No corresponding join, center branch free, and flow before predecessor split and between "
+                        + "predecessor and element are of the same type ");
+                List<Integer> pathToCurrentElement = new ArrayList<>(pathToPredecessor);
                 pathToCurrentElement.add(splitInfo.getCenterBranchNumber());
                 pathsToElements.put(element, pathToCurrentElement);
                 finalPosition = predecessorPosition.withX(predecessorPosition.x() + 1);
                 grid.addCell(new Cell(finalPosition, element));
+                log.info("Final position: '{}'", finalPosition);
                 splitInfo.setCenterBranchFree(false);
                 if (splitInfo.getNextFreeBranch() == splitInfo.getCenterBranchNumber()) {
                     splitInfo.setNextFreeBranch(splitInfo.getNextFreeBranch() + 1);
@@ -387,6 +423,8 @@ public class TopologicalSortBpmnLayouting {
                         predecessorPosition.y() + splitInfo.getNextFreeBranch()
                         - splitInfo.getCenterBranchNumber()
                 );
+
+                log.info("Final position: '{}'", finalPosition);
 
                 grid.addCell(new Cell(finalPosition, element));
 
@@ -434,12 +472,6 @@ public class TopologicalSortBpmnLayouting {
         }
     }
 
-    private GridPosition findPositionForElementWithNoPredecessors(
-            String element, GridPosition previousElementPosition
-    ) {
-        return previousElementPosition.withY(previousElementPosition.y() + 1);
-    }
-
     private boolean classifyEdges(
             String elementId,
             BpmnModel model,
@@ -484,7 +516,7 @@ public class TopologicalSortBpmnLayouting {
 
     private List<String> topologicalSort(BpmnModel model) {
         Set<String> nodesToSort = new HashSet<>(model.getFlowNodes());
-        Set<String> nodesWithNoPredecessors = new HashSet<>();
+        log.info("Nodes to sort: '{}'", nodesToSort);
         Map<String, Integer> joinNodes = new HashMap<>();
         for (String node : model.getFlowNodes()) {
             int numberOfPredecessors = model.findPredecessors(node).size();
@@ -495,7 +527,8 @@ public class TopologicalSortBpmnLayouting {
         List<String> sortedNodes = new ArrayList<>();
         Set<String> reversedEdges = new HashSet<>();
         var modelCopy = model.getCopy();
-        if (!nodesToSort.isEmpty()) {
+        while (!nodesToSort.isEmpty()) {
+            Set<String> nodesWithNoPredecessors = new HashSet<>();
             for (String nodeId : nodesToSort) {
                 if (modelCopy.findPredecessors(nodeId).isEmpty()) {
                     nodesWithNoPredecessors.add(nodeId);
@@ -507,7 +540,9 @@ public class TopologicalSortBpmnLayouting {
                     nodesToSort.remove(node);
                     joinNodes.remove(node);
                     sortedNodes.add(node);
-                    modelCopy.clearSuccessors(node);
+                    for (DirectedEdge outgoingSequenceFlow : modelCopy.getOutgoingSequenceFlows(node)) {
+                        modelCopy.removeSequenceFlow(outgoingSequenceFlow.edgeId());
+                    }
                 }
             } else {
                 String firstJoinNodeWithRemovedIncomingEdge = null;
@@ -536,6 +571,8 @@ public class TopologicalSortBpmnLayouting {
             }
         }
 
+        log.info("Sorted nodes: '{}'", sortedNodes);
+
         return sortedNodes;
     }
 
@@ -543,6 +580,7 @@ public class TopologicalSortBpmnLayouting {
     @AllArgsConstructor
     @Getter
     @Setter
+    @ToString
     private static final class SplitInfo {
 
         private String elementId;

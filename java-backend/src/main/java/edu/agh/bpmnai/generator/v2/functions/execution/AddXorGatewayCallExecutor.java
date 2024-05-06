@@ -83,6 +83,19 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
         if (checkTaskExistsInTheModel) {
             subdiagramPredecessorElement = checkTaskId;
         } else {
+            if (callArguments.predecessorElement() == null) {
+                log.warn(
+                        "Call unsuccessful, predecessor element is null when check task '{}' does not exist in the "
+                        + "model",
+                        callArguments.checkTask()
+                );
+                return Result.error(("Call unsuccessful, predecessor element is null even though check task '%s' does"
+                                     + " not exist in"
+                                     + " the model. Either use existing check task or provide a predecessor element "
+                                     + "for new check"
+                                     + " task").formatted(callArguments.checkTask()));
+            }
+
             if (!model.doesIdExist(callArguments.predecessorElement().id())) {
                 log.warn("Call unsuccessful, predecessor element does not exist in the model");
                 return Result.error("Predecessor element does not exist in the model");

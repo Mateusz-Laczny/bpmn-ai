@@ -2,7 +2,6 @@ package edu.agh.bpmnai.generator.v2;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.layouting.GridBasedBpmnLayouting;
-import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.session.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,10 +65,9 @@ public class LlmService {
 
         var modelReference = new BpmnManagedReference(sessionStateStore.model());
         modelPostProcessing.apply(modelReference);
-        BpmnModel layoutedModel = gridBasedBpmnLayouting.layoutModel(modelReference.getCurrentValue());
         return new UserRequestResponse(
                 conversationHistoryStore.getLastMessage().orElse(""),
-                layoutedModel.asXmlString()
+                modelReference.getCurrentValue().asXmlString()
         );
     }
 
