@@ -77,6 +77,15 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         if (checkTaskExistsInTheModel) {
             subdiagramPredecessorElement = checkTaskId;
         } else {
+            if (callArguments.predecessorElement() == null) {
+                log.warn(
+                        "Call unsuccessful, predecessor element is null when check task '{}' does not exist in the "
+                        + "model",
+                        callArguments.checkTask()
+                );
+                return Result.error("Predecessor element is null, when check task does not exist in the model");
+            }
+
             if (!model.doesIdExist(callArguments.predecessorElement().id())) {
                 log.warn(
                         "Call unsuccessful, predecessor element '{}' does not exist in the model",
