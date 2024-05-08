@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-import static edu.agh.bpmnai.generator.bpmn.model.BpmnElementType.START_EVENT;
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.START_EVENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

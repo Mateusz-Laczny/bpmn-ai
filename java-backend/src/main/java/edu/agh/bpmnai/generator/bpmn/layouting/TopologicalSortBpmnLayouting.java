@@ -191,7 +191,7 @@ public class TopologicalSortBpmnLayouting {
                     150,
                     150,
                     cellPosition,
-                    model.getElementType(elementId)
+                    model.getNodeType(elementId)
                             .orElseThrow()
             );
             log.info(
@@ -454,8 +454,8 @@ public class TopologicalSortBpmnLayouting {
                 }
             }
         } else {
-            for (int i = 1; i < pathToElement.size() - 1; i++) {
-                List<Integer> subpath = new ArrayList<>(pathToElement.subList(0, i - 1));
+            for (int i = 1; i < pathToElement.size(); i++) {
+                List<Integer> subpath = new ArrayList<>(pathToElement.subList(0, i));
                 subpath.set(subpath.size() - 1, subpath.get(subpath.size() - 1) + 1);
                 boolean found = true;
                 while (found) {

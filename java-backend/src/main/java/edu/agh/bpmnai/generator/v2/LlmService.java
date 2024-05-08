@@ -2,6 +2,8 @@ package edu.agh.bpmnai.generator.v2;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.layouting.GridBasedBpmnLayouting;
+import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.bpmn.model.ChangelogSnapshot;
 import edu.agh.bpmnai.generator.v2.session.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,12 +33,15 @@ public class LlmService {
 
     @Autowired
     public LlmService(
-            SessionStateStore sessionStateStore, ConversationHistoryStore conversationHistoryStore,
+            SessionStateStore sessionStateStore,
+            ConversationHistoryStore conversationHistoryStore,
             GridBasedBpmnLayouting gridBasedBpmnLayouting,
             AskQuestionsState askQuestionsState,
             ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState,
-            ModifyModelState modifyModelState, FixErrorsInModelState fixErrorsInModelState,
-            ChatMessageBuilder chatMessageBuilder, ModelPostProcessing modelPostProcessing
+            ModifyModelState modifyModelState,
+            FixErrorsInModelState fixErrorsInModelState,
+            ChatMessageBuilder chatMessageBuilder,
+            ModelPostProcessing modelPostProcessing
     ) {
         this.sessionStateStore = sessionStateStore;
         this.conversationHistoryStore = conversationHistoryStore;
@@ -65,9 +70,13 @@ public class LlmService {
 
         var modelReference = new BpmnManagedReference(sessionStateStore.model());
         modelPostProcessing.apply(modelReference);
+        BpmnModel finalModel = modelReference.getCurrentValue();
+        ChangelogSnapshot changelogSnapshot = finalModel.getChangeLogSnapshot();
         return new UserRequestResponse(
                 conversationHistoryStore.getLastMessage().orElse(""),
-                modelReference.getCurrentValue().asXmlString()
+                finalModel.asXmlString(),
+                changelogSnapshot.nodeModificationLogs(),
+                changelogSnapshot.flowModificationLogs()
         );
     }
 
@@ -75,14 +84,11 @@ public class LlmService {
         sessionStateStore.clearState();
         conversationHistoryStore.clearMessages();
         sessionStateStore.appendMessage(chatMessageBuilder.buildSystemMessage(
-                "You are the world's best business process modelling specialist. " +
-                "When confronted with a user request, ask questions to gather as much necessary information as "
-                + "possible, "
-                +
-                "the use provided functions to create a BPMN diagram based on the user responses." +
-                "Remember, that the content between 'BEGIN REQUEST CONTEXT' and 'END REQUEST CONTEXT' is just provided"
-                +
-                "for your information, do not try to modify it or mention it to the user.")
-        );
+                "You are the world's best business process modelling specialist. "
+                + "When confronted with a user request, ask questions to gather as much necessary information as "
+                + "possible, " + "the use provided functions to create a BPMN diagram based on the user responses."
+                + "Remember, that the content between 'BEGIN REQUEST CONTEXT' and 'END REQUEST CONTEXT' is just "
+                + "provided"
+                + "for your information, do not try to modify it or mention it to the user."));
     }
 }

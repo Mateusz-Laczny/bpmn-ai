@@ -8,7 +8,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Set;
 
-import static edu.agh.bpmnai.generator.bpmn.model.BpmnElementType.GATEWAY;
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.PARALLEL_GATEWAY;
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.XOR_GATEWAY;
 
 @Service
 @Slf4j
@@ -22,7 +23,9 @@ public class ModelPostProcessing {
 
     public void apply(BpmnManagedReference modelReference) {
         BpmnModel model = modelReference.getCurrentValue();
-        for (String gatewayId : model.findElementsOfType(GATEWAY)) {
+        Set<String> allGateways = model.findElementsOfType(XOR_GATEWAY);
+        allGateways.addAll(model.findElementsOfType(PARALLEL_GATEWAY));
+        for (String gatewayId : allGateways) {
             Set<String> gatewaySuccessors = model.findSuccessors(gatewayId);
             if (gatewaySuccessors.size() == 1) {
                 log.debug("Gateway '{}' has only one successor and will be cut out from the model", gatewayId);

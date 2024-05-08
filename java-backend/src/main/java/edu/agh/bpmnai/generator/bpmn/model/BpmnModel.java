@@ -37,11 +37,14 @@ public final class BpmnModel {
 
     private final Map<String, String> idToName;
 
+    private final ModelModificationChangelog changelog;
+
     private BpmnModel(BpmnModel modelToCopy) {
         this.modelInstance = modelToCopy.modelInstance.clone();
         defaultProcess = modelInstance.getModelElementById(modelToCopy.defaultProcess.getId());
         diagramPlane = ((BpmnDiagram) modelInstance.getModelElementById("diagram")).getBpmnPlane();
         idToName = new HashMap<>(modelToCopy.idToName);
+        changelog = modelToCopy.changelog.copy();
     }
 
     public BpmnModel() {
@@ -50,6 +53,7 @@ public final class BpmnModel {
         definitions.setTargetNamespace("http://camunda.org/examples");
         modelInstance.setDefinitions(definitions);
         idToName = new HashMap<>();
+        changelog = new LoggingModelModificationChangelog();
 
         String processId = generateUniqueId();
         Process processElement = createElementWithParent(modelInstance.getDefinitions(), processId, Process.class);
@@ -72,6 +76,7 @@ public final class BpmnModel {
         defaultProcess = modelInstance.getModelElementsByType(Process.class).iterator().next();
         diagramPlane = modelInstance.getModelElementsByType(BpmnDiagram.class).iterator().next().getBpmnPlane();
         idToName = new HashMap<>();
+        changelog = new LoggingModelModificationChangelog();
         for (String flowNode : getFlowNodes()) {
             idToName.put(flowNode, modelInstance.getModelElementById(flowNode).getAttributeValue("name"));
         }
@@ -92,6 +97,10 @@ public final class BpmnModel {
         T element = parentElement.getModelInstance().newInstance(elementClass);
         parentElement.addChildElement(element);
         return element;
+    }
+
+    public ChangelogSnapshot getChangeLogSnapshot() {
+        return changelog.getSnapshot();
     }
 
     private SequenceFlow createSequenceFlow(Process process, String sequenceFlowId, FlowNode from, FlowNode to) {
@@ -115,6 +124,7 @@ public final class BpmnModel {
         taskElement.setAttributeValue("name", taskName);
         addTaskDiagramElement(taskElement);
         idToName.put(id, taskName);
+        changelog.nodeAdded(getHumanReadableId(id).orElseThrow(), BpmnNodeType.TASK);
         return id;
     }
 
@@ -154,6 +164,11 @@ public final class BpmnModel {
         gatewayElement.setAttributeValue("name", name);
         addGatewayDiagramElement(gatewayElement);
         idToName.put(id, name);
+        BpmnNodeType nodeType = switch (gatewayType) {
+            case EXCLUSIVE -> BpmnNodeType.XOR_GATEWAY;
+            case PARALLEL -> BpmnNodeType.PARALLEL_GATEWAY;
+        };
+        changelog.nodeAdded(getHumanReadableId(id).orElseThrow(), nodeType);
         return id;
     }
 
@@ -163,6 +178,7 @@ public final class BpmnModel {
         startEventElement.setAttributeValue("name", label);
         addEventDiagramElement(startEventElement);
         idToName.put(id, label);
+        changelog.nodeAdded(getHumanReadableId(id).orElseThrow(), BpmnNodeType.START_EVENT);
         return id;
     }
 
@@ -183,8 +199,8 @@ public final class BpmnModel {
         endEventElement.setAttributeValue("name", "End");
         addEventDiagramElement(endEventElement);
         idToName.put(id, "End");
+        changelog.nodeAdded(getHumanReadableId(id).orElseThrow(), BpmnNodeType.END_EVENT);
         return id;
-
     }
 
     private void addSequenceFlowDiagramElement(
@@ -233,6 +249,12 @@ public final class BpmnModel {
         String id = generateUniqueId();
         SequenceFlow sequenceFlowElement = createSequenceFlow(defaultProcess, id, sourceElement, targetElement);
         addSequenceFlowDiagramElement(sequenceFlowElement, sourceElement, targetElement);
+
+        changelog.sequenceFlowAdded(
+                getHumanReadableId(sourceElementId).orElseThrow(),
+                getHumanReadableId(targetElementId).orElseThrow()
+        );
+
         return Result.ok(id);
     }
 
@@ -287,7 +309,12 @@ public final class BpmnModel {
             removeElement(outgoingSequenceFlow.getId());
         }
 
+
+        HumanReadableId nodeHumanReadableId = getHumanReadableId(flowNodeId).orElseThrow();
+        BpmnNodeType nodeType = getNodeType(flowNodeId).orElseThrow();
         removeElement(flowNodeId);
+
+        changelog.nodeRemoved(nodeHumanReadableId, nodeType);
 
         return Result.ok(null);
     }
@@ -361,22 +388,24 @@ public final class BpmnModel {
         );
     }
 
-    public Optional<BpmnElementType> getElementType(String elementId) {
+    public Optional<BpmnNodeType> getNodeType(String elementId) {
         @Nullable ModelElementInstance modelElement = modelInstance.getModelElementById(elementId);
         if (modelElement == null) {
             return Optional.empty();
         }
 
         if (modelElement instanceof Activity) {
-            return Optional.of(BpmnElementType.ACTIVITY);
+            return Optional.of(BpmnNodeType.TASK);
         } else if (modelElement instanceof StartEvent) {
-            return Optional.of(BpmnElementType.START_EVENT);
+            return Optional.of(BpmnNodeType.START_EVENT);
         } else if (modelElement instanceof EndEvent) {
-            return Optional.of(BpmnElementType.END_EVENT);
-        } else if (modelElement instanceof Gateway) {
-            return Optional.of(BpmnElementType.GATEWAY);
+            return Optional.of(BpmnNodeType.END_EVENT);
+        } else if (modelElement instanceof ExclusiveGateway) {
+            return Optional.of(BpmnNodeType.XOR_GATEWAY);
+        } else if (modelElement instanceof ParallelGateway) {
+            return Optional.of(BpmnNodeType.PARALLEL_GATEWAY);
         } else {
-            return Optional.of(BpmnElementType.OTHER_ELEMENT);
+            return Optional.of(BpmnNodeType.OTHER_ELEMENT);
         }
     }
 
@@ -465,9 +494,16 @@ public final class BpmnModel {
         for (SequenceFlow sequenceFlow : sourceFlowNode.getOutgoing()) {
             if (sequenceFlow.getTarget().equals(targetFlowNode)) {
                 removeElement(sequenceFlow.getId());
+
+                changelog.sequenceFlowRemoved(
+                        getHumanReadableId(sourceElementId).orElseThrow(),
+                        getHumanReadableId(targetElementId).orElseThrow()
+                );
+
                 return Result.ok(null);
             }
         }
+
 
         return Result.error(RemoveSequenceFlowError.ELEMENTS_NOT_CONNECTED);
     }
@@ -479,12 +515,12 @@ public final class BpmnModel {
         removeElement(sequenceFlowId);
     }
 
-    public Set<String> findElementsOfType(BpmnElementType bpmnElementType) {
+    public Set<String> findElementsOfType(BpmnNodeType bpmnNodeType) {
         Set<String> foundElements = new HashSet<>();
         for (BaseElement modelElementInstance :
                 modelInstance.getModelElementsByType(BaseElement.class)) {
             String elementId = modelElementInstance.getAttributeValue("id");
-            if (getElementType(elementId).orElseThrow() == bpmnElementType) {
+            if (getNodeType(elementId).orElseThrow() == bpmnNodeType) {
                 foundElements.add(elementId);
             }
         }

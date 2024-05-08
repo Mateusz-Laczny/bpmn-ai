@@ -1,13 +1,13 @@
 package edu.agh.bpmnai.generator.bpmn.layouting;
 
-import edu.agh.bpmnai.generator.bpmn.model.BpmnElementType;
+import edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType;
 import org.springframework.stereotype.Service;
 
 import static edu.agh.bpmnai.generator.bpmn.diagram.DiagramDimensions.*;
 
 @Service
 public class GridElementToDiagramPositionMapping {
-    public Point2d apply(int cellWidth, int cellHeight, GridPosition cellPosition, BpmnElementType elementType) {
+    public Point2d apply(int cellWidth, int cellHeight, GridPosition cellPosition, BpmnNodeType elementType) {
         double xPos;
         double yPos;
         switch (elementType) {
@@ -15,11 +15,11 @@ public class GridElementToDiagramPositionMapping {
                 xPos = cellWidth * cellPosition.x();
                 yPos = cellHeight * cellPosition.y() + (0.5 * TASK_HEIGHT - (0.5 * EVENT_DIAMETER));
             }
-            case ACTIVITY, OTHER_ELEMENT -> {
+            case TASK, OTHER_ELEMENT -> {
                 xPos = cellWidth * cellPosition.x();
                 yPos = cellHeight * cellPosition.y();
             }
-            case GATEWAY -> {
+            case XOR_GATEWAY, PARALLEL_GATEWAY -> {
                 xPos = cellWidth * cellPosition.x();
                 yPos = cellHeight * cellPosition.y() + (0.5 * TASK_HEIGHT - (0.5 * GATEWAY_DIAGONAL));
             }

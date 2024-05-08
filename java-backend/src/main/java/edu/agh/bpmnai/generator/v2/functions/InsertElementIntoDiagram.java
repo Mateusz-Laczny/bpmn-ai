@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Set;
 
-import static edu.agh.bpmnai.generator.bpmn.model.BpmnElementType.END_EVENT;
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.END_EVENT;
 
 @Service
 @Slf4j
@@ -31,7 +31,7 @@ public class InsertElementIntoDiagram {
         @Nullable String predecessorElementSuccessor = null;
         if (!predecessorElementSuccessorsBeforeModification.isEmpty()) {
             predecessorElementSuccessor = predecessorElementSuccessorsBeforeModification.iterator().next();
-            if (model.getElementType(predecessorElementSuccessor).get() == END_EVENT) {
+            if (model.getNodeType(predecessorElementSuccessor).get() == END_EVENT) {
                 model.removeElement(predecessorElementSuccessor);
             }
             model.clearSuccessors(predecessorElementId);

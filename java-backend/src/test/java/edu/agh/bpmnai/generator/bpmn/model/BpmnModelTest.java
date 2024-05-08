@@ -6,9 +6,10 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 import java.util.Set;
 
-import static edu.agh.bpmnai.generator.bpmn.model.BpmnElementType.GATEWAY;
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.PARALLEL;
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.PARALLEL_GATEWAY;
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.XOR_GATEWAY;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BpmnModelTest {
@@ -119,6 +120,7 @@ class BpmnModelTest {
         String gatewayId = model.addGateway(EXCLUSIVE, "gateway");
         String anotherGatewayId = model.addGateway(PARALLEL, "anotherGateway");
 
-        assertEquals(Set.of(gatewayId, anotherGatewayId), model.findElementsOfType(GATEWAY));
+        assertEquals(Set.of(gatewayId), model.findElementsOfType(XOR_GATEWAY));
+        assertEquals(Set.of(anotherGatewayId), model.findElementsOfType(PARALLEL_GATEWAY));
     }
 }

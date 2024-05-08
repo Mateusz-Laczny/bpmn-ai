@@ -1,7 +1,7 @@
 package edu.agh.bpmnai.generator.bpmn.layouting;
 
-import edu.agh.bpmnai.generator.bpmn.model.BpmnElementType;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType;
 import edu.agh.bpmnai.generator.datatype.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -101,7 +101,7 @@ public class GridBasedBpmnLayouting {
         }
 
         for (Cell cell : grid.allCells()) {
-            Optional<BpmnElementType> elementType = model.getElementType(cell.idOfElementInside());
+            Optional<BpmnNodeType> elementType = model.getNodeType(cell.idOfElementInside());
             if (elementType.isEmpty()) {
                 log.warn(
                         "Cell contains element with id '{}' even though it does not exist in the model",
