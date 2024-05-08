@@ -1,7 +1,6 @@
 package edu.agh.bpmnai.generator.v2;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
-import edu.agh.bpmnai.generator.bpmn.layouting.TopologicalSortBpmnLayouting;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,12 +13,6 @@ import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.XOR_GATEWAY;
 @Service
 @Slf4j
 public class ModelPostProcessing {
-
-    private final TopologicalSortBpmnLayouting bpmnLayouting;
-
-    public ModelPostProcessing(TopologicalSortBpmnLayouting bpmnLayouting) {
-        this.bpmnLayouting = bpmnLayouting;
-    }
 
     public void apply(BpmnManagedReference modelReference) {
         BpmnModel model = modelReference.getCurrentValue();
@@ -38,7 +31,6 @@ public class ModelPostProcessing {
             }
         }
 
-        BpmnModel layoutedModel = bpmnLayouting.layoutModel(model);
-        modelReference.setValue(layoutedModel);
+        modelReference.setValue(model);
     }
 }

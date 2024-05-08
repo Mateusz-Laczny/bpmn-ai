@@ -1,7 +1,7 @@
 package edu.agh.bpmnai.generator.v2;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
-import edu.agh.bpmnai.generator.bpmn.layouting.GridBasedBpmnLayouting;
+import edu.agh.bpmnai.generator.bpmn.layouting.TopologicalSortBpmnLayouting;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.ChangelogSnapshot;
 import edu.agh.bpmnai.generator.v2.session.*;
@@ -20,7 +20,6 @@ public class LlmService {
 
     private final ConversationHistoryStore conversationHistoryStore;
 
-    private final GridBasedBpmnLayouting gridBasedBpmnLayouting;
     private final AskQuestionsState askQuestionsState;
     private final ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState;
     private final ModifyModelState modifyModelState;
@@ -31,27 +30,28 @@ public class LlmService {
 
     private final ModelPostProcessing modelPostProcessing;
 
+    private final TopologicalSortBpmnLayouting bpmnLayouting;
+
     @Autowired
     public LlmService(
             SessionStateStore sessionStateStore,
             ConversationHistoryStore conversationHistoryStore,
-            GridBasedBpmnLayouting gridBasedBpmnLayouting,
             AskQuestionsState askQuestionsState,
             ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState,
             ModifyModelState modifyModelState,
             FixErrorsInModelState fixErrorsInModelState,
             ChatMessageBuilder chatMessageBuilder,
-            ModelPostProcessing modelPostProcessing
+            ModelPostProcessing modelPostProcessing, TopologicalSortBpmnLayouting bpmnLayouting
     ) {
         this.sessionStateStore = sessionStateStore;
         this.conversationHistoryStore = conversationHistoryStore;
-        this.gridBasedBpmnLayouting = gridBasedBpmnLayouting;
         this.askQuestionsState = askQuestionsState;
         this.reasonAboutTasksAndProcessFlowState = reasonAboutTasksAndProcessFlowState;
         this.modifyModelState = modifyModelState;
         this.fixErrorsInModelState = fixErrorsInModelState;
         this.chatMessageBuilder = chatMessageBuilder;
         this.modelPostProcessing = modelPostProcessing;
+        this.bpmnLayouting = bpmnLayouting;
     }
 
     public UserRequestResponse getResponse(String userMessageContent) {
@@ -72,9 +72,11 @@ public class LlmService {
         modelPostProcessing.apply(modelReference);
         BpmnModel finalModel = modelReference.getCurrentValue();
         ChangelogSnapshot changelogSnapshot = finalModel.getChangeLogSnapshot();
+
+        BpmnModel layoutedModel = bpmnLayouting.layoutModel(finalModel);
         return new UserRequestResponse(
                 conversationHistoryStore.getLastMessage().orElse(""),
-                finalModel.asXmlString(),
+                layoutedModel.asXmlString(),
                 changelogSnapshot.nodeModificationLogs(),
                 changelogSnapshot.flowModificationLogs()
         );

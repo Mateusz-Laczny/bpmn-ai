@@ -345,9 +345,9 @@ public final class BpmnModel {
         FlowNode modelElementInstance = modelInstance.getModelElementById(elementId);
         Collection<SequenceFlow> outgoingSequenceFlows = modelElementInstance.getOutgoing();
         for (SequenceFlow outgoingSequenceFlow : outgoingSequenceFlows) {
-            removeElement(outgoingSequenceFlow.getId());
             modelElementInstance.getOutgoing().remove(outgoingSequenceFlow);
             outgoingSequenceFlow.getTarget().getIncoming().remove(outgoingSequenceFlow);
+            removeElement(outgoingSequenceFlow.getId());
         }
     }
 
