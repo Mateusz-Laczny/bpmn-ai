@@ -20,13 +20,15 @@ public class ModelPostProcessing {
         allGateways.addAll(model.findElementsOfType(PARALLEL_GATEWAY));
         for (String gatewayId : allGateways) {
             Set<String> gatewaySuccessors = model.findSuccessors(gatewayId);
-            if (gatewaySuccessors.size() == 1) {
-                log.debug("Gateway '{}' has only one successor and will be cut out from the model", gatewayId);
+            Set<String> gatewayPredecessors = model.findPredecessors(gatewayId);
+            if (gatewaySuccessors.size() == 1 && gatewayPredecessors.size() == 1) {
+                log.debug(
+                        "Gateway '{}' has only one successor and one predecessor and will be cut out from the model",
+                        gatewayId
+                );
                 String gatewaySuccessorId = gatewaySuccessors.iterator().next();
-                for (String predecessorId : model.findPredecessors(gatewayId)) {
-                    model.addUnlabelledSequenceFlow(predecessorId, gatewaySuccessorId);
-                }
-
+                String gatewayPredecessor = gatewayPredecessors.iterator().next();
+                model.addUnlabelledSequenceFlow(gatewayPredecessor, gatewaySuccessorId);
                 model.removeFlowNode(gatewayId);
             }
         }

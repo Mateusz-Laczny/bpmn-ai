@@ -287,7 +287,7 @@ public final class BpmnModel {
         ModelElementInstance modelElement = modelInstance.getModelElementById(idOfElementToRemove);
         DiagramElement diagramElement = ((BaseElement) modelElement).getDiagramElement();
         diagramElement.getParentElement().removeChildElement(diagramElement);
-        defaultProcess.removeChildElement(modelInstance.getModelElementById(idOfElementToRemove));
+        defaultProcess.removeChildElement(modelElement);
         idToName.remove(idOfElementToRemove);
     }
 
@@ -356,7 +356,8 @@ public final class BpmnModel {
     }
 
     public boolean doesIdExist(String id) {
-        return modelInstance.getModelElementById(id) != null;
+        ModelElementInstance element = modelInstance.getModelElementById(id);
+        return element != null;
     }
 
     public void setPositionOfElement(String elementId, Point2d newPosition) {

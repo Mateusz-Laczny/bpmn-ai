@@ -123,4 +123,12 @@ class BpmnModelTest {
         assertEquals(Set.of(gatewayId), model.findElementsOfType(XOR_GATEWAY));
         assertEquals(Set.of(anotherGatewayId), model.findElementsOfType(PARALLEL_GATEWAY));
     }
+
+    @Test
+    void removes_the_element() {
+        BpmnModel model = new BpmnModel();
+        String task = model.addTask("a");
+        model.removeFlowNode(task);
+        assertFalse(model.doesIdExist(task));
+    }
 }
