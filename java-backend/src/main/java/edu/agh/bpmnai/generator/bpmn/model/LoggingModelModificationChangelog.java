@@ -13,19 +13,22 @@ public class LoggingModelModificationChangelog
 
     private final Set<FlowModificationLog> flowModificationLogs;
 
-    private int nextIndex = 0;
+    private int nextIndex;
 
     public LoggingModelModificationChangelog() {
         nodeModificationLogs = new HashSet<>();
         flowModificationLogs = new HashSet<>();
+        nextIndex = 0;
     }
 
     private LoggingModelModificationChangelog(
             Set<NodeModificationLog> nodeModificationLogs,
-            Set<FlowModificationLog> flowModificationLogs
+            Set<FlowModificationLog> flowModificationLogs,
+            int nextIndex
     ) {
         this.nodeModificationLogs = nodeModificationLogs;
         this.flowModificationLogs = flowModificationLogs;
+        this.nextIndex = nextIndex;
     }
 
     @Override
@@ -64,7 +67,8 @@ public class LoggingModelModificationChangelog
     public ModelModificationChangelog copy() {
         return new LoggingModelModificationChangelog(
                 new HashSet<>(nodeModificationLogs),
-                new HashSet<>(flowModificationLogs)
+                new HashSet<>(flowModificationLogs),
+                nextIndex
         );
     }
 
