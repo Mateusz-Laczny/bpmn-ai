@@ -39,7 +39,7 @@ public class BpmnToStringExporter {
         }
 
         // Remove trailing newline
-        edgeListBuilder.deleteCharAt(nodeListBuilder.length() - 1);
+        edgeListBuilder.deleteCharAt(edgeListBuilder.length() - 1);
 
         return nodeListBuilder + "\n" + edgeListBuilder;
     }
