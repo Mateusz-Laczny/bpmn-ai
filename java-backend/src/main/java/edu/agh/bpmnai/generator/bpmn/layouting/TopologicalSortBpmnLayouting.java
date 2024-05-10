@@ -192,7 +192,7 @@ public class TopologicalSortBpmnLayouting {
                     150,
                     cellPosition,
                     model.getNodeType(elementId)
-                            .orElseThrow()
+                         .orElseThrow()
             );
             log.info(
                     "Setting position of element '{}' at cell '{}' to '{}'",
@@ -200,10 +200,7 @@ public class TopologicalSortBpmnLayouting {
                     model.getHumanReadableId(elementId).get(),
                     diagramPlanePosition
             );
-            model.setPositionOfElement(
-                    elementId,
-                    diagramPlanePosition
-            );
+            model.setPositionOfElement(elementId, diagramPlanePosition);
         }
 
         layoutSequenceFlows(model, flowsOffsets);
@@ -292,12 +289,15 @@ public class TopologicalSortBpmnLayouting {
         String rightmostPredecessor = null;
         LinkedHashSet<String> predecessors = model.findPredecessors(element);
         for (String predecessor : predecessors) {
-            GridPosition predecessorPosition =
-                    grid.findCellByIdOfElementInside(predecessor).orElseThrow().gridPosition();
-            if (predecessorPosition.x() > rightmostPredecessorX) {
-                rightmostPredecessorPosition = predecessorPosition;
-                rightmostPredecessorX = predecessorPosition.x();
-                rightmostPredecessor = predecessor;
+            log.info("Checking if the predecessor: '{}' is the rightmost one'", predecessor);
+            Optional<Cell> predecessorCell = grid.findCellByIdOfElementInside(predecessor);
+            if (predecessorCell.isPresent()) {
+                GridPosition predecessorPosition = predecessorCell.get().gridPosition();
+                if (predecessorPosition.x() > rightmostPredecessorX) {
+                    rightmostPredecessorPosition = predecessorPosition;
+                    rightmostPredecessorX = predecessorPosition.x();
+                    rightmostPredecessor = predecessor;
+                }
             }
         }
 
@@ -396,9 +396,8 @@ public class TopologicalSortBpmnLayouting {
                     sequenceFlowBeforeSplit.edgeId()) == backEdgesIds.contains(elementsIncomingSequenceFlow.edgeId());
             if (splitInfo.isCenterBranchFree() && splitInfo.getCorrespondingJoin() == null
                 && flowBeforeSplitAndFlowBetweenSplitAndElementAreOfTheSameType) {
-                log.info(
-                        "No corresponding join, center branch free, and flow before predecessor split and between "
-                        + "predecessor and element are of the same type ");
+                log.info("No corresponding join, center branch free, and flow before predecessor split and between "
+                         + "predecessor and element are of the same type ");
                 List<Integer> pathToCurrentElement = new ArrayList<>(pathToPredecessor);
                 pathToCurrentElement.add(splitInfo.getCenterBranchNumber());
                 pathsToElements.put(element, pathToCurrentElement);
@@ -449,8 +448,7 @@ public class TopologicalSortBpmnLayouting {
                         if (path.size() >= subpath.size() && path.subList(0, subpath.size()).equals(subpath)) {
                             found = true;
                             GridPosition elementGridPosition = grid.findCellByIdOfElementInside(
-                                            elementIdAndPathFromStartEvent.getKey()).orElseThrow()
-                                    .gridPosition();
+                                    elementIdAndPathFromStartEvent.getKey()).orElseThrow().gridPosition();
                             GridPosition updatedPosition = elementGridPosition.withYDifference(-1);
                             grid.moveCell(elementGridPosition, updatedPosition);
                         }
@@ -470,8 +468,7 @@ public class TopologicalSortBpmnLayouting {
                         if (path.size() >= subpath.size() && path.subList(0, subpath.size()).equals(subpath)) {
                             found = true;
                             GridPosition elementGridPosition = grid.findCellByIdOfElementInside(
-                                            elementIdAndPathFromStartEvent.getKey()).orElseThrow()
-                                    .gridPosition();
+                                    elementIdAndPathFromStartEvent.getKey()).orElseThrow().gridPosition();
                             GridPosition updatedPosition = elementGridPosition.withYDifference(1);
                             grid.moveCell(elementGridPosition, updatedPosition);
                         }
