@@ -445,7 +445,8 @@ public class TopologicalSortBpmnLayouting {
                 while (found) {
                     found = false;
                     for (Entry<String, List<Integer>> elementIdAndPathFromStartEvent : elementIdToPath.entrySet()) {
-                        if (elementIdAndPathFromStartEvent.getValue().subList(0, subpath.size()).equals(subpath)) {
+                        List<Integer> path = elementIdAndPathFromStartEvent.getValue();
+                        if (path.size() >= subpath.size() && path.subList(0, subpath.size()).equals(subpath)) {
                             found = true;
                             GridPosition elementGridPosition = grid.findCellByIdOfElementInside(
                                             elementIdAndPathFromStartEvent.getKey()).orElseThrow()
@@ -465,7 +466,8 @@ public class TopologicalSortBpmnLayouting {
                 while (found) {
                     found = false;
                     for (Entry<String, List<Integer>> elementIdAndPathFromStartEvent : elementIdToPath.entrySet()) {
-                        if (elementIdAndPathFromStartEvent.getValue().subList(0, subpath.size()).equals(subpath)) {
+                        List<Integer> path = elementIdAndPathFromStartEvent.getValue();
+                        if (path.size() >= subpath.size() && path.subList(0, subpath.size()).equals(subpath)) {
                             found = true;
                             GridPosition elementGridPosition = grid.findCellByIdOfElementInside(
                                             elementIdAndPathFromStartEvent.getKey()).orElseThrow()
