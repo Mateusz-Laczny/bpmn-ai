@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="Paid API" type="Application" factoryName="Application">
+        <option name="MAIN_CLASS_NAME" value="edu.agh.bpmnai.generator.GeneratorApplication"/>
+        <module name="generator"/>
+        <option name="VM_PARAMETERS" value="-Dspring.profiles.active=paid-api"/>
+        <extension name="coverage">
+            <pattern>
+                <option name="PATTERN" value="edu.agh.bpmnai.generator.*"/>
+                <option name="ENABLED" value="true"/>
+            </pattern>
+        </extension>
+        <method v="2">
+            <option name="Make" enabled="true"/>
+        </method>
+    </configuration>
+</component>
