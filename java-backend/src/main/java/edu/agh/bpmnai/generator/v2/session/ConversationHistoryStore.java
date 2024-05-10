@@ -20,6 +20,10 @@ public class ConversationHistoryStore {
         messages.clear();
     }
 
+    public boolean isEmpty() {
+        return messages.isEmpty();
+    }
+
     public Optional<String> getLastMessage() {
         if (messages.isEmpty()) {
             return Optional.empty();

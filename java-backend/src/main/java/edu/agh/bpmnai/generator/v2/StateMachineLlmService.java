@@ -9,8 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.END;
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.REASON_ABOUT_TASKS_AND_PROCESS_FLOW;
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.*;
 
 @Service
 @Slf4j
@@ -26,6 +25,8 @@ public class StateMachineLlmService implements LlmService {
 
     private final FixErrorsInModelState fixErrorsInModelState;
 
+    private final DecideWhetherToModifyTheModelState decideWhetherToModifyTheModelState;
+
     private final ChatMessageBuilder chatMessageBuilder;
 
     private final ModelPostProcessing modelPostProcessing;
@@ -40,6 +41,7 @@ public class StateMachineLlmService implements LlmService {
             ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState,
             ModifyModelState modifyModelState,
             FixErrorsInModelState fixErrorsInModelState,
+            DecideWhetherToModifyTheModelState decideWhetherToModifyTheModelState,
             ChatMessageBuilder chatMessageBuilder,
             ModelPostProcessing modelPostProcessing, TopologicalSortBpmnLayouting bpmnLayouting
     ) {
@@ -49,6 +51,7 @@ public class StateMachineLlmService implements LlmService {
         this.reasonAboutTasksAndProcessFlowState = reasonAboutTasksAndProcessFlowState;
         this.modifyModelState = modifyModelState;
         this.fixErrorsInModelState = fixErrorsInModelState;
+        this.decideWhetherToModifyTheModelState = decideWhetherToModifyTheModelState;
         this.chatMessageBuilder = chatMessageBuilder;
         this.modelPostProcessing = modelPostProcessing;
         this.bpmnLayouting = bpmnLayouting;
@@ -56,10 +59,14 @@ public class StateMachineLlmService implements LlmService {
 
     @Override
     public UserRequestResponse getResponse(String userMessageContent) {
-        SessionStatus sessionState = REASON_ABOUT_TASKS_AND_PROCESS_FLOW;
+        boolean firstPrompt = conversationHistoryStore.isEmpty();
+        SessionStatus sessionState =
+                firstPrompt ? REASON_ABOUT_TASKS_AND_PROCESS_FLOW : DECIDE_WHETHER_TO_MODIFY_THE_MODEL;
         while (sessionState != END) {
             sessionState = switch (sessionState) {
                 case ASK_QUESTIONS -> askQuestionsState.process(userMessageContent);
+                case DECIDE_WHETHER_TO_MODIFY_THE_MODEL ->
+                        decideWhetherToModifyTheModelState.process(userMessageContent);
                 case REASON_ABOUT_TASKS_AND_PROCESS_FLOW -> reasonAboutTasksAndProcessFlowState.process(
                         userMessageContent);
                 case MODIFY_MODEL -> modifyModelState.process(userMessageContent);
