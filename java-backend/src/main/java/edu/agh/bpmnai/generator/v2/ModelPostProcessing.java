@@ -7,8 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Set;
 
-import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.PARALLEL_GATEWAY;
-import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.XOR_GATEWAY;
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.*;
 
 @Service
 @Slf4j
@@ -30,6 +29,15 @@ public class ModelPostProcessing {
                 String gatewayPredecessor = gatewayPredecessors.iterator().next();
                 model.addUnlabelledSequenceFlow(gatewayPredecessor, gatewaySuccessorId);
                 model.removeFlowNode(gatewayId);
+            }
+        }
+
+        for (String flowNode : model.getFlowNodes()) {
+            boolean nonEndEventNodeWithoutSuccessors =
+                    model.getNodeType(flowNode).orElseThrow() != END_EVENT && model.findSuccessors(flowNode).isEmpty();
+            if (nonEndEventNodeWithoutSuccessors) {
+                String endEventId = model.addEndEvent();
+                model.addUnlabelledSequenceFlow(flowNode, endEventId);
             }
         }
 

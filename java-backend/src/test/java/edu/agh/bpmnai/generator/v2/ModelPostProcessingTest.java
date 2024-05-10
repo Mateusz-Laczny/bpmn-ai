@@ -6,8 +6,10 @@ import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 
+import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.END_EVENT;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ModelPostProcessingTest {
@@ -51,5 +53,30 @@ class ModelPostProcessingTest {
 
         BpmnModel afterPostProcessing = reference.getCurrentValue();
         assertTrue(afterPostProcessing.doesIdExist(gateway));
+    }
+
+    @Test
+    void adds_end_event_to_elements_without_successors() {
+        String task = model.addTask("task");
+
+        BpmnManagedReference reference = new BpmnManagedReference(model);
+
+        modelPostProcessing.apply(reference);
+
+        BpmnModel afterPostProcessing = reference.getCurrentValue();
+        LinkedHashSet<String> successorsAfterPostProcessing = afterPostProcessing.findSuccessors(task);
+        assertEquals(1, successorsAfterPostProcessing.size());
+        assertEquals(END_EVENT, afterPostProcessing.getNodeType(successorsAfterPostProcessing.iterator().next()).get());
+    }
+
+    @Test
+    void does_not_add_end_event_to_end_event() {
+        String endEvent = model.addEndEvent();
+
+        BpmnManagedReference reference = new BpmnManagedReference(model);
+
+        modelPostProcessing.apply(reference);
+
+        assertEquals(0, model.findSuccessors(endEvent).size());
     }
 }
