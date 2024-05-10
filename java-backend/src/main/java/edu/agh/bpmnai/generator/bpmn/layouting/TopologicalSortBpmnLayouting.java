@@ -447,7 +447,11 @@ public class TopologicalSortBpmnLayouting {
                     for (Entry<String, List<Integer>> elementIdAndPathFromStartEvent : elementIdToPath.entrySet()) {
                         if (elementIdAndPathFromStartEvent.getValue().subList(0, subpath.size()).equals(subpath)) {
                             found = true;
-                            grid.shiftElementinYAxis(elementIdAndPathFromStartEvent.getKey(), -1);
+                            GridPosition elementGridPosition = grid.findCellByIdOfElementInside(
+                                            elementIdAndPathFromStartEvent.getKey()).orElseThrow()
+                                    .gridPosition();
+                            GridPosition updatedPosition = elementGridPosition.withYDifference(-1);
+                            grid.moveCell(elementGridPosition, updatedPosition);
                         }
                     }
                     subpath.set(subpath.size() - 1, subpath.get(subpath.size() - 1) - 1);
@@ -463,7 +467,11 @@ public class TopologicalSortBpmnLayouting {
                     for (Entry<String, List<Integer>> elementIdAndPathFromStartEvent : elementIdToPath.entrySet()) {
                         if (elementIdAndPathFromStartEvent.getValue().subList(0, subpath.size()).equals(subpath)) {
                             found = true;
-                            grid.shiftElementinYAxis(elementIdAndPathFromStartEvent.getKey(), 1);
+                            GridPosition elementGridPosition = grid.findCellByIdOfElementInside(
+                                            elementIdAndPathFromStartEvent.getKey()).orElseThrow()
+                                    .gridPosition();
+                            GridPosition updatedPosition = elementGridPosition.withYDifference(1);
+                            grid.moveCell(elementGridPosition, updatedPosition);
                         }
                     }
                     subpath.set(subpath.size() - 1, subpath.get(subpath.size() - 1) + 1);

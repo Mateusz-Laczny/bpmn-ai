@@ -85,8 +85,4 @@ public class Grid {
     public int getNumberOfRows() {
         return gridTable.columnKeySet().stream().max(Integer::compareTo).map(maxRow -> maxRow + 1).orElse(0);
     }
-
-    public void shiftElementinYAxis(String key, int i) {
-
-    }
 }
