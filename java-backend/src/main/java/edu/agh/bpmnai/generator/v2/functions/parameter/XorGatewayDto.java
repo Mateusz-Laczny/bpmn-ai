@@ -17,11 +17,13 @@ public record XorGatewayDto(
         @Description("Activity in which the condition is checked, that determines which activity be executed next. If"
                      + " does not exist currently in the diagram, it will be added. In the verb+object naming "
                      + "convention, should be a question like 'Pizza ok?'. Should be a name for a new element or "
-                     + "name#id for an existing one.")
+                     + "name#id for an existing one. If already exists in the diagram, it will also act as a "
+                     + "predecessor element.")
         String checkTask,
         @Description("Diagram element, which will be the direct predecessor to added gateway in the process flow. "
-                     + "Must be an element name that exists in the diagram, or a special 'Start' element, indicating "
-                     + "the start of the process. Must be provided, if `checkTask` does not yet exist in the diagram")
+                     + "Must be an element name that exists in the diagram. Must be provided, if `checkTask` does not "
+                     + "yet exist in the diagram. Must have exactly 0 or 1 successors. The gateway will be inserted "
+                     + "between the predecessor element and it's current successor if it exists.")
         @Nullable
         HumanReadableId predecessorElement,
         @Description("Activities, which will be added inside the gateway. In the verb+object naming convention. For "

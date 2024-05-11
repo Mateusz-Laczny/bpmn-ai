@@ -67,6 +67,13 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
             return Result.error("Predecessor element '%s' does not exist in the model".formatted(callArguments.predecessorElement()));
         }
 
+        if (model.findSuccessors(predecessorElementId).size() > 1) {
+            return Result.error(
+                    ("Predecessor element '%s' has more than one successor; inserting an element after it would be "
+                     + "ambiguous. Provide a predecessor element with a single or no successors").formatted(
+                            callArguments.predecessorElement()));
+        }
+
         String openingGatewayId = model.addGateway(PARALLEL, callArguments.elementName() + " opening gateway");
         String closingGatewayId = model.addGateway(PARALLEL, callArguments.elementName() + " closing gateway");
 

@@ -108,6 +108,13 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
             subdiagramStartElement = checkTaskId;
         }
 
+        if (model.findSuccessors(subdiagramPredecessorElement).size() > 1) {
+            return Result.error(
+                    ("Element '%s' which was designated as a predecessor element has more than one successor. Provide "
+                     + "an element with exactly 0 or 1 successors to avoid ambiguity.").formatted(
+                            model.getHumanReadableId(subdiagramStartElement).orElseThrow()));
+        }
+
         String openingGatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " opening gateway");
         if (subdiagramStartElement == null) {
             subdiagramStartElement = openingGatewayId;

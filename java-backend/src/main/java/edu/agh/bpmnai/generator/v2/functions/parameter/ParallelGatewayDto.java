@@ -13,7 +13,8 @@ public record ParallelGatewayDto(
         @Description("Name of the whole gateway element, with activities inside")
         String elementName,
         @Description("Diagram element, which is the direct predecessor to added gateway in the process flow. Must "
-                     + "exist in the model.")
+                     + "exist in the model and have exactly 0 or one successors. The gateway will be inserted between"
+                     + " the predecessor and it's successor.")
         HumanReadableId predecessorElement,
         @Description("Activities inside the gateway. In the verb+object naming convention. For the parallel gateway "
                      + "to make sense, it must contain at least 2 activities")
