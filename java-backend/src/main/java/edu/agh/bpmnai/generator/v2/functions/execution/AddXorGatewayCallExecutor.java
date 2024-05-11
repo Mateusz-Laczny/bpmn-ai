@@ -98,7 +98,10 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
 
             if (!model.doesIdExist(callArguments.predecessorElement().id())) {
                 log.warn("Call unsuccessful, predecessor element does not exist in the model");
-                return Result.error("Predecessor element does not exist in the model");
+                return Result.error(
+                        ("Predecessor element '%s' does not exist in the model. Provide an element which exists in the"
+                         + " model.").formatted(
+                                callArguments.predecessorElement()));
             }
 
             subdiagramPredecessorElement = callArguments.predecessorElement().id();
