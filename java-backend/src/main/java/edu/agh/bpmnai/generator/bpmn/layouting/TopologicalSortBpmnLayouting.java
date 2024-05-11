@@ -414,7 +414,7 @@ public class TopologicalSortBpmnLayouting {
                 }
 
                 List<Integer> pathToCurrentElement = new ArrayList<>(pathsToElements.get(elementPredecessor));
-                pathToCurrentElement.add(splitInfo.getCenterBranchNumber());
+                pathToCurrentElement.add(splitInfo.getNextFreeBranch());
                 pathsToElements.put(element, pathToCurrentElement);
 
                 finalPosition = new GridPosition(
@@ -437,8 +437,8 @@ public class TopologicalSortBpmnLayouting {
             List<Integer> pathToElement, int centerBranchNumber, Map<String, List<Integer>> elementIdToPath, Grid grid
     ) {
         if (pathToElement.get(pathToElement.size() - 1) < centerBranchNumber) {
-            for (int i = 1; i < pathToElement.size() - 1; i++) {
-                List<Integer> subpath = new ArrayList<>(pathToElement.subList(0, i - 1));
+            for (int i = 1; i < pathToElement.size(); i++) {
+                List<Integer> subpath = new ArrayList<>(pathToElement.subList(0, i));
                 subpath.set(subpath.size() - 1, subpath.get(subpath.size() - 1) - 1);
                 boolean found = true;
                 while (found) {
