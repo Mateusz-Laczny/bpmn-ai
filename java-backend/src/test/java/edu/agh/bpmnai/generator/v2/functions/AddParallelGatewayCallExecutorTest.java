@@ -81,4 +81,42 @@ class AddParallelGatewayCallExecutorTest {
         assertEquals(1, secondTaskSuccessors.size());
         assertEquals(firstTaskSuccessors, secondTaskSuccessors);
     }
+
+    @Test
+    void removes_closing_gateway_if_it_has_a_single_predecessor() throws JsonProcessingException {
+        BpmnModel model = sessionStateStore.model();
+        String predecessorTaskId = model.addTask("task");
+        ParallelGatewayDto callArguments = new ParallelGatewayDto(
+                aRetrospectiveSummary,
+                "",
+                "elementName",
+                new HumanReadableId("task", predecessorTaskId),
+                List.of(
+                        new Activity("activity1", false),
+                        new Activity("activity2", true)
+                )
+        );
+
+        var modelReference = new BpmnManagedReference(model);
+        executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
+        model = modelReference.getCurrentValue();
+
+        Optional<String> firstTaskId = model.findElementByName("activity1");
+        assertTrue(firstTaskId.isPresent());
+        Optional<String> secondTaskId = model.findElementByName("activity2");
+        assertTrue(secondTaskId.isPresent());
+
+        Set<String> predecessorTaskSuccessors = model.findSuccessors(predecessorTaskId);
+        assertEquals(1, predecessorTaskSuccessors.size());
+        String openingGatewayId = predecessorTaskSuccessors.iterator().next();
+        Set<String> openingGatewaySuccessors = model.findSuccessors(openingGatewayId);
+        assertTrue(openingGatewaySuccessors.contains(firstTaskId.get()));
+        assertTrue(openingGatewaySuccessors.contains(secondTaskId.get()));
+
+        Set<String> firstTaskSuccessors = model.findSuccessors(firstTaskId.get());
+        Set<String> secondTaskSuccessors = model.findSuccessors(secondTaskId.get());
+
+        assertEquals(0, firstTaskSuccessors.size());
+        assertEquals(1, secondTaskSuccessors.size());
+    }
 }

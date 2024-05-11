@@ -87,10 +87,18 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
             }
         }
 
+        String subdiagramClosingElement = closingGatewayId;
+        Set<String> closingGatewayPredecessors = model.findPredecessors(closingGatewayId);
+        if (closingGatewayPredecessors.size() == 1) {
+            // A gateway with a single predecessor is useless, so just remove it
+            model.removeFlowNode(closingGatewayId);
+            subdiagramClosingElement = closingGatewayPredecessors.iterator().next();
+        }
+
         Result<Void, String> insertSubdiagramResult = insertElementIntoDiagram.apply(
                 predecessorElementId,
                 openingGatewayId,
-                closingGatewayId,
+                subdiagramClosingElement,
                 model
         );
 
