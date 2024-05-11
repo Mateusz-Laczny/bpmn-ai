@@ -56,8 +56,8 @@ public class ModifyModelState {
 
     public SessionStatus process(String userMessageContent) {
         sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(
-                "Use the provided functions to modify the diagram. After you're done, provide a textual explanation of "
-                + "changes done to the diagram for the user.\n"
+                "Use the provided functions to modify the diagram. After you're done, don't provide any messages to "
+                + "the user\n"
                 + "BEGIN REQUEST CONTEXT" + "\n"
                 + "Current diagram state:\n" + bpmnToStringExporter.export(
                         sessionStateStore.model()) + "\n" + "END REQUEST CONTEXT"));
@@ -79,7 +79,7 @@ public class ModifyModelState {
                         "Call of function '{}' returned error '{}'", calledFunctionName, functionCallResult.getError());
                 var response = chatMessageBuilder.buildToolCallResponseMessage(
                         toolCall.id(), new FunctionCallResponseDto(false, Map.of("errors", functionCallResult.getError()
-                                .message())));
+                                                                                                             .message())));
                 sessionStateStore.appendMessage(response);
                 return MODIFY_MODEL;
             }

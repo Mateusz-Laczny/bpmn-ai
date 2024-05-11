@@ -44,7 +44,7 @@ public class ReasonAboutTasksAndProcessFlowState {
                 + "characters. Remember to include possible edge cases and paths different than the happy "
                 + "path. Don't try to create diagram, this will be done in the next step."
                 + "After you finish the description, think of possible critiques and change your description to "
-                + "address them.");
+                + "address them by modifying your plan.");
         sessionStateStore.appendMessage(promptMessage);
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(
                 usedModel,
