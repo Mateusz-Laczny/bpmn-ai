@@ -23,7 +23,7 @@ public class ModelPostProcessing {
             if (gatewaySuccessors.size() == 1 && gatewayPredecessors.size() == 1) {
                 log.debug(
                         "Gateway '{}' has only one successor and one predecessor and will be cut out from the model",
-                        gatewayId
+                        model.getHumanReadableId(gatewayId).orElseThrow()
                 );
                 String gatewaySuccessorId = gatewaySuccessors.iterator().next();
                 String gatewayPredecessor = gatewayPredecessors.iterator().next();
