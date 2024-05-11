@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 import java.util.Set;
 
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.FIX_ERRORS;
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.END;
 import static edu.agh.bpmnai.generator.v2.session.SessionStatus.MODIFY_MODEL;
 
 @Service
@@ -67,7 +67,7 @@ public class ModifyModelState {
         sessionStateStore.appendMessage(chatResponse);
         if (chatResponse.toolCalls() == null || chatResponse.toolCalls().isEmpty()) {
             conversationHistoryStore.appendMessage(chatResponse.content());
-            return FIX_ERRORS;
+            return END;
         }
 
         for (ToolCallDto toolCall : chatResponse.toolCalls()) {
