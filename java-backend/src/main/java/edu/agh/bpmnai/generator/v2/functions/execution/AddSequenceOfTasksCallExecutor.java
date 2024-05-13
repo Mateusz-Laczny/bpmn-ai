@@ -6,7 +6,6 @@ import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AddSequenceOfTasksFunction;
 import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
-import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.SequenceOfTasksDto;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -44,10 +44,8 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
     @Override
     public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
-        Result<SequenceOfTasksDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
-                callArgumentsJson,
-                SequenceOfTasksDto.class
-        );
+        Result<SequenceOfTasksDto, String> argumentsParsingResult =
+                callArgumentsParser.parseArguments(callArgumentsJson, SequenceOfTasksDto.class);
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());
         }
@@ -60,42 +58,35 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
         }
 
         String predecessorElementId = callArguments.startOfSequence().id();
-        Set<String> addedActivitiesNames = new HashSet<>();
+        Set<String> addedTasksNames = new HashSet<>();
         String previousElementInSequenceId = null;
-        for (Activity activityInSequence : callArguments.activitiesInSequence()) {
-            if (model.findElementByName(activityInSequence.activityName()).isPresent()) {
-                return Result.error("Element %s already exists in the model".formatted(activityInSequence.activityName()));
+        for (String taskInSequence : callArguments.tasksInSequence()) {
+            Optional<String> elementId = model.findElementByName(taskInSequence);
+            if (elementId.isPresent()) {
+                return Result.error("Element %s already exists in the model".formatted(model.getHumanReadableId(
+                        elementId.get()).orElseThrow().asString()));
             }
 
-            String activityId = model.addTask(activityInSequence.activityName());
-            addedActivitiesNames.add(activityInSequence.activityName());
+            String taskId = model.addTask(taskInSequence);
+            addedTasksNames.add(taskInSequence);
 
             if (previousElementInSequenceId != null && !model.areElementsDirectlyConnected(
                     previousElementInSequenceId,
-                    activityId
+                    taskId
             )) {
-                model.addUnlabelledSequenceFlow(previousElementInSequenceId, activityId);
+                model.addUnlabelledSequenceFlow(previousElementInSequenceId, taskId);
             }
 
-            previousElementInSequenceId = activityId;
+            previousElementInSequenceId = taskId;
         }
 
-        String sequenceStartElementId = model.findElementByName(callArguments.activitiesInSequence()
-                                                                        .get(0)
-                                                                        .activityName()).orElseThrow();
+        String sequenceStartElementId = model.findElementByName(callArguments.tasksInSequence().get(0)).orElseThrow();
         String lastElementInSequenceId = previousElementInSequenceId;
-        String sequenceEndElementId = null;
-        if (!callArguments.activitiesInSequence().get(callArguments.activitiesInSequence().size() - 1).isProcessEnd()) {
-            sequenceEndElementId = lastElementInSequenceId;
-        } else {
-            String endEventId = model.addEndEvent();
-            model.addUnlabelledSequenceFlow(lastElementInSequenceId, endEventId);
-        }
 
         Result<Void, String> insertElementResult = insertElementIntoDiagram.apply(
                 predecessorElementId,
                 sequenceStartElementId,
-                sequenceEndElementId,
+                lastElementInSequenceId,
                 model
         );
 
@@ -105,6 +96,6 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
         modelReference.setValue(model);
 
-        return Result.ok("Added activities: " + addedActivitiesNames);
+        return Result.ok("Added activities: " + addedTasksNames);
     }
 }

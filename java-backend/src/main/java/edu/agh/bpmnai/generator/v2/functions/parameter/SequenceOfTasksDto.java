@@ -13,8 +13,9 @@ public record SequenceOfTasksDto(
         @Description("Diagram element, which will be the start of the added sequence in the process flow. Must be an "
                      + "element that exists in the diagram.")
         HumanReadableId startOfSequence,
-        @Description("Activities which will be added to the diagram, in the verb+object naming convention. Each "
-                     + "activity will be connected to the next activity via a sequence flow")
-        List<Activity> activitiesInSequence
+        @Description("Tasks which will be added to the diagram, in the verb+object naming convention. Each "
+                     + "activity will be connected to the next activity via a sequence flow. Last element will be "
+                     + "connected to the current successor of 'startOfSequence' element.")
+        List<String> tasksInSequence
 ) {
 }
