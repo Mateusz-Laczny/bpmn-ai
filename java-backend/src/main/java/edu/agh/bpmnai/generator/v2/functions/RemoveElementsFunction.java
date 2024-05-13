@@ -8,8 +8,11 @@ public class RemoveElementsFunction {
     public static final String FUNCTION_NAME = "remove_elements";
     public static final ChatFunctionDto FUNCTION_DTO = ChatFunctionDto.builder()
             .name(FUNCTION_NAME)
-            .description("Removes the given element from the "
-                         + "diagram. All incoming and outgoing sequence flows will be removed")
-            .parameters(getSchemaForParametersDto(RemoveElementsFunctionCallDto.class))
+            .description(
+                    "Removes the provided elements from the "
+                    + "diagram. All incoming and outgoing "
+                    + "sequence flows will be removed")
+            .parameters(getSchemaForParametersDto(
+                    RemoveElementsFunctionCallDto.class))
             .build();
 }
