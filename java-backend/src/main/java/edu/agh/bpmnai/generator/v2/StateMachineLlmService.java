@@ -59,9 +59,9 @@ public class StateMachineLlmService implements LlmService {
 
     @Override
     public UserRequestResponse getResponse(String userMessageContent) {
-        boolean firstPrompt = conversationHistoryStore.isEmpty();
+        boolean initialPrompt = conversationHistoryStore.isEmpty();
         SessionStatus sessionState =
-                firstPrompt ? REASON_ABOUT_TASKS_AND_PROCESS_FLOW : DECIDE_WHETHER_TO_MODIFY_THE_MODEL;
+                initialPrompt ? REASON_ABOUT_TASKS_AND_PROCESS_FLOW : DECIDE_WHETHER_TO_MODIFY_THE_MODEL;
         while (sessionState != END) {
             sessionState = switch (sessionState) {
                 case ASK_QUESTIONS -> askQuestionsState.process(userMessageContent);
@@ -69,7 +69,7 @@ public class StateMachineLlmService implements LlmService {
                         decideWhetherToModifyTheModelState.process(userMessageContent);
                 case REASON_ABOUT_TASKS_AND_PROCESS_FLOW -> reasonAboutTasksAndProcessFlowState.process(
                         userMessageContent);
-                case MODIFY_MODEL -> modifyModelState.process(userMessageContent);
+                case MODIFY_MODEL -> modifyModelState.process(userMessageContent, initialPrompt);
                 case FIX_ERRORS -> fixErrorsInModelState.process(userMessageContent);
                 default -> throw new IllegalStateException("Unexpected session state '%s'".formatted(sessionState));
             };
