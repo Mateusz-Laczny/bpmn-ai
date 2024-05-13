@@ -1,6 +1,5 @@
 package edu.agh.bpmnai.generator.v2;
 
-import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.layouting.TopologicalSortBpmnLayouting;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.ChangelogSnapshot;
@@ -76,11 +75,9 @@ public class StateMachineLlmService implements LlmService {
             log.info("New state: '{}'", sessionState);
         }
 
-        var modelReference = new BpmnManagedReference(sessionStateStore.model());
-        modelPostProcessing.apply(modelReference);
-        BpmnModel finalModel = modelReference.getCurrentValue();
+        modelPostProcessing.apply();
+        BpmnModel finalModel = sessionStateStore.model();
         ChangelogSnapshot changelogSnapshot = finalModel.getChangeLogSnapshot();
-
         BpmnModel layoutedModel = bpmnLayouting.layoutModel(finalModel);
         return new UserRequestResponse(
                 conversationHistoryStore.getLastMessage().orElse(""),

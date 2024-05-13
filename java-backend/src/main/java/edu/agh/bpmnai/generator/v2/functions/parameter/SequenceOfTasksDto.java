@@ -14,8 +14,8 @@ public record SequenceOfTasksDto(
                      + "element that exists in the diagram.")
         HumanReadableId startOfSequence,
         @Description("Tasks which will be added to the diagram, in the verb+object naming convention. Each "
-                     + "activity will be connected to the next activity via a sequence flow. Last element will be "
-                     + "connected to the current successor of 'startOfSequence' element.")
+                     + "task will be connected to the next task via a sequence flow. Last task will be "
+                     + "connected to the current successor of 'startOfSequence' node.")
         List<String> tasksInSequence
 ) {
 }

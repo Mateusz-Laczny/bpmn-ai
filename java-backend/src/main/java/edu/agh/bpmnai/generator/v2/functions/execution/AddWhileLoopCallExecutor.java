@@ -1,13 +1,12 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
-import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
+import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.AddWhileLoopFunction;
 import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
-import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.WhileLoopDto;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
@@ -30,15 +30,19 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
     private final InsertElementIntoDiagram insertElementIntoDiagram;
 
+    private final NodeIdToModelInterfaceIdFunction nodeIdToModelInterfaceIdFunction;
+
     @Autowired
     public AddWhileLoopCallExecutor(
             ToolCallArgumentsParser callArgumentsParser,
             SessionStateStore sessionStateStore,
-            InsertElementIntoDiagram insertElementIntoDiagram
+            InsertElementIntoDiagram insertElementIntoDiagram,
+            NodeIdToModelInterfaceIdFunction nodeIdToModelInterfaceIdFunction
     ) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
         this.insertElementIntoDiagram = insertElementIntoDiagram;
+        this.nodeIdToModelInterfaceIdFunction = nodeIdToModelInterfaceIdFunction;
     }
 
     @Override
@@ -47,7 +51,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
+    public Result<String, String> executeCall(String callArgumentsJson) {
         Result<WhileLoopDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson,
                 WhileLoopDto.class
@@ -58,22 +62,28 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
         WhileLoopDto callArguments = argumentsParsingResult.getValue();
 
-        BpmnModel model = modelReference.getCurrentValue();
+        BpmnModel model = sessionStateStore.model();
+        Set<String> addedNodesIds = new HashSet<>();
+
         String checkTaskId;
         boolean checkTaskExistsInTheModel;
         if (isHumanReadableIdentifier(callArguments.checkTask())) {
-            checkTaskId = HumanReadableId.fromString(callArguments.checkTask()).id();
-            if (!model.doesIdExist(checkTaskId)) {
+            String checkTaskModelInterfaceId = HumanReadableId.fromString(callArguments.checkTask()).id();
+            Optional<String> checkTaskIdOptional = sessionStateStore.getElementId(checkTaskModelInterfaceId);
+            if (checkTaskIdOptional.isEmpty()) {
                 return Result.error("Check task '%s' does not exist in the model".formatted(callArguments.checkTask()));
             }
+
+            checkTaskId = checkTaskIdOptional.get();
             checkTaskExistsInTheModel = true;
         } else {
             checkTaskId = model.addTask(callArguments.checkTask());
+            addedNodesIds.add(checkTaskId);
             checkTaskExistsInTheModel = false;
         }
+
         String subdiagramPredecessorElement;
         String subdiagramStartElement = null;
-        Set<String> addedActivitiesNames = new HashSet<>();
         if (checkTaskExistsInTheModel) {
             subdiagramPredecessorElement = checkTaskId;
         } else {
@@ -96,10 +106,10 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
             subdiagramPredecessorElement = callArguments.predecessorElement().id();
             subdiagramStartElement = checkTaskId;
-            addedActivitiesNames.add(callArguments.checkTask());
         }
 
         String gatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " gateway");
+        addedNodesIds.add(gatewayId);
         if (subdiagramStartElement == null) {
             subdiagramStartElement = gatewayId;
         } else {
@@ -107,19 +117,19 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         }
 
         String previousElementInLoopId = gatewayId;
-        for (Activity activityInLoop : callArguments.activitiesInLoop()) {
-            if (model.findElementByName(activityInLoop.activityName()).isPresent()) {
-                return Result.error("Element %s already exists in the model".formatted(activityInLoop.activityName()));
+        for (String taskInLoop : callArguments.tasksInLoop()) {
+            if (model.findElementByName(taskInLoop).isPresent()) {
+                return Result.error("Element '%s' already exists in the model".formatted(taskInLoop));
             }
 
-            String activityId = model.addTask(activityInLoop.activityName());
-            addedActivitiesNames.add(activityInLoop.activityName());
+            String taskId = model.addTask(taskInLoop);
+            addedNodesIds.add(taskId);
 
-            if (!model.areElementsDirectlyConnected(previousElementInLoopId, activityId)) {
-                model.addUnlabelledSequenceFlow(previousElementInLoopId, activityId);
+            if (!model.areElementsDirectlyConnected(previousElementInLoopId, taskId)) {
+                model.addUnlabelledSequenceFlow(previousElementInLoopId, taskId);
             }
 
-            previousElementInLoopId = activityId;
+            previousElementInLoopId = taskId;
         }
 
         if (!model.areElementsDirectlyConnected(previousElementInLoopId, checkTaskId)) {
@@ -137,8 +147,11 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
             return Result.error(insertSubdiagramResult.getError());
         }
 
-        modelReference.setValue(model);
+        sessionStateStore.setModel(model);
+        for (String nodeId : addedNodesIds) {
+            sessionStateStore.setModelInterfaceId(nodeId, nodeIdToModelInterfaceIdFunction.apply(nodeId));
+        }
 
-        return Result.ok("Added activities: " + addedActivitiesNames);
+        return Result.ok("Call successful");
     }
 }

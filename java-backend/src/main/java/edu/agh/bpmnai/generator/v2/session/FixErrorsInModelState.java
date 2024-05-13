@@ -54,8 +54,8 @@ public class FixErrorsInModelState {
         sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(
                 "Think about possible errors in the model, and if there are any fix them using only the provided "
                 + "functions. If there are no errors respond \"No errors\"\n"
-                + "BEGIN REQUEST CONTEXT" + "\n" + "Current diagram state:\n" + bpmnToStringExporter.export(
-                        sessionStateStore.model()) + "\n" + "END REQUEST CONTEXT"));
+                + "BEGIN REQUEST CONTEXT" + "\n" + "Current diagram state:\n" + bpmnToStringExporter.export() + "\n"
+                + "END REQUEST CONTEXT"));
         log.info("Request text sent to LLM: '{}'", sessionStateStore.lastAddedMessage());
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(
                 usedModel, sessionStateStore.messages(), AVAILABLE_FUNCTIONS, "auto");

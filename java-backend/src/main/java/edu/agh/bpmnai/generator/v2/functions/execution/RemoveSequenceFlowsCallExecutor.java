@@ -1,6 +1,5 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
-import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.RemoveSequenceFlowError;
 import edu.agh.bpmnai.generator.datatype.Result;
@@ -38,14 +37,14 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
+    public Result<String, String> executeCall(String callArgumentsJson) {
         Result<RemoveSequenceFlowsCallParameterDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(callArgumentsJson, RemoveSequenceFlowsCallParameterDto.class);
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());
         }
 
-        BpmnModel model = modelReference.getCurrentValue();
+        BpmnModel model = sessionStateStore.model();
         List<SequenceFlowDto> sequenceFlowDtos =
                 argumentsParsingResult.getValue().sequenceFlowsToRemove();
         StringBuilder removedFlowsMessageBuilder = new StringBuilder("Following sequence flows were removed:\n");
@@ -99,7 +98,7 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
             }
         }
 
-        modelReference.setValue(model);
+        sessionStateStore.setModel(model);
 
         return Result.ok(removedFlowsMessageBuilder.append('\n').append(missingFlowsMessageBuilder).toString());
     }

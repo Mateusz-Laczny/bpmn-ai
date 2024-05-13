@@ -19,8 +19,9 @@ public record WhileLoopDto(
                      + "in the model, this parameter will be ignored.")
         @Nullable
         HumanReadableId predecessorElement,
-        @Description("Sequence of activities executed in order inside the loop. The last activity is connected via "
-                     + "the sequence flow to the start of the loop. In the verb+object naming convention.")
-        List<Activity> activitiesInLoop
+        @Description("Sequence of tasks executed in order inside the loop. The last task is connected via "
+                     + "the sequence flow to the XOR gateway which is the start of the loop. In the verb+object "
+                     + "naming convention.")
+        List<String> tasksInLoop
 ) {
 }

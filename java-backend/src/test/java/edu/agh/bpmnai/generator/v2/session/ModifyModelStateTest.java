@@ -14,7 +14,7 @@ import java.util.List;
 
 import static edu.agh.bpmnai.generator.v2.CallErrorType.CALL_FAILED;
 import static edu.agh.bpmnai.generator.v2.CallErrorType.NO_EXECUTOR_FOUND;
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.FIX_ERRORS;
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.END;
 import static edu.agh.bpmnai.generator.v2.session.SessionStatus.MODIFY_MODEL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
@@ -36,7 +36,7 @@ class ModifyModelStateTest {
     }
 
     @Test
-    void returns_FIX_ERRORS_when_model_response_has_no_tool_calls() {
+    void returns_END_when_model_response_has_no_tool_calls() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var state = new ModifyModelState(
                 mock(FunctionExecutionService.class),
@@ -54,9 +54,9 @@ class ModifyModelStateTest {
                 null
         ));
 
-        SessionStatus status = state.process("aUserRequest");
+        SessionStatus status = state.process("aUserRequest", true);
 
-        assertEquals(FIX_ERRORS, status);
+        assertEquals(END, status);
     }
 
     @Test
@@ -85,7 +85,7 @@ class ModifyModelStateTest {
                 List.of(toolCall)
         ));
 
-        SessionStatus status = state.process("aUserRequest");
+        SessionStatus status = state.process("aUserRequest", true);
 
         ChatMessageDto lastAddedMessage = sessionStateStore.lastAddedMessage();
         assertEquals(MODIFY_MODEL, status);
@@ -118,7 +118,7 @@ class ModifyModelStateTest {
                 List.of(toolCall)
         ));
 
-        SessionStatus status = state.process("aUserRequest");
+        SessionStatus status = state.process("aUserRequest", true);
 
         ChatMessageDto lastAddedMessage = sessionStateStore.lastAddedMessage();
         assertEquals(MODIFY_MODEL, status);
@@ -152,7 +152,7 @@ class ModifyModelStateTest {
                 List.of(toolCall)
         ));
 
-        SessionStatus status = state.process("aUserRequest");
+        SessionStatus status = state.process("aUserRequest", true);
 
         ChatMessageDto lastAddedMessage = sessionStateStore.lastAddedMessage();
         assertEquals(MODIFY_MODEL, status);

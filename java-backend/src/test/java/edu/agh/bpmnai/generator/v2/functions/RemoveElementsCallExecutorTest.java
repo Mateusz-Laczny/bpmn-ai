@@ -2,9 +2,9 @@ package edu.agh.bpmnai.generator.v2.functions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
+import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.execution.RemoveElementsCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementsFunctionCallDto;
@@ -37,19 +37,20 @@ class RemoveElementsCallExecutorTest {
 
     @Test
     void removes_task_from_the_model() throws JsonProcessingException {
-        BpmnModel model = sessionStateStore.model();
+        var model = new BpmnModel();
         String taskId = model.addTask("task");
+        sessionStateStore.setModelInterfaceId(taskId, "tasl");
         RemoveElementsFunctionCallDto callArguments = new RemoveElementsFunctionCallDto(aRetrospectiveSummary, "",
                                                                                         List.of(new HumanReadableId(
                                                                                                 "task",
-                                                                                                taskId
+                                                                                                "task"
                                                                                         ))
         );
 
-        var modelReference = new BpmnManagedReference(model);
-        executor.executeCall(mapper.writeValueAsString(callArguments), modelReference);
-        model = modelReference.getCurrentValue();
+        Result<String, String> executorResult = executor.executeCall(mapper.writeValueAsString(callArguments));
+        assertTrue(executorResult.isOk(), "Result should be OK but is '%s'".formatted(executorResult.getError()));
+        BpmnModel modelAfterModification = sessionStateStore.model();
 
-        assertTrue(model.findElementByName("task").isEmpty());
+        assertTrue(modelAfterModification.findElementByName("task").isEmpty());
     }
 }

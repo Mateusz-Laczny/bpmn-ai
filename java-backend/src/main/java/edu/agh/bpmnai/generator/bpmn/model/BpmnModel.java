@@ -65,7 +65,6 @@ public final class BpmnModel {
         diagramPlane = createElementWithParent(diagram, "id", BpmnPlane.class);
         diagram.setBpmnPlane(diagramPlane);
 
-        addLabelledStartEvent("Start");
         Bpmn.validateModel(modelInstance);
     }
 
@@ -549,8 +548,22 @@ public final class BpmnModel {
         )).collect(toSet());
     }
 
-    public Set<String> getFlowNodes() {
-        return modelInstance.getModelElementsByType(FlowNode.class).stream().map(BaseElement::getId).collect(toSet());
+    public List<String> getFlowNodes() {
+        return modelInstance.getModelElementsByType(FlowNode.class)
+                .stream()
+                .map(BaseElement::getId)
+                .sorted((nodeId1, nodeId2) -> {
+                    Optional<String> node1Name = getName(nodeId1);
+                    Optional<String> node2Name = getName(nodeId2);
+                    if (node1Name.isEmpty()) {
+                        return -1;
+                    } else if (node2Name.isEmpty()) {
+                        return 1;
+                    }
+
+                    return node1Name.get().compareTo(node2Name.get());
+                })
+                .toList();
     }
 
     public Set<DirectedEdge> getSequenceFlows() {

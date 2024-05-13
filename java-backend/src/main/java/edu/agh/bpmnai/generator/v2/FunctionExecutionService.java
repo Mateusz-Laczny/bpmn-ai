@@ -1,6 +1,5 @@
 package edu.agh.bpmnai.generator.v2;
 
-import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.execution.FunctionCallExecutor;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
@@ -42,18 +41,14 @@ public class FunctionExecutionService {
             ));
         }
         FunctionCallExecutor executorFunction = functionNameToExecutor.get(calledFunctionName);
-        BpmnManagedReference modelReference = new BpmnManagedReference(sessionStateStore.model());
         Result<String, String> callResult = executorFunction.executeCall(
                 functionCall.functionCallProperties()
-                        .argumentsJson(),
-                modelReference
+                        .argumentsJson()
         );
 
         if (callResult.isError()) {
             return Result.error(new CallError(CALL_FAILED, callResult.getError()));
         }
-
-        sessionStateStore.setModel(modelReference.getCurrentValue());
 
         return Result.ok(callResult.getValue());
     }

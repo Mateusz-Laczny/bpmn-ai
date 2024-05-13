@@ -1,9 +1,9 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
-import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
+import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.AddXorGatewayFunction;
 import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
@@ -30,15 +31,19 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
 
     private final InsertElementIntoDiagram insertElementIntoDiagram;
 
+    private final NodeIdToModelInterfaceIdFunction nodeIdToModelInterfaceIdFunction;
+
     @Autowired
     public AddXorGatewayCallExecutor(
             ToolCallArgumentsParser callArgumentsParser,
             SessionStateStore sessionStateStore,
-            InsertElementIntoDiagram insertElementIntoDiagram
+            InsertElementIntoDiagram insertElementIntoDiagram,
+            NodeIdToModelInterfaceIdFunction nodeIdToModelInterfaceIdFunction
     ) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
         this.insertElementIntoDiagram = insertElementIntoDiagram;
+        this.nodeIdToModelInterfaceIdFunction = nodeIdToModelInterfaceIdFunction;
     }
 
     @Override
@@ -47,7 +52,7 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
+    public Result<String, String> executeCall(String callArgumentsJson) {
         Result<XorGatewayDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson,
                 XorGatewayDto.class
@@ -62,19 +67,22 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
             return Result.error("A gateway must contain at least 2 activities");
         }
 
-        BpmnModel model = modelReference.getCurrentValue();
+        BpmnModel model = sessionStateStore.model();
         String checkTaskId;
         boolean checkTaskExistsInTheModel;
-        Set<String> addedActivitiesNames = new HashSet<>();
+        Set<String> addedNodesIds = new HashSet<>();
         if (isHumanReadableIdentifier(callArguments.checkTask())) {
-            checkTaskId = HumanReadableId.fromString(callArguments.checkTask()).id();
-            if (!model.doesIdExist(checkTaskId)) {
+            String checkTaskModelInterfaceId = HumanReadableId.fromString(callArguments.checkTask()).id();
+            Optional<String> checkTaskIdOptional = sessionStateStore.getElementId(checkTaskModelInterfaceId);
+            if (checkTaskIdOptional.isEmpty()) {
                 return Result.error("Check task '%s' does not exist in the model".formatted(callArguments.checkTask()));
             }
+
+            checkTaskId = checkTaskIdOptional.get();
             checkTaskExistsInTheModel = true;
         } else {
             checkTaskId = model.addTask(callArguments.checkTask());
-            addedActivitiesNames.add(callArguments.checkTask());
+            addedNodesIds.add(checkTaskId);
             checkTaskExistsInTheModel = false;
         }
 
@@ -116,11 +124,13 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
         }
 
         String openingGatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " opening gateway");
+        addedNodesIds.add(openingGatewayId);
         if (subdiagramStartElement == null) {
             subdiagramStartElement = openingGatewayId;
         }
 
         String closingGatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " closing gateway");
+        addedNodesIds.add(closingGatewayId);
 
         model.addUnlabelledSequenceFlow(checkTaskId, openingGatewayId);
 
@@ -129,14 +139,15 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
                 return Result.error("Element with name %s already exists in the model".formatted(activityInGateway.activityName()));
             }
 
-            String activityId = model.addTask(activityInGateway.activityName());
-            addedActivitiesNames.add(activityInGateway.activityName());
-            model.addUnlabelledSequenceFlow(openingGatewayId, activityId);
+            String taskId = model.addTask(activityInGateway.activityName());
+            addedNodesIds.add(taskId);
+            model.addUnlabelledSequenceFlow(openingGatewayId, taskId);
             if (activityInGateway.isProcessEnd()) {
                 String endEventId = model.addEndEvent();
-                model.addUnlabelledSequenceFlow(activityId, endEventId);
+                addedNodesIds.add(endEventId);
+                model.addUnlabelledSequenceFlow(taskId, endEventId);
             } else {
-                model.addUnlabelledSequenceFlow(activityId, closingGatewayId);
+                model.addUnlabelledSequenceFlow(taskId, closingGatewayId);
             }
         }
 
@@ -145,6 +156,7 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
         if (closingGatewayPredecessors.size() == 1) {
             // A gateway with a single predecessor is useless, so just remove it
             model.removeFlowNode(closingGatewayId);
+            addedNodesIds.remove(closingGatewayId);
             subdiagramClosingElement = closingGatewayPredecessors.iterator().next();
         }
 
@@ -159,8 +171,11 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
             return Result.error(elementInsertResult.getError());
         }
 
-        modelReference.setValue(model);
+        sessionStateStore.setModel(model);
+        for (String nodeId : addedNodesIds) {
+            sessionStateStore.setModelInterfaceId(nodeId, nodeIdToModelInterfaceIdFunction.apply(nodeId));
+        }
 
-        return Result.ok("Added activities: " + addedActivitiesNames);
+        return Result.ok("Call successful");
     }
 }

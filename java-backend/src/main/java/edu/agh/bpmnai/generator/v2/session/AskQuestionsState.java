@@ -42,7 +42,15 @@ public class AskQuestionsState {
     private final BpmnToStringExporter bpmnToStringExporter;
 
     @Autowired
-    public AskQuestionsState(FunctionExecutionService functionExecutionService, OpenAIChatCompletionApi chatCompletionApi, OpenAI.OpenAIModel usedModel, SessionStateStore sessionStateStore, ConversationHistoryStore conversationHistoryStore, ChatMessageBuilder chatMessageBuilder, BpmnToStringExporter bpmnToStringExporter) {
+    public AskQuestionsState(
+            FunctionExecutionService functionExecutionService,
+            OpenAIChatCompletionApi chatCompletionApi,
+            OpenAI.OpenAIModel usedModel,
+            SessionStateStore sessionStateStore,
+            ConversationHistoryStore conversationHistoryStore,
+            ChatMessageBuilder chatMessageBuilder,
+            BpmnToStringExporter bpmnToStringExporter
+    ) {
         this.functionExecutionService = functionExecutionService;
         this.chatCompletionApi = chatCompletionApi;
         this.usedModel = usedModel;
@@ -60,7 +68,7 @@ public class AskQuestionsState {
                 + "END USER REQUEST\n"
                 + "\n"
                 + "BEGIN REQUEST CONTEXT\n"
-                + "Current diagram state:\n" + bpmnToStringExporter.export(sessionStateStore.model())
+                + "Current diagram state:\n" + bpmnToStringExporter.export()
                 + "\n"
                 + "END REQUEST CONTEXT";
         log.info("Request text sent to LLM: '{}'", promptForModel);
@@ -68,7 +76,16 @@ public class AskQuestionsState {
             ChatMessageDto lastMessage = sessionStateStore.lastAddedMessage();
             if (lastMessage.hasToolCalls()) {
                 ToolCallDto toolCall = lastMessage.toolCalls().get(0);
-                var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(true, Map.of("response", promptForModel)));
+                var response = chatMessageBuilder.buildToolCallResponseMessage(
+                        toolCall.id(),
+                        new FunctionCallResponseDto(
+                                true,
+                                Map.of(
+                                        "response",
+                                        promptForModel
+                                )
+                        )
+                );
                 sessionStateStore.appendMessage(response);
             } else {
                 sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(promptForModel));
@@ -77,12 +94,18 @@ public class AskQuestionsState {
             sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(promptForModel));
         }
 
-        ChatMessageDto chatResponse = chatCompletionApi.sendRequest(usedModel, sessionStateStore.messages(), AVAILABLE_FUNCTIONS_IN_THIS_STATE, "auto");
+        ChatMessageDto chatResponse = chatCompletionApi.sendRequest(
+                usedModel,
+                sessionStateStore.messages(),
+                AVAILABLE_FUNCTIONS_IN_THIS_STATE,
+                "auto"
+        );
         sessionStateStore.appendMessage(chatResponse);
 
         if (chatResponse.toolCalls() == null) {
             log.warn("No tools calls even though a tool call was expected");
-            sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage("Use the provided functions, do not provide a response using other means"));
+            sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(
+                    "Use the provided functions, do not provide a response using other means"));
             return ASK_QUESTIONS;
         }
 
@@ -93,7 +116,17 @@ public class AskQuestionsState {
         Result<String, CallError> functionCallResult = functionExecutionService.executeFunctionCall(toolCall);
         if (functionCallResult.isError()) {
             log.warn("Call of function '{}' returned error '{}'", calledFunctionName, functionCallResult.getError());
-            var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(false, Map.of("errors", functionCallResult.getError().message())));
+            var response = chatMessageBuilder.buildToolCallResponseMessage(
+                    toolCall.id(),
+                    new FunctionCallResponseDto(
+                            false,
+                            Map.of(
+                                    "errors",
+                                    functionCallResult.getError()
+                                            .message()
+                            )
+                    )
+            );
             sessionStateStore.appendMessage(response);
             return ASK_QUESTIONS;
         }
@@ -102,7 +135,10 @@ public class AskQuestionsState {
             conversationHistoryStore.appendMessage(functionCallResult.getValue());
         }
 
-        var response = chatMessageBuilder.buildToolCallResponseMessage(toolCall.id(), new FunctionCallResponseDto(true));
+        var response = chatMessageBuilder.buildToolCallResponseMessage(
+                toolCall.id(),
+                new FunctionCallResponseDto(true)
+        );
         sessionStateStore.appendMessage(response);
 
         if (calledFunctionName.equals(FinishAskingQuestionsFunction.FUNCTION_NAME)) {

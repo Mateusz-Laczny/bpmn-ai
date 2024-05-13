@@ -1,8 +1,8 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
-import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.datatype.Result;
+import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.AddSequenceOfTasksFunction;
 import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
@@ -26,15 +26,19 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
     private final InsertElementIntoDiagram insertElementIntoDiagram;
 
+    private final NodeIdToModelInterfaceIdFunction nodeIdToModelInterfaceIdFunction;
+
     @Autowired
     public AddSequenceOfTasksCallExecutor(
             ToolCallArgumentsParser callArgumentsParser,
             SessionStateStore sessionStateStore,
-            InsertElementIntoDiagram insertElementIntoDiagram
+            InsertElementIntoDiagram insertElementIntoDiagram,
+            NodeIdToModelInterfaceIdFunction nodeIdToModelInterfaceIdFunction
     ) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
         this.insertElementIntoDiagram = insertElementIntoDiagram;
+        this.nodeIdToModelInterfaceIdFunction = nodeIdToModelInterfaceIdFunction;
     }
 
     @Override
@@ -43,7 +47,7 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
+    public Result<String, String> executeCall(String callArgumentsJson) {
         Result<SequenceOfTasksDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(callArgumentsJson, SequenceOfTasksDto.class);
         if (argumentsParsingResult.isError()) {
@@ -51,14 +55,17 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
         }
 
         SequenceOfTasksDto callArguments = argumentsParsingResult.getValue();
-        BpmnModel model = modelReference.getCurrentValue();
-        if (!model.doesIdExist(callArguments.startOfSequence().id())) {
-            log.info("Predecessor element does not exist in the model");
-            return Result.error("Predecessor element does not exist in the model");
+        BpmnModel model = sessionStateStore.model();
+        Optional<String> startOfSequenceNodeId =
+                sessionStateStore.getElementId(callArguments.startOfSequence().id());
+        if (startOfSequenceNodeId.isEmpty()) {
+            log.info("Predecessor element '{}' does not exist in the model", callArguments.startOfSequence());
+            return Result.error("Predecessor element '%s' does not exist in the model".formatted(callArguments.startOfSequence()
+                                                                                                         .asString()));
         }
 
-        String predecessorElementId = callArguments.startOfSequence().id();
-        Set<String> addedTasksNames = new HashSet<>();
+        String predecessorElementId = startOfSequenceNodeId.get();
+        Set<String> addedTasks = new HashSet<>();
         String previousElementInSequenceId = null;
         for (String taskInSequence : callArguments.tasksInSequence()) {
             Optional<String> elementId = model.findElementByName(taskInSequence);
@@ -68,7 +75,7 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
             }
 
             String taskId = model.addTask(taskInSequence);
-            addedTasksNames.add(taskInSequence);
+            addedTasks.add(taskId);
 
             if (previousElementInSequenceId != null && !model.areElementsDirectlyConnected(
                     previousElementInSequenceId,
@@ -94,8 +101,12 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
             return Result.error(insertElementResult.getError());
         }
 
-        modelReference.setValue(model);
+        sessionStateStore.setModel(model);
 
-        return Result.ok("Added activities: " + addedTasksNames);
+        for (String taskId : addedTasks) {
+            sessionStateStore.setModelInterfaceId(taskId, nodeIdToModelInterfaceIdFunction.apply(taskId));
+        }
+
+        return Result.ok("Added tasks: " + addedTasks);
     }
 }

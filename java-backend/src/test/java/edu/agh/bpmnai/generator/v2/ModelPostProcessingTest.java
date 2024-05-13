@@ -1,8 +1,8 @@
 package edu.agh.bpmnai.generator.v2;
 
-import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,25 +15,33 @@ import static org.junit.jupiter.api.Assertions.*;
 class ModelPostProcessingTest {
     ModelPostProcessing modelPostProcessing;
     BpmnModel model;
+    SessionStateStore sessionStateStore;
 
     @BeforeEach
     void setUp() {
-        modelPostProcessing = new ModelPostProcessing();
+        sessionStateStore = new SessionStateStore();
+        modelPostProcessing = new ModelPostProcessing(
+                sessionStateStore,
+                new NodeIdToModelInterfaceIdFunction(sessionStateStore)
+        );
         model = new BpmnModel();
     }
 
     @Test
     void removes_gateway_with_single_successor_and_single_predecessor() {
         String predecessor = model.addTask("A");
+        sessionStateStore.setModelInterfaceId(predecessor, "A");
         String successor = model.addTask("B");
+        sessionStateStore.setModelInterfaceId(successor, "B");
         String gateway = model.addGateway(BpmnGatewayType.EXCLUSIVE, "Gateway");
+        sessionStateStore.setModelInterfaceId(gateway, "Gateway");
         model.addUnlabelledSequenceFlow(predecessor, gateway);
         model.addUnlabelledSequenceFlow(gateway, successor);
-        BpmnManagedReference reference = new BpmnManagedReference(model);
+        sessionStateStore.setModel(model);
 
-        modelPostProcessing.apply(reference);
+        modelPostProcessing.apply();
 
-        BpmnModel afterPostProcessing = reference.getCurrentValue();
+        BpmnModel afterPostProcessing = sessionStateStore.model();
         assertEquals(Set.of(successor), afterPostProcessing.findSuccessors(predecessor));
         assertFalse(afterPostProcessing.doesIdExist(gateway));
     }
@@ -47,23 +55,22 @@ class ModelPostProcessingTest {
         model.addUnlabelledSequenceFlow(predecessor1, gateway);
         model.addUnlabelledSequenceFlow(predecessor2, gateway);
         model.addUnlabelledSequenceFlow(gateway, successor);
-        BpmnManagedReference reference = new BpmnManagedReference(model);
+        sessionStateStore.setModel(model);
 
-        modelPostProcessing.apply(reference);
+        modelPostProcessing.apply();
 
-        BpmnModel afterPostProcessing = reference.getCurrentValue();
+        BpmnModel afterPostProcessing = sessionStateStore.model();
         assertTrue(afterPostProcessing.doesIdExist(gateway));
     }
 
     @Test
     void adds_end_event_to_elements_without_successors() {
         String task = model.addTask("task");
+        sessionStateStore.setModel(model);
 
-        BpmnManagedReference reference = new BpmnManagedReference(model);
+        modelPostProcessing.apply();
 
-        modelPostProcessing.apply(reference);
-
-        BpmnModel afterPostProcessing = reference.getCurrentValue();
+        BpmnModel afterPostProcessing = sessionStateStore.model();
         LinkedHashSet<String> successorsAfterPostProcessing = afterPostProcessing.findSuccessors(task);
         assertEquals(1, successorsAfterPostProcessing.size());
         assertEquals(END_EVENT, afterPostProcessing.getNodeType(successorsAfterPostProcessing.iterator().next()).get());
@@ -72,11 +79,11 @@ class ModelPostProcessingTest {
     @Test
     void does_not_add_end_event_to_end_event() {
         String endEvent = model.addEndEvent();
+        sessionStateStore.setModel(model);
 
-        BpmnManagedReference reference = new BpmnManagedReference(model);
+        modelPostProcessing.apply();
 
-        modelPostProcessing.apply(reference);
 
-        assertEquals(0, model.findSuccessors(endEvent).size());
+        assertEquals(0, sessionStateStore.model().findSuccessors(endEvent).size());
     }
 }

@@ -64,7 +64,7 @@ public class DecideWhetherToModifyTheModelState {
                 + "END USER REQUEST\n"
                 + "\n"
                 + "BEGIN REQUEST CONTEXT\n"
-                + "Current diagram state:\n" + bpmnToStringExporter.export(sessionStateStore.model())
+                + "Current diagram state:\n" + bpmnToStringExporter.export()
                 + "\n"
                 + "END REQUEST CONTEXT";
         log.info("Request text sent to LLM: '{}'", promptForModel);

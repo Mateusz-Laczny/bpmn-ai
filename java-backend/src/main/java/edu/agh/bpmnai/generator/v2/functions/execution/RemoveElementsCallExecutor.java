@@ -1,6 +1,5 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
-import edu.agh.bpmnai.generator.bpmn.BpmnManagedReference;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.bpmn.model.RemoveActivityError;
@@ -12,6 +11,10 @@ import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -36,7 +39,7 @@ public class RemoveElementsCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson, BpmnManagedReference modelReference) {
+    public Result<String, String> executeCall(String callArgumentsJson) {
         Result<RemoveElementsFunctionCallDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson, RemoveElementsFunctionCallDto.class);
         if (argumentsParsingResult.isError()) {
@@ -45,19 +48,23 @@ public class RemoveElementsCallExecutor implements FunctionCallExecutor {
 
         RemoveElementsFunctionCallDto callArguments = argumentsParsingResult.getValue();
 
-        BpmnModel model = modelReference.getCurrentValue();
+        BpmnModel model = sessionStateStore.model();
+        Set<String> removedNodesIds = new HashSet<>();
         StringBuilder removedElementsMessageBuilder = new StringBuilder("Following elements were removed:\n");
         StringBuilder missingElementsMessageBuilder = new StringBuilder(
                 "Following elements are not present in the diagram:\n");
         for (HumanReadableId elementToRemove : callArguments.elementsToRemove()) {
-            String elementToRemoveId = elementToRemove.id();
-            if (!model.doesIdExist(elementToRemoveId)) {
-                missingElementsMessageBuilder.append(elementToRemove).append(", ");
+            String nodeToRemoveModelFacingId = elementToRemove.id();
+            Optional<String> nodeToRemoveIdOptional = sessionStateStore.getElementId(nodeToRemoveModelFacingId);
+            if (nodeToRemoveIdOptional.isEmpty()) {
+                missingElementsMessageBuilder.append(elementToRemove.asString()).append(", ");
             } else {
+                String nodeToRemoveId = nodeToRemoveIdOptional.get();
                 Result<Void, RemoveActivityError> removeFlowNodeResult =
-                        model.removeFlowNode(elementToRemoveId);
+                        model.removeFlowNode(nodeToRemoveId);
                 if (removeFlowNodeResult.isOk()) {
                     removedElementsMessageBuilder.append(elementToRemove).append(", ");
+                    removedNodesIds.add(nodeToRemoveId);
                 } else {
                     log.warn(
                             "Unexpected error '{}' when removing element with model ID '{}'",
@@ -68,7 +75,10 @@ public class RemoveElementsCallExecutor implements FunctionCallExecutor {
             }
         }
 
-        modelReference.setValue(model);
+        sessionStateStore.setModel(model);
+        for (String nodeId : removedNodesIds) {
+            sessionStateStore.removeModelInterfaceId(nodeId);
+        }
 
         return Result.ok(removedElementsMessageBuilder.append('\n').append(missingElementsMessageBuilder).toString());
     }
