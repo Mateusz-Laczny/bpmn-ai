@@ -289,7 +289,10 @@ public class TopologicalSortBpmnLayouting {
         String rightmostPredecessor = null;
         LinkedHashSet<String> predecessors = model.findPredecessors(element);
         for (String predecessor : predecessors) {
-            log.info("Checking if the predecessor: '{}' is the rightmost one'", predecessor);
+            log.info(
+                    "Checking if the predecessor: '{}' is the rightmost one'",
+                    model.getHumanReadableId(predecessor).orElseThrow().asString()
+            );
             Optional<Cell> predecessorCell = grid.findCellByIdOfElementInside(predecessor);
             if (predecessorCell.isPresent()) {
                 GridPosition predecessorPosition = predecessorCell.get().gridPosition();
@@ -342,7 +345,17 @@ public class TopologicalSortBpmnLayouting {
 
         List<Integer> pathToCurrentElement = elementIdToPathFromStartEvent.get(correspondingSplit);
         elementIdToPathFromStartEvent.put(element, pathToCurrentElement);
-        grid.addCell(new Cell(new GridPosition(rightmostPredecessorPosition.x() + 1, finalRow), element));
+        boolean addedCell = false;
+        GridPosition finalPosition = new GridPosition(rightmostPredecessorPosition.x() + 1, finalRow);
+        while (!addedCell) {
+            if (grid.isCellOccupied(finalPosition)) {
+                finalPosition = finalPosition.withYDifference(1);
+            } else {
+                grid.addCell(new Cell(finalPosition, element));
+                addedCell = true;
+                log.info("Final position for join element '{}'", finalPosition);
+            }
+        }
 
         for (DirectedEdge incomingSequenceFlow : model.getIncomingSequenceFlows(element)) {
             SplitInfo splitInfo = splitIdToInfo.get(correspondingSplit);
@@ -388,11 +401,17 @@ public class TopologicalSortBpmnLayouting {
             log.info("Final position: '{}'", finalPosition);
         } else {
             log.info("Predecessor element '{}' is a split", model.getHumanReadableId(elementPredecessor).get());
-            DirectedEdge sequenceFlowBeforeSplit = model.getIncomingSequenceFlows(elementPredecessor).iterator().next();
+            @Nullable DirectedEdge sequenceFlowBeforeSplit = null;
+            Set<DirectedEdge> predecessorIncomingSequenceFlows = model.getIncomingSequenceFlows(elementPredecessor);
+            if (!predecessorIncomingSequenceFlows.isEmpty()) {
+                sequenceFlowBeforeSplit = predecessorIncomingSequenceFlows.iterator().next();
+            }
+
             DirectedEdge elementsIncomingSequenceFlow = model.getIncomingSequenceFlows(element).iterator().next();
             SplitInfo splitInfo = splitInfos.get(elementPredecessor);
             log.info("Predecessor split info: '{}'", splitInfo);
-            boolean flowBeforeSplitAndFlowBetweenSplitAndElementAreOfTheSameType = backEdgesIds.contains(
+            boolean flowBeforeSplitAndFlowBetweenSplitAndElementAreOfTheSameType = sequenceFlowBeforeSplit != null
+                                                                                   && backEdgesIds.contains(
                     sequenceFlowBeforeSplit.edgeId()) == backEdgesIds.contains(elementsIncomingSequenceFlow.edgeId());
             if (splitInfo.isCenterBranchFree() && splitInfo.getCorrespondingJoin() == null
                 && flowBeforeSplitAndFlowBetweenSplitAndElementAreOfTheSameType) {
