@@ -63,8 +63,9 @@ public class ModifyModelState {
 
     public SessionStatus process(String userMessageContent, boolean isInitialPrompt) {
         sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(
-                "Use the provided functions to modify the diagram. After you're done, don't provide any messages to "
-                + "the user\n" + "BEGIN REQUEST CONTEXT" + "\n" + "Current diagram state:\n"
+                "Use the provided functions to modify the diagram. After you're done, provide an empty message "
+                + "without any text or function calls\n"
+                + "BEGIN REQUEST CONTEXT" + "\n" + "Current diagram state:\n"
                 + bpmnToStringExporter.export() + "\n" + "END REQUEST CONTEXT"));
 
         log.info("Request text sent to LLM: '{}'", sessionStateStore.lastAddedMessage());

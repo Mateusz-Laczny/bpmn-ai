@@ -3,6 +3,7 @@ package edu.agh.bpmnai.generator.bpmn.layouting;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.Dimensions;
 import edu.agh.bpmnai.generator.bpmn.model.DirectedEdge;
+import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import jakarta.annotation.Nullable;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -18,10 +19,13 @@ public class TopologicalSortBpmnLayouting {
 
     private final GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping;
 
+    private final SessionStateStore sessionStateStore;
+
     public TopologicalSortBpmnLayouting(
-            GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping
+            GridElementToDiagramPositionMapping gridElementToDiagramPositionMapping, SessionStateStore sessionStateStore
     ) {
         this.gridElementToDiagramPositionMapping = gridElementToDiagramPositionMapping;
+        this.sessionStateStore = sessionStateStore;
     }
 
     private static Set<String> findPathsToRemove(
@@ -40,8 +44,8 @@ public class TopologicalSortBpmnLayouting {
         return pathsToRemove;
     }
 
-    public BpmnModel layoutModel(BpmnModel model) {
-        model = model.getCopy();
+    public BpmnModel layoutModel() {
+        BpmnModel model = sessionStateStore.model();
         Set<String> startEventsIds = Set.of(model.getStartEvent());
         Set<String> discovered = new HashSet<>();
         Set<String> visited = new HashSet<>();
@@ -174,15 +178,16 @@ public class TopologicalSortBpmnLayouting {
         }
     }
 
-    private BpmnModel gridLayout(BpmnModel model, List<String> sortedElements, Set<DirectedEdge> backEdges) {
+    private BpmnModel gridLayout(BpmnModel adjustedModel, List<String> sortedElements, Set<DirectedEdge> backEdges) {
         Map<String, SplitInfo> splitIdToInfo = new HashMap<>();
         Map<String, List<Integer>> pathsToElements = new HashMap<>();
         Map<DirectedEdge, Integer> flowsOffsets = new HashMap<>();
-        model = model.getCopy();
         var grid = new Grid();
         for (String element : sortedElements) {
-            placeElementInGrid(element, model, backEdges, grid, splitIdToInfo, pathsToElements, flowsOffsets);
+            placeElementInGrid(element, adjustedModel, backEdges, grid, splitIdToInfo, pathsToElements, flowsOffsets);
         }
+
+        BpmnModel originalModel = sessionStateStore.model();
 
         for (Cell cell : grid.allCells()) {
             GridPosition cellPosition = cell.gridPosition();
@@ -191,21 +196,21 @@ public class TopologicalSortBpmnLayouting {
                     150,
                     150,
                     cellPosition,
-                    model.getNodeType(elementId)
-                         .orElseThrow()
+                    adjustedModel.getNodeType(elementId)
+                            .orElseThrow()
             );
             log.info(
                     "Setting position of element '{}' at cell '{}' to '{}'",
                     cellPosition,
-                    model.getHumanReadableId(elementId).get(),
+                    adjustedModel.getHumanReadableId(elementId).get(),
                     diagramPlanePosition
             );
-            model.setPositionOfElement(elementId, diagramPlanePosition);
+            originalModel.setPositionOfElement(elementId, diagramPlanePosition);
         }
 
-        layoutSequenceFlows(model, flowsOffsets);
+        layoutSequenceFlows(originalModel, flowsOffsets);
 
-        return model;
+        return originalModel;
     }
 
     private void placeElementInGrid(
