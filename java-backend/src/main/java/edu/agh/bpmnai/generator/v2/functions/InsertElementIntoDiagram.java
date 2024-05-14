@@ -15,31 +15,34 @@ import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.END_EVENT;
 @Slf4j
 public class InsertElementIntoDiagram {
     public Result<Void, String> apply(
-            String predecessorElementId,
-            String elementStartId,
-            @Nullable String elementEndId,
+            String insertionPointId,
+            String subprocessStartId,
+            @Nullable String subprocessEndId,
             BpmnModel model
     ) {
-        if (!model.nodeIdExist(predecessorElementId)) {
-            return Result.error("Predecessor element '%s' does not exist".formatted(predecessorElementId));
+        if (!model.nodeIdExist(insertionPointId)) {
+            return Result.error("Insertion point '%s' does not exist".formatted(insertionPointId));
         }
-        Set<String> predecessorElementSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);
-        if (predecessorElementSuccessorsBeforeModification.size() > 1) {
-            log.warn("Predecessor element '{}' has more than one successor", predecessorElementId);
+        Set<String> insertionPointSuccessorsBeforeModification = model.findSuccessors(insertionPointId);
+        if (insertionPointSuccessorsBeforeModification.size() > 1) {
+            return Result.error(
+                    ("Insertion point '%s' is not valid, since it has more than one successor; chose a valid insertion"
+                     + " point.").formatted(
+                            insertionPointId));
         }
 
-        @Nullable String predecessorElementSuccessor = null;
-        if (!predecessorElementSuccessorsBeforeModification.isEmpty()) {
-            predecessorElementSuccessor = predecessorElementSuccessorsBeforeModification.iterator().next();
-            if (model.getNodeType(predecessorElementSuccessor).get() == END_EVENT) {
-                model.removeElement(predecessorElementSuccessor);
+        @Nullable String insertionPointSuccessor = null;
+        if (!insertionPointSuccessorsBeforeModification.isEmpty()) {
+            insertionPointSuccessor = insertionPointSuccessorsBeforeModification.iterator().next();
+            if (model.getNodeType(insertionPointSuccessor).get() == END_EVENT) {
+                model.removeElement(insertionPointSuccessor);
             }
-            model.clearSuccessors(predecessorElementId);
+            model.clearSuccessors(insertionPointId);
         }
 
         Result<String, AddSequenceFlowError> addStartSequenceFlowResult = model.addUnlabelledSequenceFlow(
-                predecessorElementId,
-                elementStartId
+                insertionPointId,
+                subprocessStartId
         );
 
         if (addStartSequenceFlowResult.isError()) {
@@ -47,33 +50,33 @@ public class InsertElementIntoDiagram {
                 case SOURCE_ELEMENT_DOES_NOT_EXIST -> throw new IllegalStateException(
                         "Predecessor element must exist at this point");
                 case TARGET_ELEMENT_DOES_NOT_EXIST -> {
-                    return Result.error("Element '%s' does not exist in the diagram".formatted(elementStartId));
+                    return Result.error("Element '%s' does not exist in the diagram".formatted(subprocessStartId));
                 }
                 case ELEMENTS_ALREADY_CONNECTED -> log.info(
                         "Attempted to add sequence flow between already connected elements '%s' and '%s'".formatted(
-                                predecessorElementId,
-                                elementStartId
+                                insertionPointId,
+                                subprocessStartId
                         ));
             }
         }
 
-        if (predecessorElementSuccessor != null && elementEndId != null) {
+        if (insertionPointSuccessor != null && subprocessEndId != null) {
             Result<String, AddSequenceFlowError> addEndSequenceFlowResult = model.addUnlabelledSequenceFlow(
-                    elementEndId,
-                    predecessorElementSuccessor
+                    subprocessEndId,
+                    insertionPointSuccessor
             );
 
             if (addEndSequenceFlowResult.isError()) {
                 switch (addEndSequenceFlowResult.getError()) {
                     case SOURCE_ELEMENT_DOES_NOT_EXIST -> {
-                        return Result.error("Element '%s' does not exist in the diagram".formatted(elementStartId));
+                        return Result.error("Element '%s' does not exist in the diagram".formatted(subprocessStartId));
                     }
                     case TARGET_ELEMENT_DOES_NOT_EXIST -> throw new IllegalStateException(
-                            "Element with id '%s' no longer exists in the model".formatted(predecessorElementSuccessor));
+                            "Element with id '%s' no longer exists in the model".formatted(insertionPointSuccessor));
                     case ELEMENTS_ALREADY_CONNECTED -> log.info(
                             "Attempted to add sequence flow between already connected elements '%s' and '%s'".formatted(
-                                    elementEndId,
-                                    predecessorElementSuccessor
+                                    subprocessEndId,
+                                    insertionPointSuccessor
                             ));
                 }
             }

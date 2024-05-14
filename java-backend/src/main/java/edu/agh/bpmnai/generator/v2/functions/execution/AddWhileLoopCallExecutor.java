@@ -66,7 +66,6 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         Set<String> addedNodesIds = new HashSet<>();
 
         String checkTaskId;
-        boolean checkTaskExistsInTheModel;
         if (isHumanReadableIdentifier(callArguments.checkTask())) {
             String checkTaskModelInterfaceId = HumanReadableId.fromString(callArguments.checkTask()).id();
             Optional<String> checkTaskIdOptional = sessionStateStore.getNodeId(checkTaskModelInterfaceId);
@@ -75,17 +74,6 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
             }
 
             checkTaskId = checkTaskIdOptional.get();
-            checkTaskExistsInTheModel = true;
-        } else {
-            checkTaskId = model.addTask(callArguments.checkTask());
-            addedNodesIds.add(checkTaskId);
-            checkTaskExistsInTheModel = false;
-        }
-
-        String insertionPoint;
-        String subdiagramStartNode = null;
-        if (checkTaskExistsInTheModel) {
-            insertionPoint = checkTaskId;
         } else {
             if (callArguments.insertionPoint() == null) {
                 log.warn(
@@ -110,17 +98,14 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
                 return Result.error("Insertion point '%s' does not exist in the diagram".formatted(callArguments.insertionPoint()));
             }
 
-            insertionPoint = insertionPointModelId.get();
-            subdiagramStartNode = checkTaskId;
+            checkTaskId = model.addTask(callArguments.checkTask());
+            model.addUnlabelledSequenceFlow(insertionPointModelId.get(), checkTaskId);
+            addedNodesIds.add(checkTaskId);
         }
 
         String gatewayId = model.addGateway(EXCLUSIVE, callArguments.subprocessName() + " gateway");
         addedNodesIds.add(gatewayId);
-        if (subdiagramStartNode == null) {
-            subdiagramStartNode = gatewayId;
-        } else {
-            model.addUnlabelledSequenceFlow(checkTaskId, gatewayId);
-        }
+        model.addUnlabelledSequenceFlow(checkTaskId, gatewayId);
 
         String previousElementInLoopId = gatewayId;
         for (String taskInLoop : callArguments.tasksInLoop()) {
@@ -138,13 +123,11 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
             previousElementInLoopId = taskId;
         }
 
-        if (!model.areElementsDirectlyConnected(previousElementInLoopId, checkTaskId)) {
-            model.addUnlabelledSequenceFlow(previousElementInLoopId, checkTaskId);
-        }
+        model.addUnlabelledSequenceFlow(previousElementInLoopId, checkTaskId);
 
         Result<Void, String> insertSubdiagramResult = insertElementIntoDiagram.apply(
-                insertionPoint,
-                subdiagramStartNode,
+                checkTaskId,
+                gatewayId,
                 gatewayId,
                 model
         );
@@ -159,8 +142,8 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         }
 
         HumanReadableId subprocessStartNode = new HumanReadableId(
-                model.getName(subdiagramStartNode).orElseThrow(),
-                sessionStateStore.getModelInterfaceId(subdiagramStartNode).orElseThrow()
+                model.getName(checkTaskId).orElseThrow(),
+                sessionStateStore.getModelInterfaceId(checkTaskId).orElseThrow()
         );
         HumanReadableId subprocessEndNode = new HumanReadableId(
                 model.getName(gatewayId).orElseThrow(),
