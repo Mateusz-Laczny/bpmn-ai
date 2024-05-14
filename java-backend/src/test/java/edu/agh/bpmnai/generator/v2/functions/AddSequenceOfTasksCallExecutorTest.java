@@ -3,7 +3,6 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddSequenceOfTasksCallExecutor;
@@ -51,7 +50,7 @@ class AddSequenceOfTasksCallExecutorTest {
         SequenceOfTasksDto callArguments = new SequenceOfTasksDto(
                 aRetrospectiveSummary,
                 "",
-                new HumanReadableId("task", "task"),
+                "task#task",
                 List.of(
                         "activity1",
                         "activity2"
@@ -100,7 +99,7 @@ class AddSequenceOfTasksCallExecutorTest {
         SequenceOfTasksDto callArguments = new SequenceOfTasksDto(
                 aRetrospectiveSummary,
                 "",
-                new HumanReadableId("path1", "path1"),
+                "path1#path1",
                 List.of(
                         "activity1",
                         "activity2"

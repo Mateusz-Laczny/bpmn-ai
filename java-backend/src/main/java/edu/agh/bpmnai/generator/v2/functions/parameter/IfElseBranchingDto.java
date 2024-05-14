@@ -18,7 +18,7 @@ public record IfElseBranchingDto(
         String checkTask,
         @Description("Diagram element, which is the direct predecessor to the added while loop in the process flow. "
                      + "Must be an element that exists in the diagram. If the `checkTask` is a task that already "
-                     + "exists in the model, this parameter will be ignored.")
+                     + "exists in the diagram, this parameter will be ignored.")
         @Nullable
         HumanReadableId predecessorElement,
         @Description("Task that is the beginning of the true branch. May or may not exist in the diagram.")

@@ -1,8 +1,5 @@
 package edu.agh.bpmnai.generator.v2.functions.parameter;
 
-import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
-import jakarta.annotation.Nullable;
-
 import java.util.List;
 
 public record SequenceOfTasksDto(
@@ -12,11 +9,8 @@ public record SequenceOfTasksDto(
                      + "be executed in this order, so I will add them as a sequence\"")
         String reasoning,
         @Description("Diagram node after which the subprocess will be inserted.  "
-                     + "Must be an element name that exists in the diagram. Must be provided, if `checkTask` does not "
-                     + "yet exist in the diagram. Must have exactly 0 or 1 successors. The gateway will be inserted "
-                     + "between the insertion point and it's current successor if it exists.")
-        @Nullable
-        HumanReadableId insertionPoint,
+                     + "Must be an element name that exists in the diagram. Must have exactly 0 or 1 successors.")
+        String insertionPoint,
         @Description("Tasks which will be added to the diagram, in the verb+object naming convention. Each "
                      + "task will be connected to the next task via a sequence flow. Last task will be "
                      + "connected to the current successor of the insertion point node.")

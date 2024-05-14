@@ -69,7 +69,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         boolean checkTaskExistsInTheModel;
         if (isHumanReadableIdentifier(callArguments.checkTask())) {
             String checkTaskModelInterfaceId = HumanReadableId.fromString(callArguments.checkTask()).id();
-            Optional<String> checkTaskIdOptional = sessionStateStore.getElementId(checkTaskModelInterfaceId);
+            Optional<String> checkTaskIdOptional = sessionStateStore.getNodeId(checkTaskModelInterfaceId);
             if (checkTaskIdOptional.isEmpty()) {
                 return Result.error("Check task '%s' does not exist in the diagram".formatted(callArguments.checkTask()));
             }
@@ -96,7 +96,13 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
                 return Result.error("Insertion point is null, when check task does not exist in the diagram");
             }
 
-            if (!model.nodeIdExist(callArguments.insertionPoint().id())) {
+            if (!isHumanReadableIdentifier(callArguments.insertionPoint())) {
+                return Result.error("'%s' is not in the correct format".formatted(callArguments.insertionPoint()));
+            }
+
+            HumanReadableId insertionPointModelFacingId = HumanReadableId.fromString(callArguments.insertionPoint());
+            Optional<String> insertionPointModelId = sessionStateStore.getNodeId(insertionPointModelFacingId.id());
+            if (insertionPointModelId.isEmpty()) {
                 log.warn(
                         "Call unsuccessful, insertion point '{}' does not exist in the diagram",
                         callArguments.insertionPoint()
@@ -104,7 +110,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
                 return Result.error("Insertion point '%s' does not exist in the diagram".formatted(callArguments.insertionPoint()));
             }
 
-            insertionPoint = callArguments.insertionPoint().id();
+            insertionPoint = insertionPointModelId.get();
             subdiagramStartNode = checkTaskId;
         }
 

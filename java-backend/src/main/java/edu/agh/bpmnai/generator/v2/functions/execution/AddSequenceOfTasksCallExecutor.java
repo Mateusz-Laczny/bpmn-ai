@@ -17,6 +17,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import static edu.agh.bpmnai.generator.bpmn.model.HumanReadableId.isHumanReadableIdentifier;
+
 @Service
 @Slf4j
 public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
@@ -57,11 +59,16 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
 
         SequenceOfTasksDto callArguments = argumentsParsingResult.getValue();
         BpmnModel model = sessionStateStore.model();
-        Optional<String> startOfSequenceNodeId = sessionStateStore.getElementId(callArguments.insertionPoint().id());
+
+        if (!isHumanReadableIdentifier(callArguments.insertionPoint())) {
+            return Result.error("'%s' is not in the correct format".formatted(callArguments.insertionPoint()));
+        }
+
+        HumanReadableId insertionPointModelFacingId = HumanReadableId.fromString(callArguments.insertionPoint());
+        Optional<String> startOfSequenceNodeId = sessionStateStore.getNodeId(insertionPointModelFacingId.id());
         if (startOfSequenceNodeId.isEmpty()) {
-            log.info("Insertion point '{}' does not exist in the diagram", callArguments.insertionPoint().asString());
-            return Result.error("Insertion point '%s' doesn't exist in the diagram".formatted(callArguments.insertionPoint()
-                                                                                                      .asString()));
+            log.info("Insertion point '{}' does not exist in the diagram", callArguments.insertionPoint());
+            return Result.error("Insertion point '%s' doesn't exist in the diagram".formatted(callArguments.insertionPoint()));
         }
 
         String predecessorElementId = startOfSequenceNodeId.get();

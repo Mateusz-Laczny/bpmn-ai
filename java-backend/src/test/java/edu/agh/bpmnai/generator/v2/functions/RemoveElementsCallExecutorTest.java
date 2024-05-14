@@ -3,7 +3,6 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.execution.RemoveElementsCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
@@ -41,10 +40,7 @@ class RemoveElementsCallExecutorTest {
         String taskId = model.addTask("task");
         sessionStateStore.setModelInterfaceId(taskId, "tasl");
         RemoveElementsFunctionCallDto callArguments = new RemoveElementsFunctionCallDto(aRetrospectiveSummary, "",
-                                                                                        List.of(new HumanReadableId(
-                                                                                                "task",
-                                                                                                "task"
-                                                                                        ))
+                                                                                        List.of("task#task")
         );
 
         Result<String, String> executorResult = executor.executeCall(mapper.writeValueAsString(callArguments));

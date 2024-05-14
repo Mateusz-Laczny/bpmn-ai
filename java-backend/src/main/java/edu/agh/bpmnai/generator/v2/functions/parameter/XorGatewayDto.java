@@ -1,6 +1,5 @@
 package edu.agh.bpmnai.generator.v2.functions.parameter;
 
-import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
@@ -25,7 +24,7 @@ public record XorGatewayDto(
                      + "yet exist in the diagram. Must have exactly 0 or 1 successors. The gateway will be inserted "
                      + "between the insertion point and it's current successor if it exists.")
         @Nullable
-        HumanReadableId insertionPoint,
+        String insertionPoint,
         @Description("Tasks, which will be added inside the gateway. In the verb+object naming convention. For "
                      + "the gateway to make sense it must contain at least 2 activities.")
         List<Task> tasksInsideGateway

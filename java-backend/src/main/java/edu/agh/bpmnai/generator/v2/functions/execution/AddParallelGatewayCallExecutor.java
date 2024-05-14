@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.PARALLEL;
+import static edu.agh.bpmnai.generator.bpmn.model.HumanReadableId.isHumanReadableIdentifier;
 
 @Service
 @Slf4j
@@ -69,14 +70,18 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
         BpmnModel model = sessionStateStore.model();
         Set<String> addedNodesIds = new HashSet<>();
 
-        Optional<String> insertionPointIdOptional =
-                sessionStateStore.getElementId(callArguments.insertionPoint().id());
-        if (insertionPointIdOptional.isEmpty()) {
-            return Result.error("Insertion point '%s' doesn't exist in the diagram".formatted(callArguments.insertionPoint()
-                                                                                                      .asString()));
+        if (!isHumanReadableIdentifier(callArguments.insertionPoint())) {
+            return Result.error("'%s' is not in the correct format".formatted(callArguments.insertionPoint()));
         }
 
-        String insertionPointId = insertionPointIdOptional.get();
+        HumanReadableId insertionPointModelFacingId = HumanReadableId.fromString(callArguments.insertionPoint());
+        Optional<String> insertionPointModelId =
+                sessionStateStore.getNodeId(insertionPointModelFacingId.id());
+        if (insertionPointModelId.isEmpty()) {
+            return Result.error("Insertion point '%s' doesn't exist in the diagram".formatted(callArguments.insertionPoint()));
+        }
+
+        String insertionPointId = insertionPointModelId.get();
 
         if (model.findSuccessors(insertionPointId).size() > 1) {
             return Result.error(

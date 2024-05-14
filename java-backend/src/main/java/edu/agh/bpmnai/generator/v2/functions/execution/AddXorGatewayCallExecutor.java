@@ -73,7 +73,7 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
         Set<String> addedNodesIds = new HashSet<>();
         if (isHumanReadableIdentifier(callArguments.checkTask())) {
             String checkTaskModelInterfaceId = HumanReadableId.fromString(callArguments.checkTask()).id();
-            Optional<String> checkTaskIdOptional = sessionStateStore.getElementId(checkTaskModelInterfaceId);
+            Optional<String> checkTaskIdOptional = sessionStateStore.getNodeId(checkTaskModelInterfaceId);
             if (checkTaskIdOptional.isEmpty()) {
                 return Result.error("Check task '%s' does not exist in the diagram".formatted(callArguments.checkTask()));
             }
@@ -103,17 +103,17 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
                         callArguments.checkTask()));
             }
 
-            if (!model.nodeIdExist(callArguments.insertionPoint().id())) {
+            HumanReadableId insertionPointModelFacingId = HumanReadableId.fromString(callArguments.insertionPoint());
+            Optional<String> insertionPointModelId = sessionStateStore.getNodeId(insertionPointModelFacingId.id());
+            if (insertionPointModelId.isEmpty()) {
                 log.warn(
-                        "Call unsuccessful, insertion point '{}' does not exist in the model",
-                        callArguments.insertionPoint().asString()
+                        "Call unsuccessful, insertion point '{}' does not exist in the diagram",
+                        callArguments.insertionPoint()
                 );
-                return Result.error(
-                        ("Insertion point '%s' does not exist in the diagram.").formatted(
-                                callArguments.insertionPoint()));
+                return Result.error("Insertion point '%s' does not exist in the diagram".formatted(callArguments.insertionPoint()));
             }
 
-            subdiagramInsertionPoint = callArguments.insertionPoint().id();
+            subdiagramInsertionPoint = insertionPointModelId.get();
             subdiagramStartElement = checkTaskId;
         }
 

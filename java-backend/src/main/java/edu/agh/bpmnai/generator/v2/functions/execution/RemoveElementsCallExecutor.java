@@ -16,6 +16,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import static edu.agh.bpmnai.generator.bpmn.model.HumanReadableId.isHumanReadableIdentifier;
+
 @Service
 @Slf4j
 public class RemoveElementsCallExecutor implements FunctionCallExecutor {
@@ -53,23 +55,27 @@ public class RemoveElementsCallExecutor implements FunctionCallExecutor {
         StringBuilder removedElementsMessageBuilder = new StringBuilder("Following elements were removed:\n");
         StringBuilder missingElementsMessageBuilder = new StringBuilder(
                 "Following elements are not present in the diagram:\n");
-        for (HumanReadableId elementToRemove : callArguments.elementsToRemove()) {
-            String nodeToRemoveModelFacingId = elementToRemove.id();
-            Optional<String> nodeToRemoveIdOptional = sessionStateStore.getElementId(nodeToRemoveModelFacingId);
+        for (String nodeToRemove : callArguments.nodesToRemove()) {
+            if (!isHumanReadableIdentifier(nodeToRemove)) {
+                return Result.error("'%s' is not in the correct format".formatted(nodeToRemove));
+            }
+
+            String nodeToRemoveModelFacingId = HumanReadableId.fromString(nodeToRemove).id();
+            Optional<String> nodeToRemoveIdOptional = sessionStateStore.getNodeId(nodeToRemoveModelFacingId);
             if (nodeToRemoveIdOptional.isEmpty()) {
-                missingElementsMessageBuilder.append(elementToRemove.asString()).append(", ");
+                missingElementsMessageBuilder.append(nodeToRemove).append(", ");
             } else {
                 String nodeToRemoveId = nodeToRemoveIdOptional.get();
                 Result<Void, RemoveActivityError> removeFlowNodeResult =
                         model.removeFlowNode(nodeToRemoveId);
                 if (removeFlowNodeResult.isOk()) {
-                    removedElementsMessageBuilder.append(elementToRemove).append(", ");
+                    removedElementsMessageBuilder.append(nodeToRemove).append(", ");
                     removedNodesIds.add(nodeToRemoveId);
                 } else {
                     log.warn(
                             "Unexpected error '{}' when removing element with model ID '{}'",
                             removeFlowNodeResult.getError(),
-                            elementToRemove
+                            nodeToRemove
                     );
                 }
             }

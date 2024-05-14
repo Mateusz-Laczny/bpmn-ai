@@ -26,7 +26,7 @@ public class NodeIdToModelInterfaceIdFunction implements Function<String, String
         int duplicateCounter = 1;
         BpmnNodeType nodeType = model.getNodeType(nodeId).orElseThrow();
         String finalId = nodeType.asString();
-        while (sessionStateStore.getElementId(finalId).isPresent()) {
+        while (sessionStateStore.getNodeId(finalId).isPresent()) {
             finalId = nodeType.asString() + '-' + duplicateCounter;
             duplicateCounter += 1;
         }

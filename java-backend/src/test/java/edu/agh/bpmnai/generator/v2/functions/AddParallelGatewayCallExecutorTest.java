@@ -3,7 +3,6 @@ package edu.agh.bpmnai.generator.v2.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddParallelGatewayCallExecutor;
@@ -55,7 +54,7 @@ class AddParallelGatewayCallExecutorTest {
                 aRetrospectiveSummary,
                 "",
                 "elementName",
-                new HumanReadableId("task", "task"),
+                "task#task",
                 List.of(
                         new Task("activity1", false),
                         new Task("activity2", false)
@@ -96,7 +95,7 @@ class AddParallelGatewayCallExecutorTest {
                 aRetrospectiveSummary,
                 "",
                 "elementName",
-                new HumanReadableId("task", "task"),
+                "task#task",
                 List.of(
                         new Task("activity1", false),
                         new Task("activity2", true)

@@ -63,7 +63,7 @@ public class SessionStateStore {
         elementIdToModelInterfaceId.remove(elementId);
     }
 
-    public Optional<String> getElementId(String modelInterfaceId) {
+    public Optional<String> getNodeId(String modelInterfaceId) {
         return Optional.ofNullable(elementIdToModelInterfaceId.inverse().get(modelInterfaceId));
     }
 }

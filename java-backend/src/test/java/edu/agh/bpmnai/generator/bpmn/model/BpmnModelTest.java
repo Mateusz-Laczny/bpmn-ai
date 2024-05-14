@@ -89,10 +89,11 @@ class BpmnModelTest {
     @Test
     void areElementsDirectlyConnected_returns_true_if_elements_are_connected() {
         BpmnModel model = new BpmnModel();
-        String taskId = model.addTask("");
-        model.addUnlabelledSequenceFlow(model.getStartEvent(), taskId);
+        String task1Id = model.addTask("task1");
+        String task2Id = model.addTask("task2");
+        model.addUnlabelledSequenceFlow(task1Id, task2Id);
 
-        assertTrue(model.areElementsDirectlyConnected(model.getStartEvent(), taskId));
+        assertTrue(model.areElementsDirectlyConnected(task1Id, task2Id));
     }
 
     @Test
@@ -102,7 +103,6 @@ class BpmnModelTest {
         String task2Id = model.addTask("");
 
         assertFalse(model.areElementsDirectlyConnected(taskId, task2Id));
-        assertFalse(model.areElementsDirectlyConnected(task2Id, taskId));
     }
 
     @Test

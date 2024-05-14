@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
+import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddXorGatewayCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
@@ -94,7 +95,7 @@ class AddXorGatewayCallExecutorTest {
                 "",
                 "elementName",
                 "checkTask",
-                new HumanReadableId("task", taskId),
+                "taks#task",
                 List.of(new Task("task1", false), new Task("task2", false))
         );
 
@@ -134,7 +135,7 @@ class AddXorGatewayCallExecutorTest {
         String predecessorTaskId = model.addTask("predecessorTask");
         sessionStateStore.setModelInterfaceId(predecessorTaskId, "predecessorTask");
         String successorTaskId = model.addTask("successorTask");
-        sessionStateStore.setModelInterfaceId(predecessorTaskId, "successorTask");
+        sessionStateStore.setModelInterfaceId(successorTaskId, "successorTask");
         model.addUnlabelledSequenceFlow(predecessorTaskId, successorTaskId);
         sessionStateStore.setModel(model);
 
@@ -143,12 +144,13 @@ class AddXorGatewayCallExecutorTest {
                 "",
                 "elementName",
                 "checkTask",
-                new HumanReadableId("predecessorTask", predecessorTaskId),
+                "predecessorTask#predecessorTask",
                 List.of(new Task("task1", false), new Task("task2", false))
         );
 
 
-        executor.executeCall(mapper.writeValueAsString(callArguments));
+        Result<String, String> executorResult = executor.executeCall(mapper.writeValueAsString(callArguments));
+        assertTrue(executorResult.isOk(), "Result should be OK but is '%s'".formatted(executorResult.getError()));
         BpmnModel modelAfterModification = sessionStateStore.model();
 
         Optional<String> checkTaskId = modelAfterModification.findElementByName("checkTask");

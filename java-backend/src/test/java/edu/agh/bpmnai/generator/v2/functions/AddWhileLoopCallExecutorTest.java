@@ -87,7 +87,7 @@ class AddWhileLoopCallExecutorTest {
                 aRetrospectiveSummary,
                 "someName",
                 "checkTask",
-                new HumanReadableId("task", predecessorTaskId),
+                "taks#task",
                 List.of("task1", "task2")
         );
 
