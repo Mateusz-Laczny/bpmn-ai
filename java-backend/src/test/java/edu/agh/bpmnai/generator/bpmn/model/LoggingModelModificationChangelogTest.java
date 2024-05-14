@@ -25,7 +25,7 @@ class LoggingModelModificationChangelogTest {
         String taskId = model.addTask("task");
         assertEquals(
                 Set.of(new NodeModificationLog(
-                        1,
+                        0,
                         ADD,
                         new HumanReadableId("task", taskId),
                         BpmnNodeType.TASK.asString()
@@ -41,13 +41,13 @@ class LoggingModelModificationChangelogTest {
         assertEquals(
                 Set.of(
                         new NodeModificationLog(
-                                1,
+                                0,
                                 ADD,
                                 new HumanReadableId("task", taskId),
                                 BpmnNodeType.TASK.asString()
                         ),
                         new NodeModificationLog(
-                                2,
+                                1,
                                 REMOVE,
                                 new HumanReadableId("task", taskId),
                                 BpmnNodeType.TASK.asString()
@@ -62,7 +62,7 @@ class LoggingModelModificationChangelogTest {
         String gatewayId = model.addGateway(BpmnGatewayType.EXCLUSIVE, "gateway");
         assertEquals(
                 Set.of(new NodeModificationLog(
-                        1,
+                        0,
                         ADD,
                         new HumanReadableId("gateway", gatewayId),
                         BpmnNodeType.XOR_GATEWAY.asString()
@@ -77,13 +77,13 @@ class LoggingModelModificationChangelogTest {
         model.removeFlowNode(gatewayId);
         assertEquals(Set.of(
                 new NodeModificationLog(
-                        1,
+                        0,
                         ADD,
                         new HumanReadableId("gateway", gatewayId),
                         BpmnNodeType.XOR_GATEWAY.asString()
                 ),
                 new NodeModificationLog(
-                        2,
+                        1,
                         REMOVE,
                         new HumanReadableId("gateway", gatewayId),
                         BpmnNodeType.XOR_GATEWAY.asString()
@@ -96,7 +96,7 @@ class LoggingModelModificationChangelogTest {
         String gatewayId = model.addGateway(BpmnGatewayType.PARALLEL, "gateway");
         assertEquals(
                 Set.of(new NodeModificationLog(
-                        1,
+                        0,
                         ADD,
                         new HumanReadableId("gateway", gatewayId),
                         BpmnNodeType.PARALLEL_GATEWAY.asString()
@@ -111,13 +111,13 @@ class LoggingModelModificationChangelogTest {
         model.removeFlowNode(gatewayId);
         assertEquals(Set.of(
                 new NodeModificationLog(
-                        1,
+                        0,
                         ADD,
                         new HumanReadableId("gateway", gatewayId),
                         BpmnNodeType.PARALLEL_GATEWAY.asString()
                 ),
                 new NodeModificationLog(
-                        2,
+                        1,
                         REMOVE,
                         new HumanReadableId("gateway", gatewayId),
                         BpmnNodeType.PARALLEL_GATEWAY.asString()
@@ -130,7 +130,7 @@ class LoggingModelModificationChangelogTest {
         String eventId = model.addLabelledStartEvent("Start1");
         assertEquals(
                 Set.of(new NodeModificationLog(
-                        1,
+                        0,
                         ADD,
                         new HumanReadableId("Start1", eventId),
                         BpmnNodeType.START_EVENT.asString()
@@ -145,13 +145,13 @@ class LoggingModelModificationChangelogTest {
         model.removeFlowNode(eventId);
         assertEquals(Set.of(
                 new NodeModificationLog(
-                        1,
+                        0,
                         ADD,
                         new HumanReadableId("Start1", eventId),
                         BpmnNodeType.START_EVENT.asString()
                 ),
                 new NodeModificationLog(
-                        2,
+                        1,
                         REMOVE,
                         new HumanReadableId("Start1", eventId),
                         BpmnNodeType.START_EVENT.asString()
@@ -164,7 +164,7 @@ class LoggingModelModificationChangelogTest {
         String eventId = model.addEndEvent();
         assertEquals(
                 Set.of(new NodeModificationLog(
-                        1,
+                        0,
                         ADD,
                         new HumanReadableId("End", eventId),
                         BpmnNodeType.END_EVENT.asString()
@@ -180,13 +180,13 @@ class LoggingModelModificationChangelogTest {
         assertEquals(
                 Set.of(
                         new NodeModificationLog(
-                                1,
+                                0,
                                 ADD,
                                 new HumanReadableId("End", eventId),
                                 BpmnNodeType.END_EVENT.asString()
                         ),
                         new NodeModificationLog(
-                                2,
+                                1,
                                 REMOVE,
                                 new HumanReadableId("End", eventId),
                                 BpmnNodeType.END_EVENT.asString()
@@ -203,7 +203,7 @@ class LoggingModelModificationChangelogTest {
         model.addUnlabelledSequenceFlow(sourceId, targetId);
         assertEquals(
                 Set.of(new FlowModificationLog(
-                        3,
+                        2,
                         ADD,
                         new HumanReadableId("source", sourceId),
                         new HumanReadableId("target", targetId)
@@ -220,12 +220,12 @@ class LoggingModelModificationChangelogTest {
         model.removeSequenceFlow(sourceId, targetId);
         assertEquals(
                 Set.of(new FlowModificationLog(
-                        3,
+                        2,
                         ADD,
                         new HumanReadableId("source", sourceId),
                         new HumanReadableId("target", targetId)
                 ), new FlowModificationLog(
-                        4,
+                        3,
                         REMOVE,
                         new HumanReadableId("source", sourceId),
                         new HumanReadableId("target", targetId)
