@@ -7,7 +7,7 @@ import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.AddXorGatewayFunction;
 import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
-import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
+import edu.agh.bpmnai.generator.v2.functions.parameter.Task;
 import edu.agh.bpmnai.generator.v2.functions.parameter.XorGatewayDto;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +63,7 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
 
         XorGatewayDto callArguments = argumentsParsingResult.getValue();
 
-        if (callArguments.activitiesInsideGateway().size() < 2) {
+        if (callArguments.tasksInsideGateway().size() < 2) {
             return Result.error("A gateway must contain at least 2 activities");
         }
 
@@ -75,7 +75,7 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
             String checkTaskModelInterfaceId = HumanReadableId.fromString(callArguments.checkTask()).id();
             Optional<String> checkTaskIdOptional = sessionStateStore.getElementId(checkTaskModelInterfaceId);
             if (checkTaskIdOptional.isEmpty()) {
-                return Result.error("Check task '%s' does not exist in the model".formatted(callArguments.checkTask()));
+                return Result.error("Check task '%s' does not exist in the diagram".formatted(callArguments.checkTask()));
             }
 
             checkTaskId = checkTaskIdOptional.get();
@@ -86,63 +86,64 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
             checkTaskExistsInTheModel = false;
         }
 
-        String subdiagramPredecessorElement;
+        String subdiagramInsertionPoint;
         String subdiagramStartElement = null;
         if (checkTaskExistsInTheModel) {
-            subdiagramPredecessorElement = checkTaskId;
+            subdiagramInsertionPoint = checkTaskId;
         } else {
-            if (callArguments.predecessorElement() == null) {
+            if (callArguments.insertionPoint() == null) {
                 log.warn(
-                        "Call unsuccessful, predecessor element is null when check task '{}' does not exist in the "
-                        + "model",
+                        "Call unsuccessful, insertion point is null when check task '{}' does not exist in the "
+                        + "diagram",
                         callArguments.checkTask()
                 );
-                return Result.error(("Call unsuccessful, predecessor element is null even though check task '%s' does"
+                return Result.error(("Call unsuccessful, insertion point is null even though check task '%s' does"
                                      + " not exist in"
-                                     + " the model. Either use existing check task or provide a predecessor element "
-                                     + "for new check"
-                                     + " task").formatted(callArguments.checkTask()));
+                                     + " the diagram. Either use existing check task or provide an insertion point").formatted(
+                        callArguments.checkTask()));
             }
 
-            if (!model.doesIdExist(callArguments.predecessorElement().id())) {
-                log.warn("Call unsuccessful, predecessor element does not exist in the model");
+            if (!model.nodeIdExist(callArguments.insertionPoint().id())) {
+                log.warn(
+                        "Call unsuccessful, insertion point '{}' does not exist in the model",
+                        callArguments.insertionPoint().asString()
+                );
                 return Result.error(
-                        ("Predecessor element '%s' does not exist in the model. Provide an element which exists in the"
-                         + " model.").formatted(
-                                callArguments.predecessorElement()));
+                        ("Insertion point '%s' does not exist in the diagram.").formatted(
+                                callArguments.insertionPoint()));
             }
 
-            subdiagramPredecessorElement = callArguments.predecessorElement().id();
+            subdiagramInsertionPoint = callArguments.insertionPoint().id();
             subdiagramStartElement = checkTaskId;
         }
 
-        if (model.findSuccessors(subdiagramPredecessorElement).size() > 1) {
+        if (model.findSuccessors(subdiagramInsertionPoint).size() > 1) {
             return Result.error(
-                    ("Element '%s' which was designated as a predecessor element has more than one successor. Provide "
-                     + "an element with exactly 0 or 1 successors to avoid ambiguity.").formatted(
+                    ("Insertion point '%s' has more than one successor node. Provide "
+                     + "an insertion point with exactly 0 or 1 successor nodes to avoid ambiguity.").formatted(
                             model.getHumanReadableId(subdiagramStartElement).orElseThrow()));
         }
 
-        String openingGatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " opening gateway");
+        String openingGatewayId = model.addGateway(EXCLUSIVE, callArguments.subprocessName() + " opening gateway");
         addedNodesIds.add(openingGatewayId);
         if (subdiagramStartElement == null) {
             subdiagramStartElement = openingGatewayId;
         }
 
-        String closingGatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " closing gateway");
+        String closingGatewayId = model.addGateway(EXCLUSIVE, callArguments.subprocessName() + " closing gateway");
         addedNodesIds.add(closingGatewayId);
 
         model.addUnlabelledSequenceFlow(checkTaskId, openingGatewayId);
 
-        for (Activity activityInGateway : callArguments.activitiesInsideGateway()) {
-            if (model.findElementByName(activityInGateway.activityName()).isPresent()) {
-                return Result.error("Element with name %s already exists in the model".formatted(activityInGateway.activityName()));
+        for (Task taskInGateway : callArguments.tasksInsideGateway()) {
+            if (model.findElementByName(taskInGateway.taskName()).isPresent()) {
+                return Result.error("Node with name %s already exists".formatted(taskInGateway.taskName()));
             }
 
-            String taskId = model.addTask(activityInGateway.activityName());
+            String taskId = model.addTask(taskInGateway.taskName());
             addedNodesIds.add(taskId);
             model.addUnlabelledSequenceFlow(openingGatewayId, taskId);
-            if (activityInGateway.isProcessEnd()) {
+            if (taskInGateway.isProcessEnd()) {
                 String endEventId = model.addEndEvent();
                 addedNodesIds.add(endEventId);
                 model.addUnlabelledSequenceFlow(taskId, endEventId);
@@ -151,19 +152,19 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
             }
         }
 
-        String subdiagramClosingElement = closingGatewayId;
+        String subdiagramEndElement = closingGatewayId;
         Set<String> closingGatewayPredecessors = model.findPredecessors(closingGatewayId);
         if (closingGatewayPredecessors.size() == 1) {
             // A gateway with a single predecessor is useless, so just remove it
             model.removeFlowNode(closingGatewayId);
             addedNodesIds.remove(closingGatewayId);
-            subdiagramClosingElement = closingGatewayPredecessors.iterator().next();
+            subdiagramEndElement = closingGatewayPredecessors.iterator().next();
         }
 
         Result<Void, String> elementInsertResult = insertElementIntoDiagram.apply(
-                subdiagramPredecessorElement,
+                subdiagramInsertionPoint,
                 subdiagramStartElement,
-                subdiagramClosingElement,
+                subdiagramEndElement,
                 model
         );
 
@@ -176,6 +177,18 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
             sessionStateStore.setModelInterfaceId(nodeId, nodeIdToModelInterfaceIdFunction.apply(nodeId));
         }
 
-        return Result.ok("Call successful");
+        HumanReadableId subprocessStartNode = new HumanReadableId(
+                model.getName(subdiagramStartElement).orElseThrow(),
+                sessionStateStore.getModelInterfaceId(subdiagramStartElement).orElseThrow()
+        );
+        HumanReadableId subprocessEndNode = new HumanReadableId(
+                model.getName(subdiagramEndElement).orElseThrow(),
+                sessionStateStore.getModelInterfaceId(subdiagramEndElement).orElseThrow()
+        );
+
+        return Result.ok("Call successful; subprocess start node: '%s', subprocess end node: '%s'".formatted(
+                subprocessStartNode,
+                subprocessEndNode
+        ));
     }
 }

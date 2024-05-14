@@ -1,6 +1,7 @@
 package edu.agh.bpmnai.generator.v2.functions.parameter;
 
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
+import jakarta.annotation.Nullable;
 
 import java.util.List;
 
@@ -10,12 +11,15 @@ public record SequenceOfTasksDto(
         @Description("What is this action trying to achieve? Example: \"Tasks 'Select pizza' and 'Order pizza' must "
                      + "be executed in this order, so I will add them as a sequence\"")
         String reasoning,
-        @Description("Diagram element, which will be the start of the added sequence in the process flow. Must be an "
-                     + "element that exists in the diagram.")
-        HumanReadableId startOfSequence,
+        @Description("Diagram node after which the subprocess will be inserted.  "
+                     + "Must be an element name that exists in the diagram. Must be provided, if `checkTask` does not "
+                     + "yet exist in the diagram. Must have exactly 0 or 1 successors. The gateway will be inserted "
+                     + "between the insertion point and it's current successor if it exists.")
+        @Nullable
+        HumanReadableId insertionPoint,
         @Description("Tasks which will be added to the diagram, in the verb+object naming convention. Each "
                      + "task will be connected to the next task via a sequence flow. Last task will be "
-                     + "connected to the current successor of 'startOfSequence' node.")
+                     + "connected to the current successor of the insertion point node.")
         List<String> tasksInSequence
 ) {
 }

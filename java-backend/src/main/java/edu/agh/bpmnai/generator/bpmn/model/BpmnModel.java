@@ -279,7 +279,7 @@ public final class BpmnModel {
     }
 
     public void removeElement(String idOfElementToRemove) {
-        if (!doesIdExist(idOfElementToRemove)) {
+        if (!nodeIdExist(idOfElementToRemove)) {
             throw new IllegalArgumentException("Element with id \"" + idOfElementToRemove + "\" does not exist");
         }
 
@@ -356,7 +356,7 @@ public final class BpmnModel {
         return modelInstance.getModelElementsByType(StartEvent.class).iterator().next().getId();
     }
 
-    public boolean doesIdExist(String id) {
+    public boolean nodeIdExist(String id) {
         ModelElementInstance element = modelInstance.getModelElementById(id);
         return element != null;
     }
@@ -446,7 +446,7 @@ public final class BpmnModel {
             // letter,
             // so we ensure that by concatenating a string to the beginning of the UUID
             generatedId = "id-" + uuid;
-            if (!doesIdExist(generatedId)) {
+            if (!nodeIdExist(generatedId)) {
                 generatedUniqueId = true;
             }
         }
@@ -463,7 +463,7 @@ public final class BpmnModel {
     }
 
     public Optional<HumanReadableId> getHumanReadableId(String elementId) {
-        if (!doesIdExist(elementId)) {
+        if (!nodeIdExist(elementId)) {
             return Optional.empty();
         }
 

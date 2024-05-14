@@ -20,7 +20,7 @@ public class InsertElementIntoDiagram {
             @Nullable String elementEndId,
             BpmnModel model
     ) {
-        if (!model.doesIdExist(predecessorElementId)) {
+        if (!model.nodeIdExist(predecessorElementId)) {
             return Result.error("Predecessor element '%s' does not exist".formatted(predecessorElementId));
         }
         Set<String> predecessorElementSuccessorsBeforeModification = model.findSuccessors(predecessorElementId);

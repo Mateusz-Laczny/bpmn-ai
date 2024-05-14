@@ -6,9 +6,9 @@ import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddXorGatewayCallExecutor;
-import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
+import edu.agh.bpmnai.generator.v2.functions.parameter.Task;
 import edu.agh.bpmnai.generator.v2.functions.parameter.XorGatewayDto;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,7 +52,7 @@ class AddXorGatewayCallExecutorTest {
                 "elementName",
                 new HumanReadableId("task", "task").asString(),
                 null,
-                List.of(new Activity("task1", false), new Activity("task2", false))
+                List.of(new Task("task1", false), new Task("task2", false))
         );
 
 
@@ -95,7 +95,7 @@ class AddXorGatewayCallExecutorTest {
                 "elementName",
                 "checkTask",
                 new HumanReadableId("task", taskId),
-                List.of(new Activity("task1", false), new Activity("task2", false))
+                List.of(new Task("task1", false), new Task("task2", false))
         );
 
 
@@ -144,7 +144,7 @@ class AddXorGatewayCallExecutorTest {
                 "elementName",
                 "checkTask",
                 new HumanReadableId("predecessorTask", predecessorTaskId),
-                List.of(new Activity("task1", false), new Activity("task2", false))
+                List.of(new Task("task1", false), new Task("task2", false))
         );
 
 

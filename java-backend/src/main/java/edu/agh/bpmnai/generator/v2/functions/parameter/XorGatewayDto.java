@@ -12,22 +12,22 @@ public record XorGatewayDto(
                      + "transport they prefer. There are 4 possible modes of transport, so I will add a single choice"
                      + " fork, which includes those choices\"")
         String reasoning,
-        @Description("Name of the element")
-        String elementName,
-        @Description("Activity in which the condition is checked, that determines which activity be executed next. If"
+        @Description("Name of the whole subprocess.")
+        String subprocessName,
+        @Description("Task in which the condition is checked, that determines which activity be executed next. If"
                      + " does not exist currently in the diagram, it will be added. In the verb+object naming "
-                     + "convention, should be a question like 'Pizza ok?'. Should be a name for a new element or "
-                     + "name#id for an existing one. If already exists in the diagram, it will also act as a "
-                     + "predecessor element.")
+                     + "convention, should be a question like 'Pizza ok?'. Can be a name for a new element or "
+                     + "name#id for an existing one. If already exists in the diagram, it will also act as an "
+                     + "insertion point.")
         String checkTask,
-        @Description("Diagram element, which will be the direct predecessor to added gateway in the process flow. "
+        @Description("Diagram node after which the subprocess will be inserted.  "
                      + "Must be an element name that exists in the diagram. Must be provided, if `checkTask` does not "
                      + "yet exist in the diagram. Must have exactly 0 or 1 successors. The gateway will be inserted "
-                     + "between the predecessor element and it's current successor if it exists.")
+                     + "between the insertion point and it's current successor if it exists.")
         @Nullable
-        HumanReadableId predecessorElement,
-        @Description("Activities, which will be added inside the gateway. In the verb+object naming convention. For "
+        HumanReadableId insertionPoint,
+        @Description("Tasks, which will be added inside the gateway. In the verb+object naming convention. For "
                      + "the gateway to make sense it must contain at least 2 activities.")
-        List<Activity> activitiesInsideGateway
+        List<Task> tasksInsideGateway
 ) {
 }

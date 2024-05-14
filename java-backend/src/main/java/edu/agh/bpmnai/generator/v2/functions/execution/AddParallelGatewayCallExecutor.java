@@ -1,13 +1,14 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.AddParallelGatewayFunction;
 import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
-import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.ParallelGatewayDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.Task;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,43 +62,43 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
 
         ParallelGatewayDto callArguments = argumentsParsingResult.getValue();
 
-        if (callArguments.activitiesInsideGateway().size() < 2) {
-            return Result.error("A gateway must contain at least 2 activities");
+        if (callArguments.tasksInsideGateway().size() < 2) {
+            return Result.error("A gateway subprocess must contain at least 2 activities");
         }
 
         BpmnModel model = sessionStateStore.model();
         Set<String> addedNodesIds = new HashSet<>();
 
-        Optional<String> predecessorNodeIdOptional =
-                sessionStateStore.getElementId(callArguments.predecessorElement().id());
-        if (predecessorNodeIdOptional.isEmpty()) {
-            return Result.error("Predecessor element '%s' does not exist in the model".formatted(callArguments.predecessorElement()
-                                                                                                         .asString()));
+        Optional<String> insertionPointIdOptional =
+                sessionStateStore.getElementId(callArguments.insertionPoint().id());
+        if (insertionPointIdOptional.isEmpty()) {
+            return Result.error("Insertion point '%s' doesn't exist in the diagram".formatted(callArguments.insertionPoint()
+                                                                                                      .asString()));
         }
 
-        String predecessorElementId = predecessorNodeIdOptional.get();
+        String insertionPointId = insertionPointIdOptional.get();
 
-        if (model.findSuccessors(predecessorElementId).size() > 1) {
+        if (model.findSuccessors(insertionPointId).size() > 1) {
             return Result.error(
-                    ("Predecessor element '%s' has more than one successor; inserting an element after it would be "
-                     + "ambiguous. Provide a predecessor element with a single or no successors").formatted(
-                            callArguments.predecessorElement()));
+                    ("Insertion point '%s' has more than one successor node; inserting a subprocess after it would be "
+                     + "ambiguous. Provide an insertion point with exactly 0 or 1 successor nodes").formatted(
+                            callArguments.insertionPoint()));
         }
 
-        String openingGatewayId = model.addGateway(PARALLEL, callArguments.elementName() + " opening gateway");
+        String openingGatewayId = model.addGateway(PARALLEL, callArguments.subprocessName() + " opening gateway");
         addedNodesIds.add(openingGatewayId);
-        String closingGatewayId = model.addGateway(PARALLEL, callArguments.elementName() + " closing gateway");
+        String closingGatewayId = model.addGateway(PARALLEL, callArguments.subprocessName() + " closing gateway");
         addedNodesIds.add(closingGatewayId);
 
-        for (Activity activityInGateway : callArguments.activitiesInsideGateway()) {
-            if (model.findElementByName(activityInGateway.activityName()).isPresent()) {
-                return Result.error("Element with name %s already exists in the model".formatted(activityInGateway.activityName()));
+        for (Task taskInGateway : callArguments.tasksInsideGateway()) {
+            if (model.findElementByName(taskInGateway.taskName()).isPresent()) {
+                return Result.error("Node with name '%s' already exists in the diagram".formatted(taskInGateway.taskName()));
             }
 
-            String taskId = model.addTask(activityInGateway.activityName());
+            String taskId = model.addTask(taskInGateway.taskName());
             addedNodesIds.add(taskId);
             model.addUnlabelledSequenceFlow(openingGatewayId, taskId);
-            if (activityInGateway.isProcessEnd()) {
+            if (taskInGateway.isProcessEnd()) {
                 String endEventId = model.addEndEvent();
                 addedNodesIds.add(endEventId);
                 model.addUnlabelledSequenceFlow(taskId, endEventId);
@@ -116,7 +117,7 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
         }
 
         Result<Void, String> insertSubdiagramResult = insertElementIntoDiagram.apply(
-                predecessorElementId,
+                insertionPointId,
                 openingGatewayId,
                 subdiagramClosingElement,
                 model
@@ -131,6 +132,18 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
             sessionStateStore.setModelInterfaceId(nodeId, nodeIdToModelInterfaceIdFunction.apply(nodeId));
         }
 
-        return Result.ok("Call successful");
+        HumanReadableId subprocessStartNode = new HumanReadableId(
+                model.getName(openingGatewayId).orElseThrow(),
+                sessionStateStore.getModelInterfaceId(openingGatewayId).orElseThrow()
+        );
+        HumanReadableId subprocessEndNode = new HumanReadableId(
+                model.getName(subdiagramClosingElement).orElseThrow(),
+                sessionStateStore.getModelInterfaceId(subdiagramClosingElement).orElseThrow()
+        );
+
+        return Result.ok("Call successful; subprocess start node: '%s', subprocess end node: '%s'".formatted(
+                subprocessStartNode,
+                subprocessEndNode
+        ));
     }
 }

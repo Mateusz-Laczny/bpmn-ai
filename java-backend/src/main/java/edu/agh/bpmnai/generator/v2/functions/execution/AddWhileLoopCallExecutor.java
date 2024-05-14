@@ -71,7 +71,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
             String checkTaskModelInterfaceId = HumanReadableId.fromString(callArguments.checkTask()).id();
             Optional<String> checkTaskIdOptional = sessionStateStore.getElementId(checkTaskModelInterfaceId);
             if (checkTaskIdOptional.isEmpty()) {
-                return Result.error("Check task '%s' does not exist in the model".formatted(callArguments.checkTask()));
+                return Result.error("Check task '%s' does not exist in the diagram".formatted(callArguments.checkTask()));
             }
 
             checkTaskId = checkTaskIdOptional.get();
@@ -82,36 +82,36 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
             checkTaskExistsInTheModel = false;
         }
 
-        String subdiagramPredecessorElement;
-        String subdiagramStartElement = null;
+        String insertionPoint;
+        String subdiagramStartNode = null;
         if (checkTaskExistsInTheModel) {
-            subdiagramPredecessorElement = checkTaskId;
+            insertionPoint = checkTaskId;
         } else {
-            if (callArguments.predecessorElement() == null) {
+            if (callArguments.insertionPoint() == null) {
                 log.warn(
-                        "Call unsuccessful, predecessor element is null when check task '{}' does not exist in the "
-                        + "model",
+                        "Call unsuccessful, insertion point is null when check task '{}' does not exist in the "
+                        + "diagram",
                         callArguments.checkTask()
                 );
-                return Result.error("Predecessor element is null, when check task does not exist in the model");
+                return Result.error("Insertion point is null, when check task does not exist in the diagram");
             }
 
-            if (!model.doesIdExist(callArguments.predecessorElement().id())) {
+            if (!model.nodeIdExist(callArguments.insertionPoint().id())) {
                 log.warn(
-                        "Call unsuccessful, predecessor element '{}' does not exist in the model",
-                        callArguments.predecessorElement()
+                        "Call unsuccessful, insertion point '{}' does not exist in the diagram",
+                        callArguments.insertionPoint()
                 );
-                return Result.error("Predecessor element %s does not exist in the model".formatted(callArguments.predecessorElement()));
+                return Result.error("Insertion point '%s' does not exist in the diagram".formatted(callArguments.insertionPoint()));
             }
 
-            subdiagramPredecessorElement = callArguments.predecessorElement().id();
-            subdiagramStartElement = checkTaskId;
+            insertionPoint = callArguments.insertionPoint().id();
+            subdiagramStartNode = checkTaskId;
         }
 
-        String gatewayId = model.addGateway(EXCLUSIVE, callArguments.elementName() + " gateway");
+        String gatewayId = model.addGateway(EXCLUSIVE, callArguments.subprocessName() + " gateway");
         addedNodesIds.add(gatewayId);
-        if (subdiagramStartElement == null) {
-            subdiagramStartElement = gatewayId;
+        if (subdiagramStartNode == null) {
+            subdiagramStartNode = gatewayId;
         } else {
             model.addUnlabelledSequenceFlow(checkTaskId, gatewayId);
         }
@@ -119,7 +119,7 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         String previousElementInLoopId = gatewayId;
         for (String taskInLoop : callArguments.tasksInLoop()) {
             if (model.findElementByName(taskInLoop).isPresent()) {
-                return Result.error("Element '%s' already exists in the model".formatted(taskInLoop));
+                return Result.error("Node with name '%s' already exists in the diagram".formatted(taskInLoop));
             }
 
             String taskId = model.addTask(taskInLoop);
@@ -137,8 +137,8 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
         }
 
         Result<Void, String> insertSubdiagramResult = insertElementIntoDiagram.apply(
-                subdiagramPredecessorElement,
-                subdiagramStartElement,
+                insertionPoint,
+                subdiagramStartNode,
                 gatewayId,
                 model
         );
@@ -152,6 +152,18 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
             sessionStateStore.setModelInterfaceId(nodeId, nodeIdToModelInterfaceIdFunction.apply(nodeId));
         }
 
-        return Result.ok("Call successful");
+        HumanReadableId subprocessStartNode = new HumanReadableId(
+                model.getName(subdiagramStartNode).orElseThrow(),
+                sessionStateStore.getModelInterfaceId(subdiagramStartNode).orElseThrow()
+        );
+        HumanReadableId subprocessEndNode = new HumanReadableId(
+                model.getName(gatewayId).orElseThrow(),
+                sessionStateStore.getModelInterfaceId(gatewayId).orElseThrow()
+        );
+
+        return Result.ok("Call successful; subprocess start node: '%s', subprocess end node: '%s'".formatted(
+                subprocessStartNode,
+                subprocessEndNode
+        ));
     }
 }

@@ -7,10 +7,10 @@ import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.execution.AddParallelGatewayCallExecutor;
-import edu.agh.bpmnai.generator.v2.functions.parameter.Activity;
 import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
 import edu.agh.bpmnai.generator.v2.functions.parameter.ParallelGatewayDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
+import edu.agh.bpmnai.generator.v2.functions.parameter.Task;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,8 +57,8 @@ class AddParallelGatewayCallExecutorTest {
                 "elementName",
                 new HumanReadableId("task", "task"),
                 List.of(
-                        new Activity("activity1", false),
-                        new Activity("activity2", false)
+                        new Task("activity1", false),
+                        new Task("activity2", false)
                 )
         );
 
@@ -98,8 +98,8 @@ class AddParallelGatewayCallExecutorTest {
                 "elementName",
                 new HumanReadableId("task", "task"),
                 List.of(
-                        new Activity("activity1", false),
-                        new Activity("activity2", true)
+                        new Task("activity1", false),
+                        new Task("activity2", true)
                 )
         );
 

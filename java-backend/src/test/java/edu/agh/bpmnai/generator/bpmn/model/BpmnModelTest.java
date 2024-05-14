@@ -36,7 +36,7 @@ class BpmnModelTest {
 
         String gatewayId = model.addGateway(PARALLEL, "some name");
 
-        assertTrue(model.doesIdExist(gatewayId));
+        assertTrue(model.nodeIdExist(gatewayId));
         Dimensions taskDimensions = model.getElementDimensions(gatewayId);
         assertEquals(0, taskDimensions.x());
         assertEquals(0, taskDimensions.y());
@@ -131,6 +131,6 @@ class BpmnModelTest {
         BpmnModel model = new BpmnModel();
         String task = model.addTask("a");
         model.removeFlowNode(task);
-        assertFalse(model.doesIdExist(task));
+        assertFalse(model.nodeIdExist(task));
     }
 }

@@ -43,7 +43,7 @@ class ModelPostProcessingTest {
 
         BpmnModel afterPostProcessing = sessionStateStore.model();
         assertEquals(Set.of(successor), afterPostProcessing.findSuccessors(predecessor));
-        assertFalse(afterPostProcessing.doesIdExist(gateway));
+        assertFalse(afterPostProcessing.nodeIdExist(gateway));
     }
 
     @Test
@@ -60,7 +60,7 @@ class ModelPostProcessingTest {
         modelPostProcessing.apply();
 
         BpmnModel afterPostProcessing = sessionStateStore.model();
-        assertTrue(afterPostProcessing.doesIdExist(gateway));
+        assertTrue(afterPostProcessing.nodeIdExist(gateway));
     }
 
     @Test
