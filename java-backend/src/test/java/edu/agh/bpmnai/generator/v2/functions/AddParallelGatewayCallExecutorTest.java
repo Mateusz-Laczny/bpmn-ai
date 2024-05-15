@@ -38,7 +38,7 @@ class AddParallelGatewayCallExecutorTest {
         executor = new AddParallelGatewayCallExecutor(
                 new ToolCallArgumentsParser(mapper, new NullabilityCheck()),
                 sessionStateStore,
-                new InsertElementIntoDiagram(),
+                new InsertElementIntoDiagram(new CheckIfValidInsertionPoint(sessionStateStore)),
                 new NodeIdToModelInterfaceIdFunction(sessionStateStore)
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");

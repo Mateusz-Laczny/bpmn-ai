@@ -79,7 +79,7 @@ public class StateMachineLlmService implements LlmService {
         modelPostProcessing.apply();
         BpmnModel finalModel = sessionStateStore.model();
         ChangelogSnapshot changelogSnapshot = finalModel.getChangeLogSnapshot();
-        BpmnModel layoutedModel = bpmnLayouting.layoutModel(finalModel);
+        BpmnModel layoutedModel = bpmnLayouting.layoutModel();
         return new UserRequestResponse(
                 conversationHistoryStore.getLastMessage().orElse(""),
                 layoutedModel.asXmlString(),

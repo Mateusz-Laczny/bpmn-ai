@@ -34,7 +34,7 @@ class AddSequenceOfTasksCallExecutorTest {
         executor = new AddSequenceOfTasksCallExecutor(
                 new ToolCallArgumentsParser(mapper, new NullabilityCheck()),
                 sessionStateStore,
-                new InsertElementIntoDiagram(),
+                new InsertElementIntoDiagram(new CheckIfValidInsertionPoint(sessionStateStore)),
                 new NodeIdToModelInterfaceIdFunction(sessionStateStore)
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
@@ -125,5 +125,39 @@ class AddSequenceOfTasksCallExecutorTest {
         assertEquals(1, firstTaskSuccessors.size());
         assertEquals(0, secondTaskSuccessors.size());
         assertTrue(firstTaskSuccessors.contains(secondTaskId.get()));
+    }
+
+    @Test
+    void works_correctly_for_sequence_with_single_element() throws JsonProcessingException {
+        var model = new BpmnModel();
+        String predecessorTaskId = model.addTask("task");
+        sessionStateStore.setModelInterfaceId(predecessorTaskId, "task");
+        String endEvent = model.addEndEvent();
+        model.addUnlabelledSequenceFlow(predecessorTaskId, endEvent);
+        sessionStateStore.setModel(model);
+
+        SequenceOfTasksDto callArguments = new SequenceOfTasksDto(
+                aRetrospectiveSummary,
+                "",
+                "task#task",
+                List.of(
+                        "activity1"
+                )
+        );
+
+        Result<String, String> executorResult = executor.executeCall(mapper.writeValueAsString(callArguments));
+        assertTrue(executorResult.isOk(), "Result should be OK but is '%s'".formatted(executorResult.getError()));
+        BpmnModel modelAfterModification = sessionStateStore.model();
+
+        Optional<String> firstTaskId = modelAfterModification.findElementByName("activity1");
+        assertTrue(firstTaskId.isPresent());
+
+        Set<String> predecessorTaskSuccessors = modelAfterModification.findSuccessors(predecessorTaskId);
+        assertEquals(1, predecessorTaskSuccessors.size());
+        assertTrue(predecessorTaskSuccessors.contains(firstTaskId.get()));
+
+        Set<String> firstTaskSuccessors = modelAfterModification.findSuccessors(firstTaskId.get());
+
+        assertEquals(0, firstTaskSuccessors.size());
     }
 }

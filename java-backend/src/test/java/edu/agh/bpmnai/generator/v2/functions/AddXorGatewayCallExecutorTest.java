@@ -32,11 +32,13 @@ class AddXorGatewayCallExecutorTest {
     @BeforeEach
     void setUp() {
         sessionStateStore = new SessionStateStore();
+        var checkIfValidInsertionPoint = new CheckIfValidInsertionPoint(sessionStateStore);
         executor = new AddXorGatewayCallExecutor(
                 new ToolCallArgumentsParser(mapper, new NullabilityCheck()),
                 sessionStateStore,
-                new InsertElementIntoDiagram(),
-                new NodeIdToModelInterfaceIdFunction(sessionStateStore)
+                new InsertElementIntoDiagram(checkIfValidInsertionPoint),
+                new NodeIdToModelInterfaceIdFunction(sessionStateStore),
+                new FindInsertionPointForSubprocessWithCheckTask(sessionStateStore, checkIfValidInsertionPoint)
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
@@ -45,8 +47,11 @@ class AddXorGatewayCallExecutorTest {
     void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
         var model = new BpmnModel();
         String checkTaskId = model.addTask("task");
-        sessionStateStore.setModel(model);
         sessionStateStore.setModelInterfaceId(checkTaskId, "task");
+        String checkTaskPredecessorId = model.addTask("checkTaskPredecessor");
+        sessionStateStore.setModelInterfaceId(checkTaskPredecessorId, "checkTaskPredecessor");
+        model.addUnlabelledSequenceFlow(checkTaskPredecessorId, checkTaskId);
+        sessionStateStore.setModel(model);
         XorGatewayDto callArguments = new XorGatewayDto(
                 aRetrospectiveSummary,
                 "",
@@ -78,10 +83,13 @@ class AddXorGatewayCallExecutorTest {
         assertTrue(openingGatewaySuccessors.contains(secondTaskId.get()));
 
         Set<String> firstTaskSuccessors = modelAfterModification.findSuccessors(firstTaskId.get());
-        Set<String> secondTaskSuccessors = modelAfterModification.findSuccessors(firstTaskId.get());
+        Set<String> secondTaskSuccessors = modelAfterModification.findSuccessors(secondTaskId.get());
         assertEquals(1, firstTaskSuccessors.size());
         assertEquals(1, secondTaskSuccessors.size());
         assertEquals(firstTaskSuccessors, secondTaskSuccessors);
+
+        String closingGatewayId = modelAfterModification.findSuccessors(firstTaskId.get()).iterator().next();
+        assertTrue(modelAfterModification.findSuccessors(closingGatewayId).isEmpty());
     }
 
     @Test

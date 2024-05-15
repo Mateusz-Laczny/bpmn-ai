@@ -34,8 +34,12 @@ class AddWhileLoopCallExecutorTest {
         executor = new AddWhileLoopCallExecutor(
                 new ToolCallArgumentsParser(mapper, new NullabilityCheck()),
                 sessionStateStore,
-                new InsertElementIntoDiagram(),
-                new NodeIdToModelInterfaceIdFunction(sessionStateStore)
+                new InsertElementIntoDiagram(new CheckIfValidInsertionPoint(sessionStateStore)),
+                new NodeIdToModelInterfaceIdFunction(sessionStateStore),
+                new FindInsertionPointForSubprocessWithCheckTask(
+                        sessionStateStore,
+                        new CheckIfValidInsertionPoint(sessionStateStore)
+                )
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
@@ -69,7 +73,7 @@ class AddWhileLoopCallExecutorTest {
 
         String openingGatewayId = predecessorTaskSuccessors.iterator().next();
         Set<String> openingGatewaySuccessors = modelAfterModification.findSuccessors(openingGatewayId);
-        assertEquals(1, openingGatewaySuccessors.size());
+        assertEquals(2, openingGatewaySuccessors.size());
         assertTrue(openingGatewaySuccessors.contains(firstTaskId.get()));
 
         assertTrue(modelAfterModification.findSuccessors(firstTaskId.get()).contains(secondTaskId.get()));
@@ -107,7 +111,7 @@ class AddWhileLoopCallExecutorTest {
 
         String openingGatewayId = predecessorTaskSuccessors.iterator().next();
         Set<String> openingGatewaySuccessors = modelAfterModification.findSuccessors(openingGatewayId);
-        assertEquals(1, openingGatewaySuccessors.size());
+        assertEquals(2, openingGatewaySuccessors.size());
         assertTrue(openingGatewaySuccessors.contains(firstTaskId.get()));
 
         assertTrue(modelAfterModification.findSuccessors(firstTaskId.get()).contains(secondTaskId.get()));

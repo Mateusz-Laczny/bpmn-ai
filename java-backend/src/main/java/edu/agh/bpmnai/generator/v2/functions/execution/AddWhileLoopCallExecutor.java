@@ -5,6 +5,7 @@ import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.AddWhileLoopFunction;
+import edu.agh.bpmnai.generator.v2.functions.FindInsertionPointForSubprocessWithCheckTask;
 import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.WhileLoopDto;
@@ -14,11 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static edu.agh.bpmnai.generator.bpmn.model.BpmnGatewayType.EXCLUSIVE;
-import static edu.agh.bpmnai.generator.bpmn.model.HumanReadableId.isHumanReadableIdentifier;
 
 @Service
 @Slf4j
@@ -32,17 +31,21 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
     private final NodeIdToModelInterfaceIdFunction nodeIdToModelInterfaceIdFunction;
 
+    private final FindInsertionPointForSubprocessWithCheckTask findInsertionPointForSubprocessWithCheckTask;
+
     @Autowired
     public AddWhileLoopCallExecutor(
             ToolCallArgumentsParser callArgumentsParser,
             SessionStateStore sessionStateStore,
             InsertElementIntoDiagram insertElementIntoDiagram,
-            NodeIdToModelInterfaceIdFunction nodeIdToModelInterfaceIdFunction
+            NodeIdToModelInterfaceIdFunction nodeIdToModelInterfaceIdFunction,
+            FindInsertionPointForSubprocessWithCheckTask findInsertionPointForSubprocessWithCheckTask
     ) {
         this.callArgumentsParser = callArgumentsParser;
         this.sessionStateStore = sessionStateStore;
         this.insertElementIntoDiagram = insertElementIntoDiagram;
         this.nodeIdToModelInterfaceIdFunction = nodeIdToModelInterfaceIdFunction;
+        this.findInsertionPointForSubprocessWithCheckTask = findInsertionPointForSubprocessWithCheckTask;
     }
 
     @Override
@@ -62,57 +65,28 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
 
         WhileLoopDto callArguments = argumentsParsingResult.getValue();
 
-        BpmnModel model = sessionStateStore.model();
-        Set<String> addedNodesIds = new HashSet<>();
-
-        String checkTaskId;
-        if (isHumanReadableIdentifier(callArguments.checkTask())) {
-            String checkTaskModelInterfaceId = HumanReadableId.fromString(callArguments.checkTask()).id();
-            Optional<String> checkTaskIdOptional = sessionStateStore.getNodeId(checkTaskModelInterfaceId);
-            if (checkTaskIdOptional.isEmpty()) {
-                return Result.error("Check task '%s' does not exist in the diagram".formatted(callArguments.checkTask()));
-            }
-
-            checkTaskId = checkTaskIdOptional.get();
-        } else {
-            if (callArguments.insertionPoint() == null) {
-                log.warn(
-                        "Call unsuccessful, insertion point is null when check task '{}' does not exist in the "
-                        + "diagram",
-                        callArguments.checkTask()
-                );
-                return Result.error("Insertion point is null, when check task does not exist in the diagram");
-            }
-
-            if (!isHumanReadableIdentifier(callArguments.insertionPoint())) {
-                return Result.error("'%s' is not in the correct format".formatted(callArguments.insertionPoint()));
-            }
-
-            HumanReadableId insertionPointModelFacingId = HumanReadableId.fromString(callArguments.insertionPoint());
-            Optional<String> insertionPointModelId = sessionStateStore.getNodeId(insertionPointModelFacingId.id());
-            if (insertionPointModelId.isEmpty()) {
-                log.warn(
-                        "Call unsuccessful, insertion point '{}' does not exist in the diagram",
+        Result<FindInsertionPointForSubprocessWithCheckTask.InsertionPointFindResult, String> insertionPointFindResult =
+                findInsertionPointForSubprocessWithCheckTask.apply(
+                        callArguments.checkTask(),
                         callArguments.insertionPoint()
                 );
-                return Result.error("Insertion point '%s' does not exist in the diagram".formatted(callArguments.insertionPoint()));
-            }
-
-            checkTaskId = model.addTask(callArguments.checkTask());
-            model.addUnlabelledSequenceFlow(insertionPointModelId.get(), checkTaskId);
-            addedNodesIds.add(checkTaskId);
+        if (insertionPointFindResult.isError()) {
+            return Result.error(insertionPointFindResult.getError());
         }
+
+        String insertionPointId = insertionPointFindResult.getValue().insertionPointId();
+        Set<String> addedNodesIds = new HashSet<>();
+        if (insertionPointFindResult.getValue().isANewTask()) {
+            addedNodesIds.add(insertionPointId);
+        }
+
+        BpmnModel model = sessionStateStore.model();
 
         String gatewayId = model.addGateway(EXCLUSIVE, callArguments.subprocessName() + " gateway");
         addedNodesIds.add(gatewayId);
-        model.addUnlabelledSequenceFlow(checkTaskId, gatewayId);
 
         String previousElementInLoopId = gatewayId;
         for (String taskInLoop : callArguments.tasksInLoop()) {
-            if (model.findElementByName(taskInLoop).isPresent()) {
-                return Result.error("Node with name '%s' already exists in the diagram".formatted(taskInLoop));
-            }
-
             String taskId = model.addTask(taskInLoop);
             addedNodesIds.add(taskId);
 
@@ -123,10 +97,10 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
             previousElementInLoopId = taskId;
         }
 
-        model.addUnlabelledSequenceFlow(previousElementInLoopId, checkTaskId);
+        model.addUnlabelledSequenceFlow(previousElementInLoopId, insertionPointId);
 
         Result<Void, String> insertSubdiagramResult = insertElementIntoDiagram.apply(
-                checkTaskId,
+                insertionPointId,
                 gatewayId,
                 gatewayId,
                 model
@@ -136,14 +110,20 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
             return Result.error(insertSubdiagramResult.getError());
         }
 
+        if (model.findSuccessors(gatewayId).size() == 1) {
+            String endEventId = model.addEndEvent();
+            model.addUnlabelledSequenceFlow(gatewayId, endEventId);
+            addedNodesIds.add(endEventId);
+        }
+
         sessionStateStore.setModel(model);
         for (String nodeId : addedNodesIds) {
             sessionStateStore.setModelInterfaceId(nodeId, nodeIdToModelInterfaceIdFunction.apply(nodeId));
         }
 
         HumanReadableId subprocessStartNode = new HumanReadableId(
-                model.getName(checkTaskId).orElseThrow(),
-                sessionStateStore.getModelInterfaceId(checkTaskId).orElseThrow()
+                model.getName(insertionPointId).orElseThrow(),
+                sessionStateStore.getModelInterfaceId(insertionPointId).orElseThrow()
         );
         HumanReadableId subprocessEndNode = new HumanReadableId(
                 model.getName(gatewayId).orElseThrow(),

@@ -5,6 +5,7 @@ import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.datatype.Result;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -14,29 +15,34 @@ import static edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType.END_EVENT;
 @Service
 @Slf4j
 public class InsertElementIntoDiagram {
+
+    private final CheckIfValidInsertionPoint checkIfValidInsertionPoint;
+
+    @Autowired
+    public InsertElementIntoDiagram(CheckIfValidInsertionPoint checkIfValidInsertionPoint) {
+        this.checkIfValidInsertionPoint = checkIfValidInsertionPoint;
+    }
+
     public Result<Void, String> apply(
             String insertionPointId,
             String subprocessStartId,
             @Nullable String subprocessEndId,
             BpmnModel model
     ) {
-        if (!model.nodeIdExist(insertionPointId)) {
-            return Result.error("Insertion point '%s' does not exist".formatted(insertionPointId));
-        }
-        Set<String> insertionPointSuccessorsBeforeModification = model.findSuccessors(insertionPointId);
-        if (insertionPointSuccessorsBeforeModification.size() > 1) {
-            return Result.error(
-                    ("Insertion point '%s' is not valid, since it has more than one successor; chose a valid insertion"
-                     + " point.").formatted(
-                            insertionPointId));
+        Result<Void, String> checkResult = checkIfValidInsertionPoint.apply(insertionPointId);
+        if (checkResult.isError()) {
+            return Result.error(checkResult.getError());
         }
 
+        Set<String> insertionPointSuccessors = model.findSuccessors(insertionPointId);
         @Nullable String insertionPointSuccessor = null;
-        if (!insertionPointSuccessorsBeforeModification.isEmpty()) {
-            insertionPointSuccessor = insertionPointSuccessorsBeforeModification.iterator().next();
-            if (model.getNodeType(insertionPointSuccessor).get() == END_EVENT) {
+        if (!insertionPointSuccessors.isEmpty()) {
+            insertionPointSuccessor = insertionPointSuccessors.iterator().next();
+            if (model.getNodeType(insertionPointSuccessor).orElseThrow() == END_EVENT) {
                 model.removeElement(insertionPointSuccessor);
+                insertionPointSuccessor = null;
             }
+
             model.clearSuccessors(insertionPointId);
         }
 
