@@ -75,12 +75,6 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
         Set<String> addedTasks = new HashSet<>();
         String previousElementInSequenceId = null;
         for (String taskInSequence : callArguments.tasksInSequence()) {
-            Optional<String> elementId = model.findElementByName(taskInSequence);
-            if (elementId.isPresent()) {
-                return Result.error("Node with name '%s' already exists in the diagram".formatted(model.getHumanReadableId(
-                        elementId.get()).orElseThrow().asString()));
-            }
-
             String taskId = model.addTask(taskInSequence);
             addedTasks.add(taskId);
 
