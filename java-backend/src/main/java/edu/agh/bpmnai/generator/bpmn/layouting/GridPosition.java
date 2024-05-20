@@ -12,4 +12,8 @@ public record GridPosition(int x, int y) {
     public GridPosition withX(int newX) {
         return new GridPosition(newX, y);
     }
+
+    public GridPosition copy() {
+        return new GridPosition(x, y);
+    }
 }

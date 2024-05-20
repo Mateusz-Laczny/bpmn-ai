@@ -44,6 +44,25 @@ public class TopologicalSortBpmnLayouting {
         return pathsToRemove;
     }
 
+    private static GridPosition addCellAtFirstEmptyPosition(
+            String element,
+            Grid grid,
+            GridPosition desiredFinalPosition
+    ) {
+        boolean addedCell = false;
+        GridPosition currentPosition = desiredFinalPosition.copy();
+        while (!addedCell) {
+            if (grid.isCellOccupied(currentPosition)) {
+                currentPosition = currentPosition.withYDifference(1);
+            } else {
+                grid.addCell(new Cell(currentPosition, element));
+                addedCell = true;
+            }
+        }
+
+        return currentPosition;
+    }
+
     public BpmnModel layoutModel() {
         BpmnModel model = sessionStateStore.model();
         Set<String> startEventsIds = Set.of(model.getStartEvent());
@@ -224,13 +243,14 @@ public class TopologicalSortBpmnLayouting {
     ) {
         log.info("Placing element '{}'", model.getHumanReadableId(element).get());
         int numberOfPredecessors = model.findPredecessors(element).size();
-        GridPosition finalPosition;
         if (numberOfPredecessors == 0) {
             log.info("Element has no predecessors");
-            finalPosition = new GridPosition(0, grid.getNumberOfRows());
-            pathsToElements.put(element, new ArrayList<>(List.of(finalPosition.y())));
-            grid.addCell(new Cell(finalPosition, element));
-            log.info("Final position: '{}'", finalPosition);
+
+            GridPosition finalPosition = new GridPosition(0, grid.getNumberOfRows());
+            GridPosition actualElementPosition = addCellAtFirstEmptyPosition(element, grid, finalPosition);
+            log.info("Final position: '{}'", actualElementPosition);
+
+            pathsToElements.put(element, new ArrayList<>(List.of(actualElementPosition.y())));
         } else if (numberOfPredecessors == 1) {
             log.info("Element has a single predecessor");
             Set<String> backEdgesIds = backEdges.stream().map(DirectedEdge::targetId).collect(Collectors.toSet());
@@ -353,17 +373,9 @@ public class TopologicalSortBpmnLayouting {
 
         List<Integer> pathToCurrentElement = elementIdToPathFromStartEvent.get(correspondingSplit);
         elementIdToPathFromStartEvent.put(element, pathToCurrentElement);
-        boolean addedCell = false;
         GridPosition finalPosition = new GridPosition(rightmostPredecessorPosition.x() + 1, finalRow);
-        while (!addedCell) {
-            if (grid.isCellOccupied(finalPosition)) {
-                finalPosition = finalPosition.withYDifference(1);
-            } else {
-                grid.addCell(new Cell(finalPosition, element));
-                addedCell = true;
-                log.info("Final position for join element '{}'", finalPosition);
-            }
-        }
+        GridPosition actualNodePosition = addCellAtFirstEmptyPosition(element, grid, finalPosition);
+        log.info("Final position for join element '{}'", actualNodePosition);
 
         for (DirectedEdge incomingSequenceFlow : model.getIncomingSequenceFlows(element)) {
             SplitInfo splitInfo = splitIdToInfo.get(correspondingSplit);
@@ -399,14 +411,12 @@ public class TopologicalSortBpmnLayouting {
         boolean predecessorElementIsNotASplit = predecessorElementSuccessors.size() == 1;
         List<Integer> pathToPredecessor = pathsToElements.get(elementPredecessor);
         log.info("Path to predecessor: '{}'", pathToPredecessor);
-        GridPosition finalPosition;
         if (predecessorElementIsNotASplit) {
             log.info("Predecessor element '{}' is not a split", model.getHumanReadableId(elementPredecessor).get());
-            finalPosition = predecessorPosition.withX(predecessorPosition.x() + 1);
+            GridPosition finalPosition = predecessorPosition.withX(predecessorPosition.x() + 1);
             pathsToElements.put(element, pathToPredecessor);
-
-            grid.addCell(new Cell(finalPosition, element));
-            log.info("Final position: '{}'", finalPosition);
+            GridPosition actualElementPosition = addCellAtFirstEmptyPosition(element, grid, finalPosition);
+            log.info("Final position: '{}'", actualElementPosition);
         } else {
             log.info("Predecessor element '{}' is a split", model.getHumanReadableId(elementPredecessor).get());
             @Nullable DirectedEdge sequenceFlowBeforeSplit = null;
@@ -428,9 +438,10 @@ public class TopologicalSortBpmnLayouting {
                 List<Integer> pathToCurrentElement = new ArrayList<>(pathToPredecessor);
                 pathToCurrentElement.add(splitInfo.getCenterBranchNumber());
                 pathsToElements.put(element, pathToCurrentElement);
-                finalPosition = predecessorPosition.withX(predecessorPosition.x() + 1);
-                grid.addCell(new Cell(finalPosition, element));
-                log.info("Final position: '{}'", finalPosition);
+                GridPosition finalPosition = predecessorPosition.withX(predecessorPosition.x() + 1);
+                GridPosition actualElementPosition = addCellAtFirstEmptyPosition(element, grid, finalPosition);
+                log.info("Final position: '{}'", actualElementPosition);
+
                 splitInfo.setCenterBranchFree(false);
                 if (splitInfo.getNextFreeBranch() == splitInfo.getCenterBranchNumber()) {
                     splitInfo.setNextFreeBranch(splitInfo.getNextFreeBranch() + 1);
@@ -444,15 +455,14 @@ public class TopologicalSortBpmnLayouting {
                 pathToCurrentElement.add(splitInfo.getNextFreeBranch());
                 pathsToElements.put(element, pathToCurrentElement);
 
-                finalPosition = new GridPosition(
+                GridPosition finalPosition = new GridPosition(
                         predecessorPosition.x() + 1,
                         predecessorPosition.y() + splitInfo.getNextFreeBranch()
                         - splitInfo.getCenterBranchNumber()
                 );
 
-                log.info("Final position: '{}'", finalPosition);
-
-                grid.addCell(new Cell(finalPosition, element));
+                GridPosition actualElementPosition = addCellAtFirstEmptyPosition(element, grid, finalPosition);
+                log.info("Final position: '{}'", actualElementPosition);
 
                 splitInfo.setNextFreeBranch(splitInfo.getNextFreeBranch() + 1);
                 shiftElements(pathToCurrentElement, splitInfo.getCenterBranchNumber(), pathsToElements, grid);
