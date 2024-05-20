@@ -251,6 +251,9 @@ public class TopologicalSortBpmnLayouting {
         boolean elementIsSplit = numberOfSuccessors >= 2;
         if (elementIsSplit) {
             log.info("Element is a split");
+            if (!pathsToElements.containsKey(element)) {
+                pathsToElements.put(element, new ArrayList<>(List.of(0)));
+            }
             List<Integer> pathToCurrentElement = pathsToElements.get(element);
             int centerBranchNumber;
             if (numberOfSuccessors % 2 == 0 && !(pathToCurrentElement.get(pathToCurrentElement.size() - 1) == 0
