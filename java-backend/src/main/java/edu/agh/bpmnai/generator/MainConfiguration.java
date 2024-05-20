@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestTemplate;
 
-import static edu.agh.bpmnai.generator.openai.OpenAI.OpenAIModel.GPT_3_5_TURBO_16K;
+import static edu.agh.bpmnai.generator.openai.OpenAI.OpenAIModel.GPT_4_O;
 
 @Configuration
 @Profile("paid-api")
@@ -19,6 +19,6 @@ public class MainConfiguration {
 
     @Bean
     public OpenAI.OpenAIModel openAIModel() {
-        return GPT_3_5_TURBO_16K;
+        return GPT_4_O;
     }
 }
