@@ -109,21 +109,21 @@ public class ModifyModelState {
                                 )
                         )
                 );
-                sessionStateStore.appendMessage(response);
-                return MODIFY_MODEL;
-            }
 
-            var response = chatMessageBuilder.buildToolCallResponseMessage(
-                    toolCall.id(),
-                    new FunctionCallResponseDto(
-                            true,
-                            Map.of(
-                                    "response",
-                                    functionCallResult.getValue()
-                            )
-                    )
-            );
-            sessionStateStore.appendMessage(response);
+                sessionStateStore.appendMessage(response);
+            } else {
+                var response = chatMessageBuilder.buildToolCallResponseMessage(
+                        toolCall.id(),
+                        new FunctionCallResponseDto(
+                                true,
+                                Map.of(
+                                        "response",
+                                        functionCallResult.getValue()
+                                )
+                        )
+                );
+                sessionStateStore.appendMessage(response);
+            }
         }
 
         return MODIFY_MODEL;
