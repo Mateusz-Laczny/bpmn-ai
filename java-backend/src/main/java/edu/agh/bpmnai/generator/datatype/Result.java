@@ -25,7 +25,7 @@ public class Result<L, R> {
     }
 
     public boolean isOk() {
-        return value != null;
+        return error == null;
     }
 
     public boolean isError() {

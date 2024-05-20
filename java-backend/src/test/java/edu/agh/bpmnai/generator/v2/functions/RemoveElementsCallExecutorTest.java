@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RemoveElementsCallExecutorTest {
@@ -38,7 +39,8 @@ class RemoveElementsCallExecutorTest {
     void removes_task_from_the_model() throws JsonProcessingException {
         var model = new BpmnModel();
         String taskId = model.addTask("task");
-        sessionStateStore.setModelInterfaceId(taskId, "tasl");
+        sessionStateStore.setModelInterfaceId(taskId, "task");
+        sessionStateStore.setModel(model);
         RemoveElementsFunctionCallDto callArguments = new RemoveElementsFunctionCallDto(aRetrospectiveSummary, "",
                                                                                         List.of("task#task")
         );
@@ -47,6 +49,6 @@ class RemoveElementsCallExecutorTest {
         assertTrue(executorResult.isOk(), "Result should be OK but is '%s'".formatted(executorResult.getError()));
         BpmnModel modelAfterModification = sessionStateStore.model();
 
-        assertTrue(modelAfterModification.findElementByName("task").isEmpty());
+        assertFalse(modelAfterModification.nodeIdExist(taskId));
     }
 }
