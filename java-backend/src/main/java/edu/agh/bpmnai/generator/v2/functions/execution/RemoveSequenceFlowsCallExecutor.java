@@ -1,6 +1,7 @@
 package edu.agh.bpmnai.generator.v2.functions.execution;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
+import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.bpmn.model.RemoveSequenceFlowError;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.RemoveSequenceFlowsFunction;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+
+import static edu.agh.bpmnai.generator.bpmn.model.HumanReadableId.isHumanReadableIdentifier;
 
 @Service
 @Slf4j
@@ -51,15 +54,23 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
         StringBuilder missingFlowsMessageBuilder = new StringBuilder(
                 "Following sequence flows are not present in the diagram:\n");
         for (SequenceFlowDto sequenceFlowDto : sequenceFlowDtos) {
-            Optional<String> sequenceFlowSourceId = model.findElementByName(
-                    sequenceFlowDto.source());
-            if (sequenceFlowSourceId.isEmpty()) {
-                return Result.error("Element with id '%s' does not exist in the diagram".formatted(
-                        sequenceFlowDto.source()));
+            if (!isHumanReadableIdentifier(sequenceFlowDto.source())) {
+                return Result.error("'%s' is not in the correct format".formatted(sequenceFlowDto.source()));
             }
 
-            Optional<String> sequenceFlowTargetId = model.findElementByName(
-                    sequenceFlowDto.target());
+            String sequenceFlowSourceModelFacingId = HumanReadableId.fromString(sequenceFlowDto.source()).id();
+            Optional<String> sequenceFlowSourceId = sessionStateStore.getNodeId(sequenceFlowSourceModelFacingId);
+            if (sequenceFlowSourceId.isEmpty()) {
+                return Result.error("Element with id '%s' does not exist in the diagram".formatted(
+                        sequenceFlowDto.target()));
+            }
+
+            if (!isHumanReadableIdentifier(sequenceFlowDto.source())) {
+                return Result.error("'%s' is not in the correct format".formatted(sequenceFlowDto.source()));
+            }
+
+            String sequenceFlowTargetModelFacingId = HumanReadableId.fromString(sequenceFlowDto.target()).id();
+            Optional<String> sequenceFlowTargetId = sessionStateStore.getNodeId(sequenceFlowTargetModelFacingId);
             if (sequenceFlowTargetId.isEmpty()) {
                 return Result.error("Element with id '%s' does not exist in the diagram".formatted(
                         sequenceFlowDto.target()));
