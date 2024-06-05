@@ -7,7 +7,7 @@ import edu.agh.bpmnai.generator.openai.OpenAIChatCompletionApi;
 import edu.agh.bpmnai.generator.v2.*;
 import edu.agh.bpmnai.generator.v2.functions.AddSequenceFlowsFunction;
 import edu.agh.bpmnai.generator.v2.functions.ChatFunctionDto;
-import edu.agh.bpmnai.generator.v2.functions.RemoveElementsFunction;
+import edu.agh.bpmnai.generator.v2.functions.RemoveNodesFunction;
 import edu.agh.bpmnai.generator.v2.functions.RemoveSequenceFlowsFunction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,7 @@ import static edu.agh.bpmnai.generator.v2.session.SessionStatus.FIX_ERRORS;
 @Slf4j
 public class FixErrorsInModelState {
     public static final Set<ChatFunctionDto> AVAILABLE_FUNCTIONS = Set.of(
-            RemoveSequenceFlowsFunction.FUNCTION_DTO, RemoveElementsFunction.FUNCTION_DTO,
+            RemoveSequenceFlowsFunction.FUNCTION_DTO, RemoveNodesFunction.FUNCTION_DTO,
             AddSequenceFlowsFunction.FUNCTION_DTO
     );
     private final SessionStateStore sessionStateStore;

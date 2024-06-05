@@ -72,8 +72,9 @@ public class ModifyModelState {
 
         Set<ChatFunctionDto> availableFunctions = new HashSet<>(FUNCTIONS_FOR_MODIFYING_THE_MODEL);
         if (!isInitialPrompt) {
-            availableFunctions.add(RemoveElementsFunction.FUNCTION_DTO);
+            availableFunctions.add(RemoveNodesFunction.FUNCTION_DTO);
             availableFunctions.add(RemoveSequenceFlowsFunction.FUNCTION_DTO);
+            availableFunctions.add(AddSequenceFlowsFunction.FUNCTION_DTO);
         }
 
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(

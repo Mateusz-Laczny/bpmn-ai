@@ -2,7 +2,7 @@ package edu.agh.bpmnai.generator.v2.functions.parameter;
 
 import java.util.List;
 
-public record RemoveElementsFunctionCallDto(
+public record RemoveNodesFunctionCallDto(
         @Description("Retrospective summary of the current state of the diagram")
         RetrospectiveSummary retrospectiveSummary,
         @Description("What is this action trying to achieve? Example: \"I need to remove the activity 'Perform "

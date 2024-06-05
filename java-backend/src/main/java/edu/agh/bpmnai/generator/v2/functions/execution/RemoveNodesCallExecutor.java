@@ -4,9 +4,9 @@ import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.bpmn.model.RemoveActivityError;
 import edu.agh.bpmnai.generator.datatype.Result;
-import edu.agh.bpmnai.generator.v2.functions.RemoveElementsFunction;
+import edu.agh.bpmnai.generator.v2.functions.RemoveNodesFunction;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
-import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveElementsFunctionCallDto;
+import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveNodesFunctionCallDto;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,14 +20,14 @@ import static edu.agh.bpmnai.generator.bpmn.model.HumanReadableId.isHumanReadabl
 
 @Service
 @Slf4j
-public class RemoveElementsCallExecutor implements FunctionCallExecutor {
+public class RemoveNodesCallExecutor implements FunctionCallExecutor {
 
     private final ToolCallArgumentsParser callArgumentsParser;
 
     private final SessionStateStore sessionStateStore;
 
     @Autowired
-    public RemoveElementsCallExecutor(
+    public RemoveNodesCallExecutor(
             ToolCallArgumentsParser callArgumentsParser,
             SessionStateStore sessionStateStore
     ) {
@@ -37,18 +37,18 @@ public class RemoveElementsCallExecutor implements FunctionCallExecutor {
 
     @Override
     public String getFunctionName() {
-        return RemoveElementsFunction.FUNCTION_NAME;
+        return RemoveNodesFunction.FUNCTION_NAME;
     }
 
     @Override
     public Result<String, String> executeCall(String callArgumentsJson) {
-        Result<RemoveElementsFunctionCallDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
-                callArgumentsJson, RemoveElementsFunctionCallDto.class);
+        Result<RemoveNodesFunctionCallDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
+                callArgumentsJson, RemoveNodesFunctionCallDto.class);
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());
         }
 
-        RemoveElementsFunctionCallDto callArguments = argumentsParsingResult.getValue();
+        RemoveNodesFunctionCallDto callArguments = argumentsParsingResult.getValue();
 
         BpmnModel model = sessionStateStore.model();
         Set<String> removedNodesIds = new HashSet<>();

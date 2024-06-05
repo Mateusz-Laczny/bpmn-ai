@@ -9,7 +9,7 @@ public class AddSequenceFlowsFunction {
 
     public static final ChatFunctionDto FUNCTION_DTO = ChatFunctionDto.builder()
             .name(FUNCTION_NAME)
-            .description("Adds sequence flows to the diagram")
+            .description("Adds sequence flows to the diagram.")
             .parameters(getSchemaForParametersDto(AddSequenceFlowsCallParameterDto.class))
             .build();
 }
