@@ -365,7 +365,10 @@ public class TopologicalSortBpmnLayouting {
             log.info("no corresponding split");
             int rowNumberSum = 0;
             for (String predecessor : predecessors) {
-                rowNumberSum += grid.findCellByIdOfElementInside(predecessor).orElseThrow().y();
+                Optional<Cell> predecessorCell = grid.findCellByIdOfElementInside(predecessor);
+                if (predecessorCell.isPresent()) {
+                    rowNumberSum += predecessorCell.get().y();
+                }
             }
 
             finalRow = rowNumberSum / predecessors.size();
@@ -449,6 +452,10 @@ public class TopologicalSortBpmnLayouting {
             } else {
                 if (splitInfo.getNextFreeBranch() == splitInfo.getCenterBranchNumber()) {
                     splitInfo.setNextFreeBranch(splitInfo.getNextFreeBranch() + 1);
+                }
+
+                if (!pathsToElements.containsKey(elementPredecessor)) {
+                    pathsToElements.put(elementPredecessor, new ArrayList<>(List.of(0)));
                 }
 
                 List<Integer> pathToCurrentElement = new ArrayList<>(pathsToElements.get(elementPredecessor));
