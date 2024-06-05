@@ -6,8 +6,7 @@ import edu.agh.bpmnai.generator.openai.OpenAI;
 import edu.agh.bpmnai.generator.openai.OpenAIChatCompletionApi;
 import edu.agh.bpmnai.generator.v2.*;
 import edu.agh.bpmnai.generator.v2.functions.ChatFunctionDto;
-import edu.agh.bpmnai.generator.v2.functions.FillInMissingDetailsInUserRequestFunction;
-import edu.agh.bpmnai.generator.v2.functions.RespondWithoutModifyingDiagramFunction;
+import edu.agh.bpmnai.generator.v2.functions.DecideWhetherToUpdateTheDiagramFunction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,8 +20,7 @@ import static edu.agh.bpmnai.generator.v2.session.SessionStatus.*;
 @Slf4j
 public class DecideWhetherToModifyTheModelState {
     private static final Set<ChatFunctionDto> AVAILABLE_FUNCTIONS_IN_THIS_STATE = Set.of(
-            RespondWithoutModifyingDiagramFunction.FUNCTION_DTO,
-            FillInMissingDetailsInUserRequestFunction.FUNCTION_DTO
+            DecideWhetherToUpdateTheDiagramFunction.FUNCTION_DTO
     );
 
     private final SessionStateStore sessionStateStore;
@@ -58,16 +56,24 @@ public class DecideWhetherToModifyTheModelState {
 
     public SessionStatus process(String userRequestContent) {
         String promptForModel =
-                "Decide whether to modify the diagram based on current state and user request\n"
-                + "BEGIN USER REQUEST\n"
-                + userRequestContent
-                + "END USER REQUEST\n"
-                + "\n"
-                + "BEGIN REQUEST CONTEXT\n"
-                + "Current diagram state:\n" + bpmnToStringExporter.export()
-                + "\n"
-                + "END REQUEST CONTEXT";
+                ("""
+                 You will now be provided with a message from the user. The user can see the generated diagram.
+                 Call the provided function to decide whether to update the diagram based on the request contents.
+                 Do not provide an empty response.
+                 BEGIN USER MESSAGE
+                 %s
+                 END USER MESSAGE
+
+                 BEGIN REQUEST CONTEXT
+                 Current diagram state:
+                 %s
+                 END REQUEST CONTEXT""").formatted(
+                        userRequestContent,
+                        bpmnToStringExporter.export()
+                );
         log.info("Request text sent to LLM: '{}'", promptForModel);
+
+        sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(promptForModel));
 
         ChatMessageDto chatResponse = chatCompletionApi.sendRequest(
                 usedModel,
@@ -79,9 +85,11 @@ public class DecideWhetherToModifyTheModelState {
         sessionStateStore.appendMessage(chatResponse);
 
         if (chatResponse.toolCalls() == null) {
-            log.warn("No function calls even though a function call was expected");
-            sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(
-                    "Use the provided functions in your response, do not provide a response using other means"));
+            log.warn("No tool calls");
+            var response = chatMessageBuilder.buildUserMessage(
+                    "You must call the provided function '%s' in this step".formatted(
+                            DecideWhetherToUpdateTheDiagramFunction.FUNCTION_NAME));
+            sessionStateStore.appendMessage(response);
             return DECIDE_WHETHER_TO_MODIFY_THE_MODEL;
         }
 
@@ -107,21 +115,18 @@ public class DecideWhetherToModifyTheModelState {
             return DECIDE_WHETHER_TO_MODIFY_THE_MODEL;
         }
 
-        if (calledFunctionName.equals(RespondWithoutModifyingDiagramFunction.FUNCTION_NAME)) {
-            conversationHistoryStore.appendMessage(functionCallResult.getValue());
-        }
-
         var response = chatMessageBuilder.buildToolCallResponseMessage(
                 toolCall.id(),
                 new FunctionCallResponseDto(true)
         );
+
         sessionStateStore.appendMessage(response);
 
-        if (calledFunctionName.equals(FillInMissingDetailsInUserRequestFunction.FUNCTION_NAME)) {
-            return REASON_ABOUT_TASKS_AND_PROCESS_FLOW;
+        if (!functionCallResult.getValue().isBlank()) {
+            conversationHistoryStore.appendMessage(functionCallResult.getValue());
+            return END;
         }
 
-        return END;
-
+        return REASON_ABOUT_TASKS_AND_PROCESS_FLOW;
     }
 }
