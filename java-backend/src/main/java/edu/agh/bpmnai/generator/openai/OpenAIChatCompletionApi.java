@@ -18,6 +18,7 @@ import io.github.bucket4j.Bucket;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -37,27 +38,38 @@ public class OpenAIChatCompletionApi {
 
     private static final Bucket bucket;
 
-    private final ObjectMapper objectMapper;
-
     static {
         Bandwidth limit = Bandwidth.simple(OpenAI.openAIApiTokenPerMinuteRateLimit, Duration.ofMinutes(1));
         bucket = Bucket.builder().addLimit(limit).build();
     }
 
+    private final ObjectMapper objectMapper;
+    private final double defaultTemperature;
     private final RestTemplate restTemplate;
 
     @Autowired
-    public OpenAIChatCompletionApi(ObjectMapper objectMapper, RestTemplate restTemplate) {
+    public OpenAIChatCompletionApi(
+            ObjectMapper objectMapper,
+            @Value("${defaultTemperature}") double defaultTemperature,
+            RestTemplate restTemplate
+    ) {
         this.objectMapper = objectMapper;
+        this.defaultTemperature = defaultTemperature;
         this.restTemplate = restTemplate;
     }
 
-    public ChatMessageDto sendRequest(OpenAIModel modelToUse, List<ChatMessageDto> messages, @Nullable Set<ChatFunctionDto> availableFunctions, Object toolChoice) {
+    public ChatMessageDto sendRequest(
+            OpenAIModel modelToUse,
+            List<ChatMessageDto> messages,
+            @Nullable Set<ChatFunctionDto> availableFunctions,
+            Object toolChoice
+    ) {
         var completionRequest = ChatCompletionDto.builder()
                 .messages(messages)
                 .model(modelToUse.getModelProperties().name())
                 .tools(availableFunctions != null ? availableFunctions.stream().map(ChatToolDto::new).toList() : null)
                 .toolChoice(toolChoice)
+                .temperature(defaultTemperature)
                 .build();
         ChatCompletionResponseDto responseBody = getChatCompletion(completionRequest);
         return responseBody.choices().get(0).message();
@@ -74,7 +86,10 @@ public class OpenAIChatCompletionApi {
         return sendRequest(usedModel, requestBody);
     }
 
-    public ChatCompletionResponse getChatCompletion(OpenAIChatSession conversation, List<ChatFunction> callableFunctions) throws FailedRequestException {
+    public ChatCompletionResponse getChatCompletion(
+            OpenAIChatSession conversation,
+            List<ChatFunction> callableFunctions
+    ) throws FailedRequestException {
         OpenAIModel usedModel = conversation.getUsedModel();
         var requestBody = ChatCompletionRequest.builder()
                 .model(usedModel.getModelProperties().name())
@@ -120,7 +135,10 @@ public class OpenAIChatCompletionApi {
                     ChatCompletionResponse.class
             );
 
-            Logging.logDebugMessage("Request was successful", new Logging.ObjectToLog("usedTokens", response.getBody().usage().total_tokens()));
+            Logging.logDebugMessage(
+                    "Request was successful",
+                    new Logging.ObjectToLog("usedTokens", response.getBody().usage().total_tokens())
+            );
             return response.getBody();
         } catch (HttpStatusCodeException e) {
             throw new FailedRequestException(e);
@@ -146,12 +164,14 @@ public class OpenAIChatCompletionApi {
         int numberOfTokensInFunctionDescriptions;
 
         try {
-            numberOfTokensInFunctionDescriptions = OpenAI.getNumberOfTokens(new ObjectMapper().writeValueAsString(request.functions()), usedModel);
+            numberOfTokensInFunctionDescriptions = OpenAI.getNumberOfTokens(new ObjectMapper().writeValueAsString(
+                    request.functions()), usedModel);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
 
-        return usedModel.getModelProperties().maxNumberOfTokens() - numberOfTokensInMessages - numberOfTokensInFunctionDescriptions;
+        return usedModel.getModelProperties().maxNumberOfTokens() - numberOfTokensInMessages
+               - numberOfTokensInFunctionDescriptions;
     }
 
     private int calculateTokensUsedByMessage(ChatMessage message, OpenAIModel usedModel) {

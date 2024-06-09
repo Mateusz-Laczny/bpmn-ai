@@ -20,4 +20,6 @@ public class ChatCompletionDto {
     private final List<ChatToolDto> tools;
     @JsonProperty("tool_choice")
     private final Object toolChoice;
+    @Nullable
+    private final Double temperature;
 }
