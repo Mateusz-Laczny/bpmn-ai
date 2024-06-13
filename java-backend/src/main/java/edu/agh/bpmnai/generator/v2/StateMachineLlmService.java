@@ -8,100 +8,68 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.*;
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.PROMPTING_FINISHED;
 
 @Service
 @Slf4j
 public class StateMachineLlmService implements LlmService {
 
     private final SessionStateStore sessionStateStore;
-
-    private final ConversationHistoryStore conversationHistoryStore;
-
-    private final AskQuestionsState askQuestionsState;
     private final ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState;
     private final ModifyModelState modifyModelState;
-
-    private final FixErrorsInModelState fixErrorsInModelState;
-
     private final DecideWhetherToModifyTheModelState decideWhetherToModifyTheModelState;
-
-    private final ChatMessageBuilder chatMessageBuilder;
-
     private final ModelPostProcessing modelPostProcessing;
-
     private final TopologicalSortBpmnLayouting bpmnLayouting;
 
     @Autowired
     public StateMachineLlmService(
             SessionStateStore sessionStateStore,
-            ConversationHistoryStore conversationHistoryStore,
-            AskQuestionsState askQuestionsState,
             ReasonAboutTasksAndProcessFlowState reasonAboutTasksAndProcessFlowState,
             ModifyModelState modifyModelState,
-            FixErrorsInModelState fixErrorsInModelState,
             DecideWhetherToModifyTheModelState decideWhetherToModifyTheModelState,
-            ChatMessageBuilder chatMessageBuilder,
             ModelPostProcessing modelPostProcessing,
             TopologicalSortBpmnLayouting bpmnLayouting
     ) {
         this.sessionStateStore = sessionStateStore;
-        this.conversationHistoryStore = conversationHistoryStore;
-        this.askQuestionsState = askQuestionsState;
         this.reasonAboutTasksAndProcessFlowState = reasonAboutTasksAndProcessFlowState;
         this.modifyModelState = modifyModelState;
-        this.fixErrorsInModelState = fixErrorsInModelState;
         this.decideWhetherToModifyTheModelState = decideWhetherToModifyTheModelState;
-        this.chatMessageBuilder = chatMessageBuilder;
         this.modelPostProcessing = modelPostProcessing;
         this.bpmnLayouting = bpmnLayouting;
     }
 
     @Override
-    public UserRequestResponse getResponse(String userMessageContent) {
-        boolean initialPrompt = conversationHistoryStore.isEmpty();
-        SessionStatus sessionState =
-                initialPrompt ? REASON_ABOUT_TASKS_AND_PROCESS_FLOW : DECIDE_WHETHER_TO_MODIFY_THE_MODEL;
-        while (sessionState != END) {
-            sessionState = switch (sessionState) {
-                case ASK_QUESTIONS -> askQuestionsState.process(userMessageContent);
-                case DECIDE_WHETHER_TO_MODIFY_THE_MODEL ->
-                        decideWhetherToModifyTheModelState.process(userMessageContent);
-                case REASON_ABOUT_TASKS_AND_PROCESS_FLOW -> reasonAboutTasksAndProcessFlowState.process(
-                        userMessageContent);
-                case MODIFY_MODEL -> modifyModelState.process(userMessageContent, initialPrompt);
-                case FIX_ERRORS -> fixErrorsInModelState.process(userMessageContent);
-                default -> throw new IllegalStateException("Unexpected session state '%s'".formatted(sessionState));
+    public UserRequestResponse getResponse(String sessionId) {
+        ImmutableSessionState sessionState = sessionStateStore.getSessionState(sessionId).orElseThrow();
+        String userPrompt = sessionState.lastAddedMessage().content();
+        while (sessionState.sessionStatus() != PROMPTING_FINISHED) {
+            sessionState = switch (sessionState.sessionStatus()) {
+                case DECIDE_WHETHER_TO_MODIFY_THE_MODEL -> decideWhetherToModifyTheModelState.process(
+                        userPrompt,
+                        sessionState
+                );
+                case NEW, REASON_ABOUT_TASKS_AND_PROCESS_FLOW -> reasonAboutTasksAndProcessFlowState.process(
+                        userPrompt,
+                        sessionState
+                );
+                case MODIFY_MODEL -> modifyModelState.process(sessionState);
+                default ->
+                        throw new IllegalStateException("Unexpected session status '%s'".formatted(sessionState.sessionStatus()));
             };
-            log.info("New state: '{}'", sessionState);
+            log.info("New session status: '{}'", sessionState.sessionStatus());
         }
 
-        modelPostProcessing.apply();
-        BpmnModel finalModel = sessionStateStore.model();
+        sessionState = modelPostProcessing.apply(sessionState);
+        sessionStateStore.saveSessionState(sessionState);
+        BpmnModel finalModel = sessionState.bpmnModel();
         ChangelogSnapshot changelogSnapshot = finalModel.getChangeLogSnapshot();
-        BpmnModel layoutedModel = bpmnLayouting.layoutModel();
+        BpmnModel layoutedModel = bpmnLayouting.layoutModel(sessionState.bpmnModel());
         return new UserRequestResponse(
-                conversationHistoryStore.getLastMessage().orElse(""),
+                sessionState.lastUserFacingMessage().orElse(null),
                 layoutedModel.asXmlString(),
                 changelogSnapshot.nodeModificationLogs(),
                 changelogSnapshot.flowModificationLogs()
         );
     }
 
-    @Override
-    public void startNewConversation() {
-        sessionStateStore.clearState();
-        conversationHistoryStore.clearMessages();
-        sessionStateStore.appendMessage(chatMessageBuilder.buildSystemMessage("""
-                                                                              You are the world's best business process modelling specialist.
-                                                                              When confronted with a user request, use the provided functions to create a BPMN diagram based on \
-                                                                              the user responses. The functions work in a recursive manner, each function call creates a \
-                                                                              separate subprocess, which is the inserted into the diagram at a specified insertion point. Each \
-                                                                              subprocess has a start and an end node, which can be used to connect subprocesses with each other.\
-                                                                              Remember, that the content between 'BEGIN REQUEST CONTEXT' and 'END REQUEST CONTEXT' is just provided for your information, do not try to modify it or mention it to the user.
-                                                                              Glossary:
-                                                                              - Node: Elements of the BPMN diagram which are connected with sequence flows, such as tasks or gateways.
-                                                                              - Edge: Sequence flow connecting two nodes.
-                                                                              - Insertion point: A Node after which a subprocess will be inserted. If a subprocess start is already connected to that point, it will be reconnected to the end of the inserted subprocess"""));
-    }
 }

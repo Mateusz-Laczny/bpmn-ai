@@ -9,6 +9,7 @@ import edu.agh.bpmnai.generator.v2.functions.execution.AddSequenceOfTasksCallExe
 import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.functions.parameter.SequenceOfTasksDto;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ class AddSequenceOfTasksCallExecutorTest {
     RetrospectiveSummary aRetrospectiveSummary;
     SessionStateStore sessionStateStore;
     AddSequenceOfTasksCallExecutor executor;
+    String aSessionId = "ID";
 
     @BeforeEach
     void setUp() {
@@ -34,8 +36,8 @@ class AddSequenceOfTasksCallExecutorTest {
         executor = new AddSequenceOfTasksCallExecutor(
                 new ToolCallArgumentsParser(mapper, new NullabilityCheck()),
                 sessionStateStore,
-                new InsertElementIntoDiagram(new CheckIfValidInsertionPoint(sessionStateStore)),
-                new NodeIdToModelInterfaceIdFunction(sessionStateStore)
+                new InsertElementIntoDiagram(new CheckIfValidInsertionPoint()),
+                new NodeIdToModelInterfaceIdFunction()
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
@@ -44,8 +46,11 @@ class AddSequenceOfTasksCallExecutorTest {
     void works_as_expected() throws JsonProcessingException {
         var model = new BpmnModel();
         String predecessorTaskId = model.addTask("task");
-        sessionStateStore.setModelInterfaceId(predecessorTaskId, "task");
-        sessionStateStore.setModel(model);
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .bpmnModel(model)
+                .putNodeIdToModelInterfaceId(predecessorTaskId, "task")
+                .build();
 
         SequenceOfTasksDto callArguments = new SequenceOfTasksDto(
                 aRetrospectiveSummary,
@@ -57,9 +62,10 @@ class AddSequenceOfTasksCallExecutorTest {
                 )
         );
 
-        Result<String, String> executorResult = executor.executeCall(mapper.writeValueAsString(callArguments));
+        Result<FunctionCallResult, String> executorResult =
+                executor.executeCall(mapper.writeValueAsString(callArguments), sessionState);
         assertTrue(executorResult.isOk(), "Result should be OK but is '%s'".formatted(executorResult.getError()));
-        BpmnModel modelAfterModification = sessionStateStore.model();
+        BpmnModel modelAfterModification = executorResult.getValue().updatedSessionState().bpmnModel();
 
         Optional<String> firstTaskId = modelAfterModification.findElementByName("activity1");
         assertTrue(firstTaskId.isPresent());
@@ -83,18 +89,21 @@ class AddSequenceOfTasksCallExecutorTest {
         var model = new BpmnModel();
         model.addLabelledStartEvent("Start");
         String checkTaskId = model.addTask("task");
-        sessionStateStore.setModelInterfaceId(checkTaskId, "task");
         String gatewayId = model.addGateway(EXCLUSIVE, "gateway");
-        sessionStateStore.setModelInterfaceId(gatewayId, "gateway");
         String firstPathAfterGateway = model.addTask("path1");
-        sessionStateStore.setModelInterfaceId(firstPathAfterGateway, "path1");
         String secondPathAfterGateway = model.addTask("path2");
-        sessionStateStore.setModelInterfaceId(secondPathAfterGateway, "path2");
         model.addUnlabelledSequenceFlow(model.getStartEvent(), checkTaskId);
         model.addUnlabelledSequenceFlow(checkTaskId, gatewayId);
         model.addUnlabelledSequenceFlow(gatewayId, firstPathAfterGateway);
         model.addUnlabelledSequenceFlow(gatewayId, secondPathAfterGateway);
-        sessionStateStore.setModel(model);
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .bpmnModel(model)
+                .putNodeIdToModelInterfaceId(checkTaskId, "task1")
+                .putNodeIdToModelInterfaceId(gatewayId, "gateway")
+                .putNodeIdToModelInterfaceId(firstPathAfterGateway, "path1")
+                .putNodeIdToModelInterfaceId(secondPathAfterGateway, "path2")
+                .build();
 
         SequenceOfTasksDto callArguments = new SequenceOfTasksDto(
                 aRetrospectiveSummary,
@@ -106,9 +115,10 @@ class AddSequenceOfTasksCallExecutorTest {
                 )
         );
 
-        Result<String, String> executorResult = executor.executeCall(mapper.writeValueAsString(callArguments));
+        Result<FunctionCallResult, String> executorResult =
+                executor.executeCall(mapper.writeValueAsString(callArguments), sessionState);
         assertTrue(executorResult.isOk(), "Result should be OK but is '%s'".formatted(executorResult.getError()));
-        BpmnModel modelAfterModification = sessionStateStore.model();
+        BpmnModel modelAfterModification = executorResult.getValue().updatedSessionState().bpmnModel();
 
         Optional<String> firstTaskId = modelAfterModification.findElementByName("activity1");
         assertTrue(firstTaskId.isPresent());
@@ -131,10 +141,13 @@ class AddSequenceOfTasksCallExecutorTest {
     void works_correctly_for_sequence_with_single_element() throws JsonProcessingException {
         var model = new BpmnModel();
         String predecessorTaskId = model.addTask("task");
-        sessionStateStore.setModelInterfaceId(predecessorTaskId, "task");
         String endEvent = model.addEndEvent();
         model.addUnlabelledSequenceFlow(predecessorTaskId, endEvent);
-        sessionStateStore.setModel(model);
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .bpmnModel(model)
+                .putNodeIdToModelInterfaceId(predecessorTaskId, "task")
+                .build();
 
         SequenceOfTasksDto callArguments = new SequenceOfTasksDto(
                 aRetrospectiveSummary,
@@ -145,9 +158,10 @@ class AddSequenceOfTasksCallExecutorTest {
                 )
         );
 
-        Result<String, String> executorResult = executor.executeCall(mapper.writeValueAsString(callArguments));
+        Result<FunctionCallResult, String> executorResult =
+                executor.executeCall(mapper.writeValueAsString(callArguments), sessionState);
         assertTrue(executorResult.isOk(), "Result should be OK but is '%s'".formatted(executorResult.getError()));
-        BpmnModel modelAfterModification = sessionStateStore.model();
+        BpmnModel modelAfterModification = executorResult.getValue().updatedSessionState().bpmnModel();
 
         Optional<String> firstTaskId = modelAfterModification.findElementByName("activity1");
         assertTrue(firstTaskId.isPresent());

@@ -2,8 +2,10 @@ package edu.agh.bpmnai.generator.v2.functions.execution;
 
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.DecideWhetherToUpdateTheDiagramFunction;
+import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.DecideWhetherToUpdateTheDiagramFunctionParameters;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +24,10 @@ public class DecideWhetherToUpdateTheDiagramFunctionCallExecutor implements Func
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<FunctionCallResult, String> executeCall(
+            String callArgumentsJson,
+            ImmutableSessionState sessionState
+    ) {
         Result<DecideWhetherToUpdateTheDiagramFunctionParameters, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(
                         callArgumentsJson,
@@ -35,9 +40,9 @@ public class DecideWhetherToUpdateTheDiagramFunctionCallExecutor implements Func
 
         DecideWhetherToUpdateTheDiagramFunctionParameters callArguments = argumentsParsingResult.getValue();
         if (callArguments.diagramNeedsUpdate()) {
-            return Result.ok("");
+            return Result.ok(new FunctionCallResult(sessionState, ""));
         }
 
-        return Result.ok(callArguments.finalMessage());
+        return Result.ok(new FunctionCallResult(sessionState, callArguments.finalMessage()));
     }
 }

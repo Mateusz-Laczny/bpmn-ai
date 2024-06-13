@@ -11,7 +11,9 @@ import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Task;
 import edu.agh.bpmnai.generator.v2.functions.parameter.XorGatewayDto;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
+import edu.agh.bpmnai.generator.v2.session.SessionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.NEW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,17 +31,19 @@ class AddXorGatewayCallExecutorTest {
     RetrospectiveSummary aRetrospectiveSummary;
     SessionStateStore sessionStateStore;
     AddXorGatewayCallExecutor executor;
+    String aSessionId = "ID";
+    SessionStatus aSessionStatus = NEW;
 
     @BeforeEach
     void setUp() {
         sessionStateStore = new SessionStateStore();
-        var checkIfValidInsertionPoint = new CheckIfValidInsertionPoint(sessionStateStore);
+        var checkIfValidInsertionPoint = new CheckIfValidInsertionPoint();
         executor = new AddXorGatewayCallExecutor(
                 new ToolCallArgumentsParser(mapper, new NullabilityCheck()),
                 sessionStateStore,
                 new InsertElementIntoDiagram(checkIfValidInsertionPoint),
-                new NodeIdToModelInterfaceIdFunction(sessionStateStore),
-                new FindInsertionPointForSubprocessWithCheckTask(sessionStateStore, checkIfValidInsertionPoint)
+                new NodeIdToModelInterfaceIdFunction(),
+                new FindInsertionPointForSubprocessWithCheckTask(checkIfValidInsertionPoint)
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
@@ -47,11 +52,15 @@ class AddXorGatewayCallExecutorTest {
     void should_work_as_expected_for_existing_check_activity() throws JsonProcessingException {
         var model = new BpmnModel();
         String checkTaskId = model.addTask("task");
-        sessionStateStore.setModelInterfaceId(checkTaskId, "task");
         String checkTaskPredecessorId = model.addTask("checkTaskPredecessor");
-        sessionStateStore.setModelInterfaceId(checkTaskPredecessorId, "checkTaskPredecessor");
         model.addUnlabelledSequenceFlow(checkTaskPredecessorId, checkTaskId);
-        sessionStateStore.setModel(model);
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .sessionStatus(aSessionStatus)
+                .bpmnModel(model)
+                .putNodeIdToModelInterfaceId(checkTaskId, "task")
+                .putNodeIdToModelInterfaceId(checkTaskPredecessorId, "checkTaskPredecessor")
+                .build();
         XorGatewayDto callArguments = new XorGatewayDto(
                 aRetrospectiveSummary,
                 "",
@@ -61,9 +70,10 @@ class AddXorGatewayCallExecutorTest {
                 List.of(new Task("task1", false), new Task("task2", false))
         );
 
-
-        executor.executeCall(mapper.writeValueAsString(callArguments));
-        BpmnModel modelAfterModification = sessionStateStore.model();
+        Result<FunctionCallResult, String> functionCallResult =
+                executor.executeCall(mapper.writeValueAsString(callArguments), sessionState);
+        assertTrue(functionCallResult.isOk());
+        BpmnModel modelAfterModification = functionCallResult.getValue().updatedSessionState().bpmnModel();
 
         Optional<String> firstTaskId = modelAfterModification.findElementByName("task1");
         assertTrue(firstTaskId.isPresent());
@@ -96,8 +106,12 @@ class AddXorGatewayCallExecutorTest {
     void should_work_as_expected_for_new_check_activity_task() throws JsonProcessingException {
         var model = new BpmnModel();
         String taskId = model.addTask("task");
-        sessionStateStore.setModel(model);
-        sessionStateStore.setModelInterfaceId(taskId, "task");
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .sessionStatus(aSessionStatus)
+                .bpmnModel(model)
+                .putNodeIdToModelInterfaceId(taskId, "task")
+                .build();
         XorGatewayDto callArguments = new XorGatewayDto(
                 aRetrospectiveSummary,
                 "",
@@ -107,9 +121,10 @@ class AddXorGatewayCallExecutorTest {
                 List.of(new Task("task1", false), new Task("task2", false))
         );
 
-
-        executor.executeCall(mapper.writeValueAsString(callArguments));
-        BpmnModel modelAfterModification = sessionStateStore.model();
+        Result<FunctionCallResult, String> functionCallResult =
+                executor.executeCall(mapper.writeValueAsString(callArguments), sessionState);
+        assertTrue(functionCallResult.isOk());
+        BpmnModel modelAfterModification = functionCallResult.getValue().updatedSessionState().bpmnModel();
 
         Optional<String> checkTaskId = modelAfterModification.findElementByName("checkTask");
         assertTrue(checkTaskId.isPresent());
@@ -141,12 +156,15 @@ class AddXorGatewayCallExecutorTest {
     void should_work_as_expected_when_inserting_between_existing_tasks() throws JsonProcessingException {
         var model = new BpmnModel();
         String predecessorTaskId = model.addTask("predecessorTask");
-        sessionStateStore.setModelInterfaceId(predecessorTaskId, "predecessorTask");
         String successorTaskId = model.addTask("successorTask");
-        sessionStateStore.setModelInterfaceId(successorTaskId, "successorTask");
         model.addUnlabelledSequenceFlow(predecessorTaskId, successorTaskId);
-        sessionStateStore.setModel(model);
-
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .sessionStatus(aSessionStatus)
+                .bpmnModel(model)
+                .putNodeIdToModelInterfaceId(predecessorTaskId, "predecessorTask")
+                .putNodeIdToModelInterfaceId(successorTaskId, "successorTask")
+                .build();
         XorGatewayDto callArguments = new XorGatewayDto(
                 aRetrospectiveSummary,
                 "",
@@ -157,9 +175,10 @@ class AddXorGatewayCallExecutorTest {
         );
 
 
-        Result<String, String> executorResult = executor.executeCall(mapper.writeValueAsString(callArguments));
+        Result<FunctionCallResult, String> executorResult =
+                executor.executeCall(mapper.writeValueAsString(callArguments), sessionState);
         assertTrue(executorResult.isOk(), "Result should be OK but is '%s'".formatted(executorResult.getError()));
-        BpmnModel modelAfterModification = sessionStateStore.model();
+        BpmnModel modelAfterModification = executorResult.getValue().updatedSessionState().bpmnModel();
 
         Optional<String> checkTaskId = modelAfterModification.findElementByName("checkTask");
         assertTrue(checkTaskId.isPresent());

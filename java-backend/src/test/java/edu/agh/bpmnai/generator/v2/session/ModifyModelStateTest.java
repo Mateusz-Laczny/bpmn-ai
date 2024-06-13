@@ -1,12 +1,14 @@
 package edu.agh.bpmnai.generator.v2.session;
 
 import edu.agh.bpmnai.generator.bpmn.BpmnToStringExporter;
+import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.openai.OpenAI;
 import edu.agh.bpmnai.generator.openai.OpenAIChatCompletionApi;
 import edu.agh.bpmnai.generator.openai.model.FunctionCallDto;
 import edu.agh.bpmnai.generator.v2.*;
 import edu.agh.bpmnai.generator.v2.functions.FinishAskingQuestionsFunction;
+import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,8 +16,7 @@ import java.util.List;
 
 import static edu.agh.bpmnai.generator.v2.CallErrorType.CALL_FAILED;
 import static edu.agh.bpmnai.generator.v2.CallErrorType.NO_EXECUTOR_FOUND;
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.END;
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.MODIFY_MODEL;
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
@@ -24,10 +25,9 @@ import static org.mockito.Mockito.when;
 class ModifyModelStateTest {
 
     OpenAI.OpenAIModel aModel = OpenAI.OpenAIModel.GPT_3_5_TURBO_16K;
-
     SessionStateStore sessionStateStore;
-
     ChatMessageBuilder chatMessageBuilder;
+    String aSessionId = "ID";
 
     @BeforeEach
     void setUp() {
@@ -42,7 +42,6 @@ class ModifyModelStateTest {
                 mock(FunctionExecutionService.class),
                 mockApi,
                 aModel,
-                sessionStateStore,
                 mock(ConversationHistoryStore.class),
                 chatMessageBuilder,
                 mock(BpmnToStringExporter.class)
@@ -53,17 +52,21 @@ class ModifyModelStateTest {
                 null,
                 null
         ));
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .sessionStatus(NEW)
+                .bpmnModel(new BpmnModel())
+                .build();
 
-        SessionStatus status = state.process("aUserRequest", true);
-
-        assertEquals(END, status);
+        ImmutableSessionState sessionStateAfterProcessing = state.process(sessionState);
+        assertEquals(PROMPTING_FINISHED, sessionStateAfterProcessing.sessionStatus());
     }
 
     @Test
     void adds_error_response_to_conversation_when_called_function_does_not_exist() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
-        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.error(new CallError(
+        when(mockFunctionExecutionService.executeFunctionCall(any(), any())).thenReturn(Result.error(new CallError(
                 NO_EXECUTOR_FOUND,
                 "Error description"
         )));
@@ -71,7 +74,6 @@ class ModifyModelStateTest {
                 mockFunctionExecutionService,
                 mockApi,
                 aModel,
-                sessionStateStore,
                 mock(ConversationHistoryStore.class),
                 chatMessageBuilder,
                 mock(BpmnToStringExporter.class)
@@ -84,11 +86,15 @@ class ModifyModelStateTest {
                 null,
                 List.of(toolCall)
         ));
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .sessionStatus(NEW)
+                .bpmnModel(new BpmnModel())
+                .build();
 
-        SessionStatus status = state.process("aUserRequest", true);
-
-        ChatMessageDto lastAddedMessage = sessionStateStore.lastAddedMessage();
-        assertEquals(MODIFY_MODEL, status);
+        ImmutableSessionState sessionStateAfterProcessing = state.process(sessionState);
+        ChatMessageDto lastAddedMessage = sessionStateAfterProcessing.lastAddedMessage();
+        assertEquals(MODIFY_MODEL, sessionStateAfterProcessing.sessionStatus());
         assertEquals(callId, lastAddedMessage.toolCallId());
     }
 
@@ -96,7 +102,7 @@ class ModifyModelStateTest {
     void adds_error_response_to_conversation_when_function_call_fails() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
-        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.error(new CallError(
+        when(mockFunctionExecutionService.executeFunctionCall(any(), any())).thenReturn(Result.error(new CallError(
                 CALL_FAILED,
                 "Error description"
         )));
@@ -104,7 +110,6 @@ class ModifyModelStateTest {
                 mockFunctionExecutionService,
                 mockApi,
                 aModel,
-                sessionStateStore,
                 mock(ConversationHistoryStore.class),
                 chatMessageBuilder,
                 mock(BpmnToStringExporter.class)
@@ -117,11 +122,15 @@ class ModifyModelStateTest {
                 null,
                 List.of(toolCall)
         ));
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .sessionStatus(NEW)
+                .bpmnModel(new BpmnModel())
+                .build();
 
-        SessionStatus status = state.process("aUserRequest", true);
-
-        ChatMessageDto lastAddedMessage = sessionStateStore.lastAddedMessage();
-        assertEquals(MODIFY_MODEL, status);
+        ImmutableSessionState sessionStateAfterProcessing = state.process(sessionState);
+        ChatMessageDto lastAddedMessage = sessionStateAfterProcessing.lastAddedMessage();
+        assertEquals(MODIFY_MODEL, sessionStateAfterProcessing.sessionStatus());
         assertEquals(callId, lastAddedMessage.toolCallId());
     }
 
@@ -129,12 +138,10 @@ class ModifyModelStateTest {
     void stays_in_MODIFY_MODEL_state_if_function_call_is_successful() {
         var mockApi = mock(OpenAIChatCompletionApi.class);
         var mockFunctionExecutionService = mock(FunctionExecutionService.class);
-        when(mockFunctionExecutionService.executeFunctionCall(any())).thenReturn(Result.ok("some message"));
         var state = new ModifyModelState(
                 mockFunctionExecutionService,
                 mockApi,
                 aModel,
-                sessionStateStore,
                 mock(ConversationHistoryStore.class),
                 chatMessageBuilder,
                 mock(BpmnToStringExporter.class)
@@ -151,11 +158,19 @@ class ModifyModelStateTest {
                 null,
                 List.of(toolCall)
         ));
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .sessionStatus(NEW)
+                .bpmnModel(new BpmnModel())
+                .build();
+        when(mockFunctionExecutionService.executeFunctionCall(
+                any(),
+                any()
+        )).thenReturn(Result.ok(new FunctionCallResult(sessionState, "Some response")));
 
-        SessionStatus status = state.process("aUserRequest", true);
-
-        ChatMessageDto lastAddedMessage = sessionStateStore.lastAddedMessage();
-        assertEquals(MODIFY_MODEL, status);
+        ImmutableSessionState sessionStateAfterProcessing = state.process(sessionState);
+        ChatMessageDto lastAddedMessage = sessionStateAfterProcessing.lastAddedMessage();
+        assertEquals(MODIFY_MODEL, sessionStateAfterProcessing.sessionStatus());
         assertEquals(callId, lastAddedMessage.toolCallId());
     }
 }

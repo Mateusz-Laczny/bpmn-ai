@@ -3,7 +3,7 @@ package edu.agh.bpmnai.generator.v2.functions;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
-import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,34 +18,31 @@ import static edu.agh.bpmnai.generator.bpmn.model.HumanReadableId.isHumanReadabl
 @Slf4j
 public class FindInsertionPointForSubprocessWithCheckTask {
 
-    private final SessionStateStore sessionStateStore;
-
     private final CheckIfValidInsertionPoint checkIfValidInsertionPoint;
 
     @Autowired
     public FindInsertionPointForSubprocessWithCheckTask(
-            SessionStateStore sessionStateStore,
             CheckIfValidInsertionPoint checkIfValidInsertionPoint
     ) {
-        this.sessionStateStore = sessionStateStore;
         this.checkIfValidInsertionPoint = checkIfValidInsertionPoint;
     }
 
     public Result<InsertionPointFindResult, String> apply(
             String checkTaskString,
-            @Nullable String insertionPointModelInterfaceIdString
+            @Nullable String insertionPointModelInterfaceIdString,
+            ImmutableSessionState sessionState
     ) {
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = sessionState.bpmnModel();
         String checkTaskId;
         if (isHumanReadableIdentifier(checkTaskString)) {
             String checkTaskModelInterfaceId = HumanReadableId.fromString(checkTaskString).id();
-            Optional<String> checkTaskIdOptional = sessionStateStore.getNodeId(checkTaskModelInterfaceId);
+            Optional<String> checkTaskIdOptional = sessionState.getNodeId(checkTaskModelInterfaceId);
             if (checkTaskIdOptional.isEmpty()) {
                 return Result.error("Check task '%s' does not exist in the diagram".formatted(
                         checkTaskString));
             }
 
-            return Result.ok(new InsertionPointFindResult(checkTaskIdOptional.get(), false));
+            return Result.ok(new InsertionPointFindResult(checkTaskIdOptional.get(), null));
         }
         if (insertionPointModelInterfaceIdString == null) {
             log.warn(
@@ -62,7 +59,7 @@ public class FindInsertionPointForSubprocessWithCheckTask {
 
         HumanReadableId insertionPointModelFacingId = HumanReadableId.fromString(
                 insertionPointModelInterfaceIdString);
-        Optional<String> insertionPointModelId = sessionStateStore.getNodeId(insertionPointModelFacingId.id());
+        Optional<String> insertionPointModelId = sessionState.getNodeId(insertionPointModelFacingId.id());
         if (insertionPointModelId.isEmpty()) {
             log.warn(
                     "Call unsuccessful, insertion point '{}' does not exist in the diagram",
@@ -72,7 +69,7 @@ public class FindInsertionPointForSubprocessWithCheckTask {
                     insertionPointModelInterfaceIdString));
         }
 
-        Result<Void, String> checkResult = checkIfValidInsertionPoint.apply(insertionPointModelId.get());
+        Result<Void, String> checkResult = checkIfValidInsertionPoint.apply(model, insertionPointModelId.get());
         if (checkResult.isError()) {
             return Result.error(checkResult.getError());
         }
@@ -86,9 +83,8 @@ public class FindInsertionPointForSubprocessWithCheckTask {
         }
 
         model.addUnlabelledSequenceFlow(insertionPointModelId.get(), checkTaskId);
-        sessionStateStore.setModel(model);
-        return Result.ok(new InsertionPointFindResult(checkTaskId, true));
+        return Result.ok(new InsertionPointFindResult(checkTaskId, model));
     }
 
-    public record InsertionPointFindResult(String insertionPointId, boolean isANewTask) {}
+    public record InsertionPointFindResult(String insertionPointId, @Nullable BpmnModel updatedModel) {}
 }

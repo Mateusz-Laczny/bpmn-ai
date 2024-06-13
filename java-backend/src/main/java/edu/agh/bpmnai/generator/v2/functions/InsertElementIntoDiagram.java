@@ -29,7 +29,7 @@ public class InsertElementIntoDiagram {
             @Nullable String subprocessEndId,
             BpmnModel model
     ) {
-        Result<Void, String> checkResult = checkIfValidInsertionPoint.apply(insertionPointId);
+        Result<Void, String> checkResult = checkIfValidInsertionPoint.apply(model, insertionPointId);
         if (checkResult.isError()) {
             return Result.error(checkResult.getError());
         }

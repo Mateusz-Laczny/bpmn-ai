@@ -1,7 +1,6 @@
 package edu.agh.bpmnai.generator.bpmn.layouting;
 
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
-import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import org.junit.jupiter.api.Test;
 
 class TopologicalSortBpmnLayoutingTest {
@@ -289,9 +288,7 @@ class TopologicalSortBpmnLayoutingTest {
         var model = new BpmnModel(testBpmn);
         var gridElementToDiagramPositionMapping =
                 new GridElementToDiagramPositionMapping();
-        var sessionStateStore = new SessionStateStore();
-        sessionStateStore.setModel(model);
-        var layouting = new TopologicalSortBpmnLayouting(gridElementToDiagramPositionMapping, sessionStateStore);
-        System.out.println(layouting.layoutModel().asXmlString());
+        var layouting = new TopologicalSortBpmnLayouting(gridElementToDiagramPositionMapping);
+        System.out.println(layouting.layoutModel(model).asXmlString());
     }
 }

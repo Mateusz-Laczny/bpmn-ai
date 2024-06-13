@@ -2,8 +2,10 @@ package edu.agh.bpmnai.generator.v2.functions.execution;
 
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.FinishAskingQuestionsFunction;
+import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.FinishAskingQuestionsDto;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +24,10 @@ public class FinishAskingQuestionsCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<FunctionCallResult, String> executeCall(
+            String callArgumentsJson,
+            ImmutableSessionState sessionState
+    ) {
         Result<FinishAskingQuestionsDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(callArgumentsJson, FinishAskingQuestionsDto.class);
         if (argumentsParsingResult.isError()) {
@@ -30,6 +35,6 @@ public class FinishAskingQuestionsCallExecutor implements FunctionCallExecutor {
         }
 
         FinishAskingQuestionsDto callArguments = argumentsParsingResult.getValue();
-        return Result.ok(callArguments.finalMessageToTheUser());
+        return Result.ok(new FunctionCallResult(sessionState, callArguments.finalMessageToTheUser()));
     }
 }

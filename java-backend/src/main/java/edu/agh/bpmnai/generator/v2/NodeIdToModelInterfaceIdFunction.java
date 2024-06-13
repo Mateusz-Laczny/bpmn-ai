@@ -1,42 +1,41 @@
 package edu.agh.bpmnai.generator.v2;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnNodeType;
-import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.function.Function;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @Slf4j
-public class NodeIdToModelInterfaceIdFunction implements Function<String, String> {
+public class NodeIdToModelInterfaceIdFunction {
 
-    private final SessionStateStore sessionStateStore;
+    public Map<String, String> apply(Set<String> nodeIds, ImmutableSessionState sessionState) {
+        BpmnModel model = sessionState.bpmnModel();
+        BiMap<String, String> nodeIdToModelInterfacingId = HashBiMap.create(sessionState.nodeIdToModelInterfaceId());
+        for (String nodeId : nodeIds) {
+            int duplicateCounter = 1;
+            BpmnNodeType nodeType = model.getNodeType(nodeId).orElseThrow();
+            String finalModelInterfacingId = nodeType.asString();
+            while (nodeIdToModelInterfacingId.inverse().containsKey(finalModelInterfacingId)) {
+                finalModelInterfacingId = nodeType.asString() + '-' + duplicateCounter;
+                duplicateCounter += 1;
+            }
 
-    @Autowired
-    public NodeIdToModelInterfaceIdFunction(SessionStateStore sessionStateStore) {
-        this.sessionStateStore = sessionStateStore;
-    }
+            nodeIdToModelInterfacingId.put(nodeId, finalModelInterfacingId);
 
-    @Override
-    public String apply(String nodeId) {
-        BpmnModel model = sessionStateStore.model();
-        int duplicateCounter = 1;
-        BpmnNodeType nodeType = model.getNodeType(nodeId).orElseThrow();
-        String finalId = nodeType.asString();
-        while (sessionStateStore.getNodeId(finalId).isPresent()) {
-            finalId = nodeType.asString() + '-' + duplicateCounter;
-            duplicateCounter += 1;
+            log.info(
+                    "Final model interface id for element '{}': '{}'",
+                    model.getHumanReadableId(nodeId).orElseThrow().asString(),
+                    finalModelInterfacingId
+            );
         }
 
-        log.info(
-                "Final model interface id for element '{}': '{}'",
-                model.getHumanReadableId(nodeId).orElseThrow().asString(),
-                finalId
-        );
-
-        return finalId;
+        return nodeIdToModelInterfacingId;
     }
 }

@@ -5,7 +5,7 @@
         <option name="VM_PARAMETERS" value="-Dspring.profiles.active=mock-api"/>
         <extension name="coverage">
             <pattern>
-                <option name="PATTERN" value="edu.agh.bpmnai.generator.*"/>
+                <option name="PATTERN" value="edu.agh.bpmnai.generator.v2.session.*"/>
                 <option name="ENABLED" value="true"/>
             </pattern>
         </extension>

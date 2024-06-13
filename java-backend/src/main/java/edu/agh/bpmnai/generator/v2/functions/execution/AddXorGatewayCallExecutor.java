@@ -4,13 +4,11 @@ import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
-import edu.agh.bpmnai.generator.v2.functions.AddXorGatewayFunction;
-import edu.agh.bpmnai.generator.v2.functions.FindInsertionPointForSubprocessWithCheckTask;
+import edu.agh.bpmnai.generator.v2.functions.*;
 import edu.agh.bpmnai.generator.v2.functions.FindInsertionPointForSubprocessWithCheckTask.InsertionPointFindResult;
-import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
-import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Task;
 import edu.agh.bpmnai.generator.v2.functions.parameter.XorGatewayDto;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +54,10 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<FunctionCallResult, String> executeCall(
+            String callArgumentsJson,
+            ImmutableSessionState sessionState
+    ) {
         Result<XorGatewayDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson,
                 XorGatewayDto.class
@@ -74,7 +75,8 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
         Result<InsertionPointFindResult, String> insertionPointFindResult =
                 findInsertionPointForSubprocessWithCheckTask.apply(
                         callArguments.checkTask(),
-                        callArguments.insertionPoint()
+                        callArguments.insertionPoint(),
+                        sessionState
                 );
         if (insertionPointFindResult.isError()) {
             return Result.error(insertionPointFindResult.getError());
@@ -82,11 +84,11 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
 
         String insertionPointId = insertionPointFindResult.getValue().insertionPointId();
         Set<String> addedNodesIds = new HashSet<>();
-        if (insertionPointFindResult.getValue().isANewTask()) {
+        BpmnModel model = sessionState.bpmnModel();
+        if (insertionPointFindResult.getValue().updatedModel() != null) {
             addedNodesIds.add(insertionPointId);
+            model = insertionPointFindResult.getValue().updatedModel();
         }
-
-        BpmnModel model = sessionStateStore.model();
 
         String openingGatewayId = model.addGateway(EXCLUSIVE, callArguments.subprocessName() + " opening gateway");
         addedNodesIds.add(openingGatewayId);
@@ -126,23 +128,23 @@ public class AddXorGatewayCallExecutor implements FunctionCallExecutor {
             return Result.error(elementInsertResult.getError());
         }
 
-        sessionStateStore.setModel(model);
-        for (String nodeId : addedNodesIds) {
-            sessionStateStore.setModelInterfaceId(nodeId, nodeIdToModelInterfaceIdFunction.apply(nodeId));
-        }
+        var updatedState =
+                ImmutableSessionState.builder().from(sessionState).bpmnModel(model).nodeIdToModelInterfaceId(
+                        nodeIdToModelInterfaceIdFunction.apply(addedNodesIds, sessionState)).build();
 
         HumanReadableId subprocessStartNode = new HumanReadableId(
                 model.getName(insertionPointId).orElseThrow(),
-                sessionStateStore.getModelInterfaceId(insertionPointId).orElseThrow()
+                updatedState.getModelInterfaceId(insertionPointId).orElseThrow()
         );
         HumanReadableId subprocessEndNode = new HumanReadableId(
                 model.getName(subdiagramEndElement).orElseThrow(),
-                sessionStateStore.getModelInterfaceId(subdiagramEndElement).orElseThrow()
+                updatedState.getModelInterfaceId(subdiagramEndElement).orElseThrow()
         );
 
-        return Result.ok("Call successful; subprocess start node: '%s', subprocess end node: '%s'".formatted(
-                subprocessStartNode,
-                subprocessEndNode
+        return Result.ok(new FunctionCallResult(
+                updatedState,
+                ("Call successful; subprocess start node: '%s', subprocess end node: "
+                 + "'%s'").formatted(subprocessStartNode, subprocessEndNode)
         ));
     }
 }

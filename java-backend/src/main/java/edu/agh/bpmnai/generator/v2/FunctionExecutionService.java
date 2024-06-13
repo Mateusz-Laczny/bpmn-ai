@@ -1,8 +1,9 @@
 package edu.agh.bpmnai.generator.v2;
 
 import edu.agh.bpmnai.generator.datatype.Result;
+import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.execution.FunctionCallExecutor;
-import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -19,20 +20,19 @@ public class FunctionExecutionService {
 
     private final Map<String, FunctionCallExecutor> functionNameToExecutor;
 
-    private final SessionStateStore sessionStateStore;
-
     public FunctionExecutionService(
-            List<FunctionCallExecutor> functionCallExecutors,
-            SessionStateStore sessionStateStore
+            List<FunctionCallExecutor> functionCallExecutors
     ) {
-        this.sessionStateStore = sessionStateStore;
         functionNameToExecutor = new HashMap<>();
         for (FunctionCallExecutor functionCallExecutor : functionCallExecutors) {
             functionNameToExecutor.put(functionCallExecutor.getFunctionName(), functionCallExecutor);
         }
     }
 
-    public Result<String, CallError> executeFunctionCall(ToolCallDto functionCall) {
+    public Result<FunctionCallResult, CallError> executeFunctionCall(
+            ToolCallDto functionCall,
+            ImmutableSessionState sessionState
+    ) {
         String calledFunctionName = functionCall.functionCallProperties().name();
         if (!functionNameToExecutor.containsKey(calledFunctionName)) {
             return Result.error(new CallError(
@@ -41,9 +41,9 @@ public class FunctionExecutionService {
             ));
         }
         FunctionCallExecutor executorFunction = functionNameToExecutor.get(calledFunctionName);
-        Result<String, String> callResult = executorFunction.executeCall(
+        Result<FunctionCallResult, String> callResult = executorFunction.executeCall(
                 functionCall.functionCallProperties()
-                        .argumentsJson()
+                        .argumentsJson(), sessionState
         );
 
         if (callResult.isError()) {

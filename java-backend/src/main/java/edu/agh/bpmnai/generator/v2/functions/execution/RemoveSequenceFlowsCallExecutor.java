@@ -4,10 +4,12 @@ import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.bpmn.model.RemoveSequenceFlowError;
 import edu.agh.bpmnai.generator.datatype.Result;
+import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.RemoveSequenceFlowsFunction;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveSequenceFlowsCallParameterDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.SequenceFlowDto;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,14 +42,17 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<FunctionCallResult, String> executeCall(
+            String callArgumentsJson,
+            ImmutableSessionState sessionState
+    ) {
         Result<RemoveSequenceFlowsCallParameterDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(callArgumentsJson, RemoveSequenceFlowsCallParameterDto.class);
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());
         }
 
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = sessionState.bpmnModel();
         List<SequenceFlowDto> sequenceFlowDtos =
                 argumentsParsingResult.getValue().sequenceFlowsToRemove();
         StringBuilder removedFlowsMessageBuilder = new StringBuilder("Following sequence flows were removed:\n");
@@ -59,7 +64,7 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
             }
 
             String sequenceFlowSourceModelFacingId = HumanReadableId.fromString(sequenceFlowDto.source()).id();
-            Optional<String> sequenceFlowSourceId = sessionStateStore.getNodeId(sequenceFlowSourceModelFacingId);
+            Optional<String> sequenceFlowSourceId = sessionState.getNodeId(sequenceFlowSourceModelFacingId);
             if (sequenceFlowSourceId.isEmpty()) {
                 return Result.error("Element with id '%s' does not exist in the diagram".formatted(
                         sequenceFlowDto.target()));
@@ -70,7 +75,7 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
             }
 
             String sequenceFlowTargetModelFacingId = HumanReadableId.fromString(sequenceFlowDto.target()).id();
-            Optional<String> sequenceFlowTargetId = sessionStateStore.getNodeId(sequenceFlowTargetModelFacingId);
+            Optional<String> sequenceFlowTargetId = sessionState.getNodeId(sequenceFlowTargetModelFacingId);
             if (sequenceFlowTargetId.isEmpty()) {
                 return Result.error("Element with id '%s' does not exist in the diagram".formatted(
                         sequenceFlowDto.target()));
@@ -109,8 +114,14 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
             }
         }
 
-        sessionStateStore.setModel(model);
+        ImmutableSessionState updatedSessionState =
+                ImmutableSessionState.builder().from(sessionState).bpmnModel(model).build();
 
-        return Result.ok(removedFlowsMessageBuilder.append('\n').append(missingFlowsMessageBuilder).toString());
+        return Result.ok(new FunctionCallResult(
+                updatedSessionState,
+                removedFlowsMessageBuilder.append('\n')
+                        .append(missingFlowsMessageBuilder)
+                        .toString()
+        ));
     }
 }

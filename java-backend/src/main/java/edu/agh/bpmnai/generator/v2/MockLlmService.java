@@ -317,8 +317,4 @@ public class MockLlmService implements LlmService {
         );
     }
 
-    @Override
-    public void startNewConversation() {
-
-    }
 }

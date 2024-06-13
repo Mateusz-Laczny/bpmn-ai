@@ -5,11 +5,12 @@ import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.AddParallelGatewayFunction;
+import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.ParallelGatewayDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Task;
-import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,8 +28,6 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
 
     private final ToolCallArgumentsParser callArgumentsParser;
 
-    private final SessionStateStore sessionStateStore;
-
     private final InsertElementIntoDiagram insertElementIntoDiagram;
 
     private final NodeIdToModelInterfaceIdFunction nodeIdToModelInterfaceIdFunction;
@@ -36,12 +35,10 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
     @Autowired
     public AddParallelGatewayCallExecutor(
             ToolCallArgumentsParser callArgumentsParser,
-            SessionStateStore sessionStateStore,
             InsertElementIntoDiagram insertElementIntoDiagram,
             NodeIdToModelInterfaceIdFunction nodeIdToModelInterfaceIdFunction
     ) {
         this.callArgumentsParser = callArgumentsParser;
-        this.sessionStateStore = sessionStateStore;
         this.insertElementIntoDiagram = insertElementIntoDiagram;
         this.nodeIdToModelInterfaceIdFunction = nodeIdToModelInterfaceIdFunction;
     }
@@ -52,11 +49,11 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
-        Result<ParallelGatewayDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
-                callArgumentsJson,
-                ParallelGatewayDto.class
-        );
+    public Result<FunctionCallResult, String> executeCall(
+            String callArgumentsJson, ImmutableSessionState sessionState
+    ) {
+        Result<ParallelGatewayDto, String> argumentsParsingResult =
+                callArgumentsParser.parseArguments(callArgumentsJson, ParallelGatewayDto.class);
         if (argumentsParsingResult.isError()) {
             return Result.error(argumentsParsingResult.getError());
         }
@@ -67,7 +64,7 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
             return Result.error("A gateway subprocess must contain at least 2 activities");
         }
 
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = sessionState.bpmnModel();
         Set<String> addedNodesIds = new HashSet<>();
 
         if (!isHumanReadableIdentifier(callArguments.insertionPoint())) {
@@ -75,8 +72,7 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
         }
 
         HumanReadableId insertionPointModelFacingId = HumanReadableId.fromString(callArguments.insertionPoint());
-        Optional<String> insertionPointModelId =
-                sessionStateStore.getNodeId(insertionPointModelFacingId.id());
+        Optional<String> insertionPointModelId = sessionState.getNodeId(insertionPointModelFacingId.id());
         if (insertionPointModelId.isEmpty()) {
             return Result.error("Insertion point '%s' doesn't exist in the diagram".formatted(callArguments.insertionPoint()));
         }
@@ -84,10 +80,10 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
         String insertionPointId = insertionPointModelId.get();
 
         if (model.findSuccessors(insertionPointId).size() > 1) {
-            return Result.error(
-                    ("Insertion point '%s' has more than one successor node; inserting a subprocess after it would be "
-                     + "ambiguous. Provide an insertion point with exactly 0 or 1 successor nodes").formatted(
-                            callArguments.insertionPoint()));
+            return Result.error(("Insertion point '%s' has more than one successor node; inserting a subprocess after"
+                                 + " it would be "
+                                 + "ambiguous. Provide an insertion point with exactly 0 or 1 successor nodes").formatted(
+                    callArguments.insertionPoint()));
         }
 
         String openingGatewayId = model.addGateway(PARALLEL, callArguments.subprocessName() + " opening gateway");
@@ -132,23 +128,28 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
             return Result.error(insertSubdiagramResult.getError());
         }
 
-        sessionStateStore.setModel(model);
-        for (String nodeId : addedNodesIds) {
-            sessionStateStore.setModelInterfaceId(nodeId, nodeIdToModelInterfaceIdFunction.apply(nodeId));
-        }
+        var updatedState =
+                ImmutableSessionState.builder().from(sessionState).bpmnModel(model).nodeIdToModelInterfaceId(
+                        nodeIdToModelInterfaceIdFunction.apply(addedNodesIds, sessionState)).build();
 
         HumanReadableId subprocessStartNode = new HumanReadableId(
                 model.getName(openingGatewayId).orElseThrow(),
-                sessionStateStore.getModelInterfaceId(openingGatewayId).orElseThrow()
+                updatedState.getModelInterfaceId(openingGatewayId)
+                        .orElseThrow()
         );
         HumanReadableId subprocessEndNode = new HumanReadableId(
                 model.getName(subdiagramClosingElement).orElseThrow(),
-                sessionStateStore.getModelInterfaceId(subdiagramClosingElement).orElseThrow()
+                updatedState.getModelInterfaceId(
+                        subdiagramClosingElement).orElseThrow()
         );
 
-        return Result.ok("Call successful; subprocess start node: '%s', subprocess end node: '%s'".formatted(
-                subprocessStartNode,
-                subprocessEndNode
+        return Result.ok(new FunctionCallResult(
+                updatedState,
+                ("Call successful; subprocess start node: '%s', subprocess end node: "
+                 + "'%s'").formatted(
+                        subprocessStartNode,
+                        subprocessEndNode
+                )
         ));
     }
 }

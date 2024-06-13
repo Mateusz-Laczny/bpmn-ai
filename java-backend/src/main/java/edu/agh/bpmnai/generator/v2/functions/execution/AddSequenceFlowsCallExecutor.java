@@ -4,10 +4,11 @@ import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.functions.AddSequenceFlowsFunction;
+import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.AddSequenceFlowsCallParameterDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.SequenceFlowDto;
-import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,15 +21,12 @@ import static edu.agh.bpmnai.generator.bpmn.model.HumanReadableId.isHumanReadabl
 @Slf4j
 public class AddSequenceFlowsCallExecutor implements FunctionCallExecutor {
 
-    private final SessionStateStore sessionStateStore;
     private final ToolCallArgumentsParser callArgumentsParser;
 
     @Autowired
     public AddSequenceFlowsCallExecutor(
-            SessionStateStore sessionStateStore,
             ToolCallArgumentsParser callArgumentsParser
     ) {
-        this.sessionStateStore = sessionStateStore;
         this.callArgumentsParser = callArgumentsParser;
     }
 
@@ -38,7 +36,10 @@ public class AddSequenceFlowsCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<FunctionCallResult, String> executeCall(
+            String callArgumentsJson,
+            ImmutableSessionState sessionState
+    ) {
         Result<AddSequenceFlowsCallParameterDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson, AddSequenceFlowsCallParameterDto.class);
         if (argumentsParsingResult.isError()) {
@@ -47,7 +48,7 @@ public class AddSequenceFlowsCallExecutor implements FunctionCallExecutor {
 
         AddSequenceFlowsCallParameterDto callArguments = argumentsParsingResult.getValue();
 
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = sessionState.bpmnModel();
         for (SequenceFlowDto sequenceFlow : callArguments.sequenceFlows()) {
             if (!isHumanReadableIdentifier(sequenceFlow.source())) {
                 return Result.error("'%s' is not in the correct id format".formatted(sequenceFlow.source()));
@@ -58,13 +59,13 @@ public class AddSequenceFlowsCallExecutor implements FunctionCallExecutor {
             }
 
             String sourceNodeLlmInterfacingId = HumanReadableId.fromString(sequenceFlow.source()).id();
-            Optional<String> sourceNodeModelId = sessionStateStore.getNodeId(sourceNodeLlmInterfacingId);
+            Optional<String> sourceNodeModelId = sessionState.getNodeId(sourceNodeLlmInterfacingId);
             if (sourceNodeModelId.isEmpty()) {
                 return Result.error("Node with id '%s' does not exist".formatted(sequenceFlow.source()));
             }
 
             String targetNodeLlmInterfacingId = HumanReadableId.fromString(sequenceFlow.target()).id();
-            Optional<String> targetNodeModelId = sessionStateStore.getNodeId(targetNodeLlmInterfacingId);
+            Optional<String> targetNodeModelId = sessionState.getNodeId(targetNodeLlmInterfacingId);
             if (targetNodeModelId.isEmpty()) {
                 return Result.error("Node with id '%s' does not exist".formatted(sequenceFlow.target()));
             }
@@ -79,8 +80,9 @@ public class AddSequenceFlowsCallExecutor implements FunctionCallExecutor {
             model.addUnlabelledSequenceFlow(sourceNodeModelId.get(), targetNodeModelId.get());
         }
 
-        sessionStateStore.setModel(model);
+        ImmutableSessionState updatedState =
+                ImmutableSessionState.builder().from(sessionState).bpmnModel(model).build();
 
-        return Result.ok("Call successful");
+        return Result.ok(new FunctionCallResult(updatedState, "Call successful"));
     }
 }

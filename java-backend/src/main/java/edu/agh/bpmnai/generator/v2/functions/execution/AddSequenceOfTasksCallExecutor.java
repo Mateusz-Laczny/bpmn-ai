@@ -5,9 +5,11 @@ import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.v2.NodeIdToModelInterfaceIdFunction;
 import edu.agh.bpmnai.generator.v2.functions.AddSequenceOfTasksFunction;
+import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.InsertElementIntoDiagram;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.SequenceOfTasksDto;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +52,9 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<FunctionCallResult, String> executeCall(
+            String callArgumentsJson, ImmutableSessionState sessionState
+    ) {
         Result<SequenceOfTasksDto, String> argumentsParsingResult =
                 callArgumentsParser.parseArguments(callArgumentsJson, SequenceOfTasksDto.class);
         if (argumentsParsingResult.isError()) {
@@ -58,14 +62,14 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
         }
 
         SequenceOfTasksDto callArguments = argumentsParsingResult.getValue();
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = sessionState.bpmnModel();
 
         if (!isHumanReadableIdentifier(callArguments.insertionPoint())) {
             return Result.error("'%s' is not in the correct format".formatted(callArguments.insertionPoint()));
         }
 
         HumanReadableId insertionPointModelFacingId = HumanReadableId.fromString(callArguments.insertionPoint());
-        Optional<String> startOfSequenceNodeId = sessionStateStore.getNodeId(insertionPointModelFacingId.id());
+        Optional<String> startOfSequenceNodeId = sessionState.getNodeId(insertionPointModelFacingId.id());
         if (startOfSequenceNodeId.isEmpty()) {
             log.info("Insertion point '{}' does not exist in the diagram", callArguments.insertionPoint());
             return Result.error("Insertion point '%s' doesn't exist in the diagram".formatted(callArguments.insertionPoint()));
@@ -102,26 +106,27 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
             return Result.error(insertElementResult.getError());
         }
 
-        sessionStateStore.setModel(model);
-
-        for (String taskId : addedTasks) {
-            sessionStateStore.setModelInterfaceId(taskId, nodeIdToModelInterfaceIdFunction.apply(taskId));
-        }
-
+        var updatedState =
+                ImmutableSessionState.builder().from(sessionState).bpmnModel(model).nodeIdToModelInterfaceId(
+                        nodeIdToModelInterfaceIdFunction.apply(addedTasks, sessionState)).build();
         HumanReadableId subprocessStartNode = new HumanReadableId(
                 model.getName(sequenceStartElementId).orElseThrow(),
-                sessionStateStore.getModelInterfaceId(
+                updatedState.getModelInterfaceId(
                         sequenceStartElementId).orElseThrow()
         );
         HumanReadableId subprocessEndNode = new HumanReadableId(
                 model.getName(lastElementInSequenceId).orElseThrow(),
-                sessionStateStore.getModelInterfaceId(
-                        lastElementInSequenceId).orElseThrow()
+                updatedState.getModelInterfaceId(lastElementInSequenceId)
+                        .orElseThrow()
         );
 
-        return Result.ok("Call successful; subprocess start node: '%s', subprocess end node: '%s'".formatted(
-                subprocessStartNode,
-                subprocessEndNode
+        return Result.ok(new FunctionCallResult(
+                updatedState,
+                ("Call successful; subprocess start node: '%s', subprocess end node: "
+                 + "'%s'").formatted(
+                        subprocessStartNode,
+                        subprocessEndNode
+                )
         ));
     }
 }

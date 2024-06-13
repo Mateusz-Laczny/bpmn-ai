@@ -8,12 +8,15 @@ import edu.agh.bpmnai.generator.v2.functions.execution.RemoveNodesCallExecutor;
 import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveNodesFunctionCallDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
+import edu.agh.bpmnai.generator.v2.session.SessionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.NEW;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,8 +24,9 @@ class RemoveNodesCallExecutorTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     SessionStateStore sessionStateStore;
-
     RetrospectiveSummary aRetrospectiveSummary;
+    String aSessionId = "ID";
+    SessionStatus aSessionStatus = NEW;
     private RemoveNodesCallExecutor executor;
 
     @BeforeEach
@@ -39,15 +43,20 @@ class RemoveNodesCallExecutorTest {
     void removes_task_from_the_model() throws JsonProcessingException {
         var model = new BpmnModel();
         String taskId = model.addTask("task");
-        sessionStateStore.setModelInterfaceId(taskId, "task");
-        sessionStateStore.setModel(model);
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .sessionStatus(aSessionStatus)
+                .bpmnModel(model)
+                .putNodeIdToModelInterfaceId(taskId, "task")
+                .build();
         RemoveNodesFunctionCallDto callArguments = new RemoveNodesFunctionCallDto(aRetrospectiveSummary, "",
                                                                                   List.of("task#task")
         );
 
-        Result<String, String> executorResult = executor.executeCall(mapper.writeValueAsString(callArguments));
+        Result<FunctionCallResult, String> executorResult =
+                executor.executeCall(mapper.writeValueAsString(callArguments), sessionState);
         assertTrue(executorResult.isOk(), "Result should be OK but is '%s'".formatted(executorResult.getError()));
-        BpmnModel modelAfterModification = sessionStateStore.model();
+        BpmnModel modelAfterModification = executorResult.getValue().updatedSessionState().bpmnModel();
 
         assertFalse(modelAfterModification.nodeIdExist(taskId));
     }

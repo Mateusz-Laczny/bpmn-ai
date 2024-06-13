@@ -4,17 +4,22 @@ import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.bpmn.model.HumanReadableId;
 import edu.agh.bpmnai.generator.bpmn.model.RemoveActivityError;
 import edu.agh.bpmnai.generator.datatype.Result;
+import edu.agh.bpmnai.generator.v2.functions.FunctionCallResult;
 import edu.agh.bpmnai.generator.v2.functions.RemoveNodesFunction;
 import edu.agh.bpmnai.generator.v2.functions.ToolCallArgumentsParser;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RemoveNodesFunctionCallDto;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static edu.agh.bpmnai.generator.bpmn.model.HumanReadableId.isHumanReadableIdentifier;
 
@@ -41,7 +46,10 @@ public class RemoveNodesCallExecutor implements FunctionCallExecutor {
     }
 
     @Override
-    public Result<String, String> executeCall(String callArgumentsJson) {
+    public Result<FunctionCallResult, String> executeCall(
+            String callArgumentsJson,
+            ImmutableSessionState sessionState
+    ) {
         Result<RemoveNodesFunctionCallDto, String> argumentsParsingResult = callArgumentsParser.parseArguments(
                 callArgumentsJson, RemoveNodesFunctionCallDto.class);
         if (argumentsParsingResult.isError()) {
@@ -50,7 +58,7 @@ public class RemoveNodesCallExecutor implements FunctionCallExecutor {
 
         RemoveNodesFunctionCallDto callArguments = argumentsParsingResult.getValue();
 
-        BpmnModel model = sessionStateStore.model();
+        BpmnModel model = sessionState.bpmnModel();
         Set<String> removedNodesIds = new HashSet<>();
         StringBuilder removedElementsMessageBuilder = new StringBuilder("Following elements were removed:\n");
         StringBuilder missingElementsMessageBuilder = new StringBuilder(
@@ -61,7 +69,7 @@ public class RemoveNodesCallExecutor implements FunctionCallExecutor {
             }
 
             String nodeToRemoveModelFacingId = HumanReadableId.fromString(nodeToRemove).id();
-            Optional<String> nodeToRemoveIdOptional = sessionStateStore.getNodeId(nodeToRemoveModelFacingId);
+            Optional<String> nodeToRemoveIdOptional = sessionState.getNodeId(nodeToRemoveModelFacingId);
             if (nodeToRemoveIdOptional.isEmpty()) {
                 missingElementsMessageBuilder.append(nodeToRemove).append(", ");
             } else {
@@ -81,11 +89,20 @@ public class RemoveNodesCallExecutor implements FunctionCallExecutor {
             }
         }
 
-        sessionStateStore.setModel(model);
-        for (String nodeId : removedNodesIds) {
-            sessionStateStore.removeModelInterfaceId(nodeId);
-        }
+        Map<String, String> updatedNodeIdToModelInterfaceId =
+                sessionState.nodeIdToModelInterfaceId().entrySet().stream().filter(entry -> !removedNodesIds.contains(
+                        entry.getKey())).collect(
+                        Collectors.toMap(Entry::getKey, Entry::getValue));
+        ImmutableSessionState updatedState = ImmutableSessionState.builder().from(sessionState)
+                .bpmnModel(model)
+                .nodeIdToModelInterfaceId(updatedNodeIdToModelInterfaceId)
+                .build();
 
-        return Result.ok(removedElementsMessageBuilder.append('\n').append(missingElementsMessageBuilder).toString());
+        return Result.ok(new FunctionCallResult(
+                updatedState,
+                removedElementsMessageBuilder.append('\n')
+                        .append(missingElementsMessageBuilder)
+                        .toString()
+        ));
     }
 }

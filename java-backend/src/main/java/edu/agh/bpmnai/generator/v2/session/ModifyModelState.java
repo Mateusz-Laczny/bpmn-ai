@@ -10,12 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.END;
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.MODIFY_MODEL;
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.*;
 
 @Service
 @Slf4j
@@ -27,19 +24,19 @@ public class ModifyModelState {
                     AddParallelGatewayFunction.FUNCTION_DTO,
                     AddWhileLoopFunction.FUNCTION_DTO
             );
-
+    private static final String PROMPT_TEMPLATE =
+            """
+            Use the provided functions to modify the diagram. After you're done, provide an empty message without \
+            any text or function calls
+            BEGIN REQUEST CONTEXT
+            Current diagram state:
+            %s
+            END REQUEST CONTEXT""";
     private final FunctionExecutionService functionExecutionService;
-
     private final OpenAIChatCompletionApi chatCompletionApi;
-
     private final OpenAI.OpenAIModel usedModel;
-
-    private final SessionStateStore sessionStateStore;
-
     private final ConversationHistoryStore conversationHistoryStore;
-
     private final ChatMessageBuilder chatMessageBuilder;
-
     private final BpmnToStringExporter bpmnToStringExporter;
 
     @Autowired
@@ -47,7 +44,6 @@ public class ModifyModelState {
             FunctionExecutionService functionExecutionService,
             OpenAIChatCompletionApi chatCompletionApi,
             OpenAI.OpenAIModel usedModel,
-            SessionStateStore sessionStateStore,
             ConversationHistoryStore conversationHistoryStore,
             ChatMessageBuilder chatMessageBuilder,
             BpmnToStringExporter bpmnToStringExporter
@@ -55,51 +51,57 @@ public class ModifyModelState {
         this.functionExecutionService = functionExecutionService;
         this.chatCompletionApi = chatCompletionApi;
         this.usedModel = usedModel;
-        this.sessionStateStore = sessionStateStore;
         this.conversationHistoryStore = conversationHistoryStore;
         this.chatMessageBuilder = chatMessageBuilder;
         this.bpmnToStringExporter = bpmnToStringExporter;
     }
 
-    public SessionStatus process(String userMessageContent, boolean isInitialPrompt) {
-        sessionStateStore.appendMessage(chatMessageBuilder.buildUserMessage(
-                "Use the provided functions to modify the diagram. After you're done, provide an empty message "
-                + "without any text or function calls\n"
-                + "BEGIN REQUEST CONTEXT" + "\n" + "Current diagram state:\n"
-                + bpmnToStringExporter.export() + "\n" + "END REQUEST CONTEXT"));
+    public ImmutableSessionState process(ImmutableSessionState sessionState) {
+        ChatMessageDto promptDto =
+                chatMessageBuilder.buildUserMessage(PROMPT_TEMPLATE.formatted(bpmnToStringExporter.export(sessionState)));
+        List<ChatMessageDto> updatedModelContext = new ArrayList<>(sessionState.modelContext());
+        updatedModelContext.add(promptDto);
 
-        log.info("Request text sent to LLM: '{}'", sessionStateStore.lastAddedMessage());
+        log.info("Request text sent to LLM: '{}'", promptDto);
 
         Set<ChatFunctionDto> availableFunctions = new HashSet<>(FUNCTIONS_FOR_MODIFYING_THE_MODEL);
-        if (!isInitialPrompt) {
+        if (sessionState.sessionStatus() != NEW) {
             availableFunctions.add(RemoveNodesFunction.FUNCTION_DTO);
             availableFunctions.add(RemoveSequenceFlowsFunction.FUNCTION_DTO);
             availableFunctions.add(AddSequenceFlowsFunction.FUNCTION_DTO);
         }
 
-        ChatMessageDto chatResponse = chatCompletionApi.sendRequest(
+        ChatMessageDto chatCompletion = chatCompletionApi.sendRequest(
                 usedModel,
-                sessionStateStore.messages(),
+                updatedModelContext,
                 availableFunctions,
                 "auto"
         );
-        sessionStateStore.appendMessage(chatResponse);
-        if (chatResponse.toolCalls() == null || chatResponse.toolCalls().isEmpty()) {
-            conversationHistoryStore.appendMessage(chatResponse.content());
-            return END;
+
+        updatedModelContext.add(chatCompletion);
+
+        if (chatCompletion.toolCalls() == null || chatCompletion.toolCalls().isEmpty()) {
+            conversationHistoryStore.appendMessage(chatCompletion.content());
+            return ImmutableSessionState.builder().from(sessionState)
+                    .sessionStatus(PROMPTING_FINISHED)
+                    .modelContext(updatedModelContext)
+                    .build();
         }
 
-        for (ToolCallDto toolCall : chatResponse.toolCalls()) {
+        for (ToolCallDto toolCall : chatCompletion.toolCalls()) {
             log.info("Calling function '{}'", toolCall);
             String calledFunctionName = toolCall.functionCallProperties().name();
-            Result<String, CallError> functionCallResult = functionExecutionService.executeFunctionCall(toolCall);
+            Result<FunctionCallResult, CallError> functionCallResult = functionExecutionService.executeFunctionCall(
+                    toolCall,
+                    sessionState
+            );
             if (functionCallResult.isError()) {
                 log.warn(
                         "Call of function '{}' returned error '{}'",
                         calledFunctionName,
                         functionCallResult.getError()
                 );
-                var response = chatMessageBuilder.buildToolCallResponseMessage(
+                var errorResponse = chatMessageBuilder.buildToolCallResponseMessage(
                         toolCall.id(),
                         new FunctionCallResponseDto(
                                 false,
@@ -111,9 +113,9 @@ public class ModifyModelState {
                         )
                 );
 
-                sessionStateStore.appendMessage(response);
+                updatedModelContext.add(errorResponse);
             } else {
-                var response = chatMessageBuilder.buildToolCallResponseMessage(
+                var successResponse = chatMessageBuilder.buildToolCallResponseMessage(
                         toolCall.id(),
                         new FunctionCallResponseDto(
                                 true,
@@ -123,10 +125,15 @@ public class ModifyModelState {
                                 )
                         )
                 );
-                sessionStateStore.appendMessage(response);
+
+                updatedModelContext.add(successResponse);
+                sessionState = functionCallResult.getValue().updatedSessionState();
             }
         }
 
-        return MODIFY_MODEL;
+        return ImmutableSessionState.builder().from(sessionState)
+                .sessionStatus(MODIFY_MODEL)
+                .modelContext(updatedModelContext)
+                .build();
     }
 }

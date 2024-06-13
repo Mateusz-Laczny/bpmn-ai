@@ -10,7 +10,9 @@ import edu.agh.bpmnai.generator.v2.functions.parameter.NullabilityCheck;
 import edu.agh.bpmnai.generator.v2.functions.parameter.ParallelGatewayDto;
 import edu.agh.bpmnai.generator.v2.functions.parameter.RetrospectiveSummary;
 import edu.agh.bpmnai.generator.v2.functions.parameter.Task;
+import edu.agh.bpmnai.generator.v2.session.ImmutableSessionState;
 import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
+import edu.agh.bpmnai.generator.v2.session.SessionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.NEW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,10 +29,10 @@ class AddParallelGatewayCallExecutorTest {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     AddParallelGatewayCallExecutor executor;
-
     RetrospectiveSummary aRetrospectiveSummary;
-
     SessionStateStore sessionStateStore;
+    String aSessionId = "ID";
+    SessionStatus aSessionStatus = NEW;
 
     @BeforeEach
     void setUp() {
@@ -37,9 +40,8 @@ class AddParallelGatewayCallExecutorTest {
 
         executor = new AddParallelGatewayCallExecutor(
                 new ToolCallArgumentsParser(mapper, new NullabilityCheck()),
-                sessionStateStore,
-                new InsertElementIntoDiagram(new CheckIfValidInsertionPoint(sessionStateStore)),
-                new NodeIdToModelInterfaceIdFunction(sessionStateStore)
+                new InsertElementIntoDiagram(new CheckIfValidInsertionPoint()),
+                new NodeIdToModelInterfaceIdFunction()
         );
         aRetrospectiveSummary = new RetrospectiveSummary("");
     }
@@ -48,8 +50,12 @@ class AddParallelGatewayCallExecutorTest {
     void correctly_adds_a_gateway_with_two_tasks() throws JsonProcessingException {
         var model = new BpmnModel();
         String predecessorTaskId = model.addTask("task");
-        sessionStateStore.setModelInterfaceId(predecessorTaskId, "task");
-        sessionStateStore.setModel(model);
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .sessionStatus(aSessionStatus)
+                .bpmnModel(model)
+                .putNodeIdToModelInterfaceId(predecessorTaskId, "task")
+                .build();
         ParallelGatewayDto callArguments = new ParallelGatewayDto(
                 aRetrospectiveSummary,
                 "",
@@ -61,10 +67,11 @@ class AddParallelGatewayCallExecutorTest {
                 )
         );
 
-        Result<String, String> executorResult = executor.executeCall(mapper.writeValueAsString(callArguments));
+        Result<FunctionCallResult, String> executorResult =
+                executor.executeCall(mapper.writeValueAsString(callArguments), sessionState);
         assertTrue(executorResult.isOk(), "Result should be OK but is '%s'".formatted(executorResult.getError()));
 
-        BpmnModel modelAfterModification = sessionStateStore.model();
+        BpmnModel modelAfterModification = executorResult.getValue().updatedSessionState().bpmnModel();
         Optional<String> firstTaskId = modelAfterModification.findElementByName("activity1");
         assertTrue(firstTaskId.isPresent());
         Optional<String> secondTaskId = modelAfterModification.findElementByName("activity2");
@@ -89,8 +96,12 @@ class AddParallelGatewayCallExecutorTest {
     void removes_closing_gateway_if_it_has_a_single_predecessor() throws JsonProcessingException {
         var model = new BpmnModel();
         String predecessorTaskId = model.addTask("task");
-        sessionStateStore.setModel(model);
-        sessionStateStore.setModelInterfaceId(predecessorTaskId, "task");
+        var sessionState = ImmutableSessionState.builder()
+                .sessionId(aSessionId)
+                .sessionStatus(aSessionStatus)
+                .bpmnModel(model)
+                .putNodeIdToModelInterfaceId(predecessorTaskId, "task")
+                .build();
         ParallelGatewayDto callArguments = new ParallelGatewayDto(
                 aRetrospectiveSummary,
                 "",
@@ -102,10 +113,11 @@ class AddParallelGatewayCallExecutorTest {
                 )
         );
 
-        Result<String, String> executorResult = executor.executeCall(mapper.writeValueAsString(callArguments));
+        Result<FunctionCallResult, String> executorResult =
+                executor.executeCall(mapper.writeValueAsString(callArguments), sessionState);
         assertTrue(executorResult.isOk(), "Result should be OK but is '%s'".formatted(executorResult.getError()));
 
-        BpmnModel modelAfterModification = sessionStateStore.model();
+        BpmnModel modelAfterModification = executorResult.getValue().updatedSessionState().bpmnModel();
         Optional<String> firstTaskId = modelAfterModification.findElementByName("activity1");
         assertTrue(firstTaskId.isPresent());
         Optional<String> secondTaskId = modelAfterModification.findElementByName("activity2");
