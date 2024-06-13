@@ -57,7 +57,7 @@ class AddXorGatewayCallExecutorTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(checkTaskId, "task")
                 .putNodeIdToModelInterfaceId(checkTaskPredecessorId, "checkTaskPredecessor")
                 .build();
@@ -109,7 +109,7 @@ class AddXorGatewayCallExecutorTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(taskId, "task")
                 .build();
         XorGatewayDto callArguments = new XorGatewayDto(
@@ -161,7 +161,7 @@ class AddXorGatewayCallExecutorTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(predecessorTaskId, "predecessorTask")
                 .putNodeIdToModelInterfaceId(successorTaskId, "successorTask")
                 .build();

@@ -31,7 +31,7 @@ public class SessionService {
         String sessionId = UUID.randomUUID().toString();
         return ImmutableSessionState.builder()
                 .sessionId(sessionId)
-                .bpmnModel(model)
+                .model(model)
                 .addModelContext(chatMessageBuilder.buildSystemMessage(SYSTEM_PROMPT))
                 .putNodeIdToModelInterfaceId(model.getStartEvent(), "start-event")
                 .build();

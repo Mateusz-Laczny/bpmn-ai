@@ -128,10 +128,11 @@ public class AddParallelGatewayCallExecutor implements FunctionCallExecutor {
             return Result.error(insertSubdiagramResult.getError());
         }
 
-        var updatedState =
-                ImmutableSessionState.builder().from(sessionState).bpmnModel(model).nodeIdToModelInterfaceId(
-                        nodeIdToModelInterfaceIdFunction.apply(addedNodesIds, sessionState)).build();
-
+        var updatedState = sessionState.withModel(model);
+        updatedState = updatedState.withNodeIdToModelInterfaceId(nodeIdToModelInterfaceIdFunction.apply(
+                addedNodesIds,
+                updatedState
+        ));
         HumanReadableId subprocessStartNode = new HumanReadableId(
                 model.getName(openingGatewayId).orElseThrow(),
                 updatedState.getModelInterfaceId(openingGatewayId)

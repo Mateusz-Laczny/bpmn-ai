@@ -62,7 +62,7 @@ class AddWhileLoopCallExecutorTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(checkTaskId, "task")
                 .build();
 
@@ -95,7 +95,7 @@ class AddWhileLoopCallExecutorTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(predecessorTaskId, "task")
                 .build();
 

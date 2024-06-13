@@ -93,8 +93,8 @@ public class RemoveNodesCallExecutor implements FunctionCallExecutor {
                 sessionState.nodeIdToModelInterfaceId().entrySet().stream().filter(entry -> !removedNodesIds.contains(
                         entry.getKey())).collect(
                         Collectors.toMap(Entry::getKey, Entry::getValue));
-        ImmutableSessionState updatedState = ImmutableSessionState.builder().from(sessionState)
-                .bpmnModel(model)
+        var updatedState = ImmutableSessionState.builder().from(sessionState)
+                .model(model)
                 .nodeIdToModelInterfaceId(updatedNodeIdToModelInterfaceId)
                 .build();
 

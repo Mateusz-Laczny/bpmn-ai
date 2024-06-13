@@ -67,14 +67,10 @@ public class ModelPostProcessing {
             }
         }
 
-        sessionState =
-                ImmutableSessionState.builder().from(sessionState).bpmnModel(model).nodeIdToModelInterfaceId(
-                        nodeIdToModelInterfaceIdFunction.apply(addedEndEventIds, sessionState)).build();
+        sessionState = ImmutableSessionState.builder().from(sessionState).model(model).nodeIdToModelInterfaceId(
+                updatedNodeIdToModelInterfaceIdMapping).build();
+        return sessionState.withNodeIdToModelInterfaceId(
+                nodeIdToModelInterfaceIdFunction.apply(addedEndEventIds, sessionState));
 
-        return ImmutableSessionState.builder()
-                .from(sessionState)
-                .bpmnModel(model)
-                .nodeIdToModelInterfaceId(updatedNodeIdToModelInterfaceIdMapping)
-                .build();
     }
 }

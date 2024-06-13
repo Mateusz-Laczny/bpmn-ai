@@ -26,7 +26,11 @@ public abstract class SessionState {
 
     public abstract BiMap<String, String> nodeIdToModelInterfaceId();
 
-    public abstract BpmnModel bpmnModel();
+    abstract BpmnModel model();
+
+    public BpmnModel bpmnModel() {
+        return model().getCopy();
+    }
 
     public ChatMessageDto lastAddedMessage() {
         return modelContext().get(modelContext().size() - 1);

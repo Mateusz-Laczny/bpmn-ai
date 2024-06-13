@@ -80,9 +80,7 @@ public class AddSequenceFlowsCallExecutor implements FunctionCallExecutor {
             model.addUnlabelledSequenceFlow(sourceNodeModelId.get(), targetNodeModelId.get());
         }
 
-        ImmutableSessionState updatedState =
-                ImmutableSessionState.builder().from(sessionState).bpmnModel(model).build();
-
+        ImmutableSessionState updatedState = sessionState.withModel(model);
         return Result.ok(new FunctionCallResult(updatedState, "Call successful"));
     }
 }

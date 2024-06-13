@@ -53,7 +53,7 @@ class AddParallelGatewayCallExecutorTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(predecessorTaskId, "task")
                 .build();
         ParallelGatewayDto callArguments = new ParallelGatewayDto(
@@ -99,7 +99,7 @@ class AddParallelGatewayCallExecutorTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(predecessorTaskId, "task")
                 .build();
         ParallelGatewayDto callArguments = new ParallelGatewayDto(

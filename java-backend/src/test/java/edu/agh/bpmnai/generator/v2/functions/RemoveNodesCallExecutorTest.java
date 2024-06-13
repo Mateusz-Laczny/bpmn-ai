@@ -46,7 +46,7 @@ class RemoveNodesCallExecutorTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(taskId, "task")
                 .build();
         RemoveNodesFunctionCallDto callArguments = new RemoveNodesFunctionCallDto(aRetrospectiveSummary, "",

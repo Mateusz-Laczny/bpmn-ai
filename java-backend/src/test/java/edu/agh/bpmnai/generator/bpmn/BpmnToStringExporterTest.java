@@ -27,7 +27,7 @@ class BpmnToStringExporterTest {
         String task2 = model.addTask("task2");
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(task1, "task1")
                 .putNodeIdToModelInterfaceId(task2, "task2")
                 .build();
@@ -47,7 +47,7 @@ class BpmnToStringExporterTest {
         model.addUnlabelledSequenceFlow(task2, task3);
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(task1, "task1")
                 .putNodeIdToModelInterfaceId(task2, "task2")
                 .putNodeIdToModelInterfaceId(task3, "task3")

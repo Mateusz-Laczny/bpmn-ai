@@ -106,9 +106,11 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
             return Result.error(insertElementResult.getError());
         }
 
-        var updatedState =
-                ImmutableSessionState.builder().from(sessionState).bpmnModel(model).nodeIdToModelInterfaceId(
-                        nodeIdToModelInterfaceIdFunction.apply(addedTasks, sessionState)).build();
+        var updatedState = sessionState.withModel(model);
+        updatedState = updatedState.withNodeIdToModelInterfaceId(nodeIdToModelInterfaceIdFunction.apply(
+                addedTasks,
+                updatedState
+        ));
         HumanReadableId subprocessStartNode = new HumanReadableId(
                 model.getName(sequenceStartElementId).orElseThrow(),
                 updatedState.getModelInterfaceId(

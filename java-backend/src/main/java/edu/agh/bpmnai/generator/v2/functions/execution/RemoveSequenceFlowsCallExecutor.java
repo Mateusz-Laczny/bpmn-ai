@@ -114,11 +114,9 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
             }
         }
 
-        ImmutableSessionState updatedSessionState =
-                ImmutableSessionState.builder().from(sessionState).bpmnModel(model).build();
-
+        ImmutableSessionState updatedState = sessionState.withModel(model);
         return Result.ok(new FunctionCallResult(
-                updatedSessionState,
+                updatedState,
                 removedFlowsMessageBuilder.append('\n')
                         .append(missingFlowsMessageBuilder)
                         .toString()

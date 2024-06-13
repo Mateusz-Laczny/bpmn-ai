@@ -118,9 +118,11 @@ public class AddWhileLoopCallExecutor implements FunctionCallExecutor {
             addedNodesIds.add(endEventId);
         }
 
-        var updatedState =
-                ImmutableSessionState.builder().from(sessionState).bpmnModel(model).nodeIdToModelInterfaceId(
-                        nodeIdToModelInterfaceIdFunction.apply(addedNodesIds, sessionState)).build();
+        var updatedState = sessionState.withModel(model);
+        updatedState = updatedState.withNodeIdToModelInterfaceId(nodeIdToModelInterfaceIdFunction.apply(
+                addedNodesIds,
+                updatedState
+        ));
         HumanReadableId subprocessStartNode = new HumanReadableId(
                 model.getName(insertionPointId).orElseThrow(),
                 updatedState.getModelInterfaceId(insertionPointId)

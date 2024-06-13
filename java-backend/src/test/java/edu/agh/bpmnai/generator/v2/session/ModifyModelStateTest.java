@@ -55,7 +55,7 @@ class ModifyModelStateTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(NEW)
-                .bpmnModel(new BpmnModel())
+                .model(new BpmnModel())
                 .build();
 
         ImmutableSessionState sessionStateAfterProcessing = state.process(sessionState);
@@ -89,7 +89,7 @@ class ModifyModelStateTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(NEW)
-                .bpmnModel(new BpmnModel())
+                .model(new BpmnModel())
                 .build();
 
         ImmutableSessionState sessionStateAfterProcessing = state.process(sessionState);
@@ -125,7 +125,7 @@ class ModifyModelStateTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(NEW)
-                .bpmnModel(new BpmnModel())
+                .model(new BpmnModel())
                 .build();
 
         ImmutableSessionState sessionStateAfterProcessing = state.process(sessionState);
@@ -161,7 +161,7 @@ class ModifyModelStateTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(NEW)
-                .bpmnModel(new BpmnModel())
+                .model(new BpmnModel())
                 .build();
         when(mockFunctionExecutionService.executeFunctionCall(
                 any(),

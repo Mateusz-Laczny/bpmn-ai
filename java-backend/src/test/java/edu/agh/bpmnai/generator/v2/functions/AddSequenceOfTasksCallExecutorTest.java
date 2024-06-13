@@ -48,7 +48,7 @@ class AddSequenceOfTasksCallExecutorTest {
         String predecessorTaskId = model.addTask("task");
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(predecessorTaskId, "task")
                 .build();
 
@@ -98,7 +98,7 @@ class AddSequenceOfTasksCallExecutorTest {
         model.addUnlabelledSequenceFlow(gatewayId, secondPathAfterGateway);
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(checkTaskId, "task1")
                 .putNodeIdToModelInterfaceId(gatewayId, "gateway")
                 .putNodeIdToModelInterfaceId(firstPathAfterGateway, "path1")
@@ -145,7 +145,7 @@ class AddSequenceOfTasksCallExecutorTest {
         model.addUnlabelledSequenceFlow(predecessorTaskId, endEvent);
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(predecessorTaskId, "task")
                 .build();
 

@@ -47,7 +47,7 @@ class RemoveSequenceFlowsCallExecutorTest {
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(task1Id, "task-1")
                 .putNodeIdToModelInterfaceId(task2Id, "task-2")
                 .build();

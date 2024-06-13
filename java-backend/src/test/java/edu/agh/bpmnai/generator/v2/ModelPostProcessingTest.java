@@ -37,7 +37,7 @@ class ModelPostProcessingTest {
         model.addUnlabelledSequenceFlow(gateway, successor);
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
-                .bpmnModel(model)
+                .model(model)
                 .putNodeIdToModelInterfaceId(predecessor, "A")
                 .putNodeIdToModelInterfaceId(successor, "B")
                 .putNodeIdToModelInterfaceId(gateway, "Gateway")
@@ -61,7 +61,7 @@ class ModelPostProcessingTest {
         model.addUnlabelledSequenceFlow(gateway, successor);
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
-                .bpmnModel(model)
+                .model(model)
                 .build();
 
         ImmutableSessionState sessionStateAfterPostprocessing = modelPostProcessing.apply(sessionState);
@@ -75,7 +75,7 @@ class ModelPostProcessingTest {
         String task = model.addTask("task");
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
-                .bpmnModel(model)
+                .model(model)
                 .build();
 
         ImmutableSessionState sessionStateAfterPostprocessing = modelPostProcessing.apply(sessionState);
@@ -91,7 +91,7 @@ class ModelPostProcessingTest {
         String endEvent = model.addEndEvent();
         var sessionState = ImmutableSessionState.builder()
                 .sessionId(aSessionId)
-                .bpmnModel(model)
+                .model(model)
                 .build();
 
         ImmutableSessionState sessionStateAfterPostprocessing = modelPostProcessing.apply(sessionState);
