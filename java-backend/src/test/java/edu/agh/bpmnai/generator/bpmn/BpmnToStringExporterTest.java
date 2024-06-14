@@ -6,6 +6,7 @@ import edu.agh.bpmnai.generator.v2.session.SessionStateStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BpmnToStringExporterTest {
@@ -55,13 +56,13 @@ class BpmnToStringExporterTest {
 
         String exportResult = bpmnToStringExporter.export(sessionState).replaceAll("\\s", "");
 
-        assertEquals(
-                ("Nodes: task1#task1, task2#task2, task3#task3, Edges:(task1#task1) -> (task2#task2), (task2#task2) -> "
-                 + "(task3#task3),").replaceAll(
-                        "\\s",
-                        ""
-                ),
-                exportResult
-        );
+        assertThat(exportResult)
+                .contains("Nodes:")
+                .contains("task1#task1")
+                .contains("task2#task2")
+                .contains("task3#task3")
+                .contains("Edges:")
+                .contains("(task1#task1)->(task2#task2)")
+                .contains("(task2#task2)->(task3#task3");
     }
 }

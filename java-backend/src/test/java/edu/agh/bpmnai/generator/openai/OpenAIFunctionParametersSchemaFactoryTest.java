@@ -3,6 +3,7 @@ package edu.agh.bpmnai.generator.openai;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.agh.bpmnai.generator.v2.functions.parameter.Description;
 import jakarta.annotation.Nullable;
 import org.junit.jupiter.api.Test;
 
@@ -16,107 +17,131 @@ class OpenAIFunctionParametersSchemaFactoryTest {
 
     @Test
     void shouldGenerateSchemaForSimpleDto() throws JsonProcessingException {
-        record TestFunctionParametersDto(String someString, Integer someValue) {
-        }
-        JsonNode actualJsonSchema = OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(TestFunctionParametersDto.class);
+        record TestFunctionParametersDto(@Description("Some description 1") String someString,
+                                         @Description("Some description 2") Integer someValue) {}
+        JsonNode actualJsonSchema = OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(
+                TestFunctionParametersDto.class);
 
         JsonNode expectedJsonSchema = mapper.readTree("""
-                {
-                    "type": "object",
-                    "properties": {
-                        "someString": {
-                            "type": "string"
-                        },
-                        "someValue": {
-                            "type": "integer"
-                        }
-                    },
-                    "required": ["someString", "someValue"]
-                }""");
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "someString": {
+                                                            "description": "Some description 1",
+                                                            "type": "string"
+                                                          },
+                                                          "someValue": {
+                                                            "description": "Some description 2",
+                                                            "type": "integer"
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "someString",
+                                                          "someValue"
+                                                        ]
+                                                      }""");
         assertEquals(expectedJsonSchema, actualJsonSchema);
     }
 
     @Test
     void shouldCorrectlyGenerateSchemaForDtoWithOptionalParameters() throws JsonProcessingException {
-        record TestFunctionParametersDto(String someString, @Nullable Integer someValue) {
-        }
-        JsonNode actualJsonSchema = OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(TestFunctionParametersDto.class);
+        record TestFunctionParametersDto(@Description("Some description 1") String someString,
+                                         @Description("Some description 2") @Nullable Integer someValue) {}
+        JsonNode actualJsonSchema = OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(
+                TestFunctionParametersDto.class);
 
         JsonNode expectedJsonSchema = mapper.readTree("""
-                {
-                    "type": "object",
-                    "properties": {
-                        "someString": {
-                            "type": "string"
-                        },
-                        "someValue": {
-                            "type": "integer"
-                        }
-                    },
-                    "required": ["someString"]
-                }""");
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "someString": {
+                                                            "description": "Some description 1",
+                                                            "type": "string"
+                                                          },
+                                                          "someValue": {
+                                                            "description": "Some description 2",
+                                                            "type": "integer"
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "someString"
+                                                        ]
+                                                      }""");
         assertEquals(expectedJsonSchema, actualJsonSchema);
     }
 
     @Test
     void shouldCorrectlyGenerateSchemaForDtoWithEnumParameters() throws JsonProcessingException {
         enum TestEnum {FIRST_VALUE, SECOND_VALUE}
-        record TestFunctionParametersDto(String someString, TestEnum someEnum) {
-        }
-        JsonNode actualJsonSchema = OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(TestFunctionParametersDto.class);
+        record TestFunctionParametersDto(@Description("Some description 1") String someString,
+                                         @Description("Some description 2") TestEnum someEnum) {}
+        JsonNode actualJsonSchema = OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(
+                TestFunctionParametersDto.class);
 
         JsonNode expectedJsonSchema = mapper.readTree("""
-                {
-                    "type": "object",
-                    "properties": {
-                        "someString": {
-                            "type": "string"
-                        },
-                        "someEnum": {
-                            "type": "string",
-                            "enum": ["FIRST_VALUE", "SECOND_VALUE"]
-                        }
-                    },
-                    "required": ["someString", "someEnum"]
-                }""");
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "someString": {
+                                                            "type": "string",
+                                                            "description": "Some description 1"
+                                                          },
+                                                          "someEnum": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "FIRST_VALUE",
+                                                              "SECOND_VALUE"
+                                                            ],
+                                                            "description": "Some description 2"
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "someString",
+                                                          "someEnum"
+                                                        ]
+                                                      }""");
         assertEquals(expectedJsonSchema, actualJsonSchema);
     }
 
     @Test
     void shouldGenerateSchemaForDtoWithListParameters() throws JsonProcessingException {
-        record ListElement(String someString, Integer someValue) {
-        }
-        record TestFunctionParametersDto(List<ListElement> someArray) {
-        }
-        JsonNode actualJsonSchema = OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(TestFunctionParametersDto.class);
+        record ListElement(@Description("Some description 1") String someString,
+                           @Description("Some description 2") Integer someValue) {}
+        record TestFunctionParametersDto(@Description("Some description 3") List<ListElement> someArray) {}
+        JsonNode actualJsonSchema = OpenAIFunctionParametersSchemaFactory.getSchemaForParametersDto(
+                TestFunctionParametersDto.class);
 
         JsonNode expectedJsonSchema = mapper.readTree("""
-                {
-                  "type": "object",
-                  "properties": {
-                    "someArray": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "someString": {
-                            "type": "string"
-                          },
-                          "someValue": {
-                            "type": "integer"
-                          }
-                        },
-                        "required": [
-                          "someString",
-                          "someValue"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "someArray"
-                  ]
-                }""");
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "someArray": {
+                                                            "type": "array",
+                                                            "description": "Some description 3",
+                                                            "items": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "someString": {
+                                                                  "type": "string",
+                                                                  "description": "Some description 1"
+                                                                },
+                                                                "someValue": {
+                                                                  "type": "integer",
+                                                                  "description": "Some description 2"
+                                                                }
+                                                              },
+                                                              "description": "Some description 3",
+                                                              "required": [
+                                                                "someString",
+                                                                "someValue"
+                                                              ]
+                                                            }
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "someArray"
+                                                        ]
+                                                      }""");
         assertEquals(expectedJsonSchema, actualJsonSchema);
     }
 }
