@@ -9,8 +9,8 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>edu.agh.bpmnai</groupId>
-    <artifactId>generator</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <artifactId>llm2bpmn</artifactId>
+    <version>0.0.1</version>
     <name>generator</name>
     <properties>
         <java.version>17</java.version>
