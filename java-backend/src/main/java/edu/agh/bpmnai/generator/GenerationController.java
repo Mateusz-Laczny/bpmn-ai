@@ -54,7 +54,7 @@ public class GenerationController {
         return new NewSessionInfo(newSessionState.sessionId());
     }
 
-    @PostMapping("/sessions/{session-id}/prompts/add")
+    @PostMapping("sessions/{sessionId}/prompts/add")
     public void addPrompt(@PathVariable String sessionId, @RequestBody TextPrompt newPrompt) {
         Optional<ImmutableSessionState> sessionState = sessionStateStore.getSessionState(sessionId);
         if (sessionState.isEmpty()) {
@@ -66,7 +66,7 @@ public class GenerationController {
         sessionStateStore.saveSessionState(sessionService.addPromptToContext(newPrompt.content(), sessionState.get()));
     }
 
-    @PostMapping("/sessions/{session-id}/completions/generate")
+    @PostMapping("sessions/{sessionId}/completions/generate")
     public UserRequestResponse sendMessage(@PathVariable String sessionId) {
         UserRequestResponse response = llmService.getResponse(sessionId);
         fileExporter.exportToFile(bpmnLogFilepath, response.bpmnXml());
