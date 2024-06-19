@@ -307,6 +307,7 @@ public class MockLlmService implements LlmService {
         return new UserRequestResponse(
                 "This is a test response",
                 mockBpmn,
+                FinishReason.OK,
                 Set.of(new NodeModificationLog(0, ModificationType.ADD, new HumanReadableId("Node", "id"), "task")),
                 Set.of(new FlowModificationLog(
                         1,

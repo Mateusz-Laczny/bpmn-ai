@@ -125,7 +125,7 @@ public class DecideWhetherToModifyTheModelState {
 
         if (functionCallResult.getValue().responseToModel() != null) {
             return ImmutableSessionState.builder().from(sessionState)
-                    .sessionStatus(PROMPTING_FINISHED)
+                    .sessionStatus(PROMPTING_FINISHED_OK)
                     .modelContext(updatedModelContext)
                     .addUserFacingMessages(functionCallResult.getValue().responseToModel())
                     .build();

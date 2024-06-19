@@ -1,6 +1,7 @@
 package edu.agh.bpmnai.generator.v2.session;
 
 import com.google.common.collect.BiMap;
+import com.google.common.primitives.UnsignedInteger;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.ChatMessageDto;
 import org.immutables.value.Value;
@@ -30,6 +31,11 @@ public abstract class SessionState {
 
     public BpmnModel bpmnModel() {
         return model().getCopy();
+    }
+
+    @Value.Default
+    public UnsignedInteger numberOfFailedFunctionCalls() {
+        return UnsignedInteger.ZERO;
     }
 
     public ChatMessageDto lastAddedMessage() {

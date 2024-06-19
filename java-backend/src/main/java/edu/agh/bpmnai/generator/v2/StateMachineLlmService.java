@@ -8,7 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import static edu.agh.bpmnai.generator.v2.session.SessionStatus.PROMPTING_FINISHED;
+import static edu.agh.bpmnai.generator.v2.FinishReason.ERROR;
+import static edu.agh.bpmnai.generator.v2.FinishReason.OK;
+import static edu.agh.bpmnai.generator.v2.session.SessionStatus.PROMPTING_FINISHED_OK;
 
 @Service
 @Slf4j
@@ -42,12 +44,13 @@ public class StateMachineLlmService implements LlmService {
     public UserRequestResponse getResponse(String sessionId) {
         ImmutableSessionState sessionState = sessionStateStore.getSessionState(sessionId).orElseThrow();
         String userPrompt = sessionState.lastAddedMessage().content();
-        while (sessionState.sessionStatus() != PROMPTING_FINISHED) {
+        while (!sessionState.sessionStatus().isFinishedStatus()) {
             sessionState = switch (sessionState.sessionStatus()) {
-                case DECIDE_WHETHER_TO_MODIFY_THE_MODEL -> decideWhetherToModifyTheModelState.process(
-                        userPrompt,
-                        sessionState
-                );
+                case DECIDE_WHETHER_TO_MODIFY_THE_MODEL, PROMPTING_FINISHED_OK, PROMPTING_FINISHED_ERROR ->
+                        decideWhetherToModifyTheModelState.process(
+                                userPrompt,
+                                sessionState
+                        );
                 case NEW, REASON_ABOUT_TASKS_AND_PROCESS_FLOW -> reasonAboutTasksAndProcessFlowState.process(
                         userPrompt,
                         sessionState
@@ -56,6 +59,7 @@ public class StateMachineLlmService implements LlmService {
                 default ->
                         throw new IllegalStateException("Unexpected session status '%s'".formatted(sessionState.sessionStatus()));
             };
+
             log.info("New session status: '{}'", sessionState.sessionStatus());
         }
 
@@ -67,6 +71,7 @@ public class StateMachineLlmService implements LlmService {
         return new UserRequestResponse(
                 sessionState.lastUserFacingMessage().orElse(null),
                 layoutedModel.asXmlString(),
+                sessionState.sessionStatus() == PROMPTING_FINISHED_OK ? OK : ERROR,
                 changelogSnapshot.nodeModificationLogs(),
                 changelogSnapshot.flowModificationLogs()
         );

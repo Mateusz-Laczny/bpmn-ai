@@ -59,7 +59,7 @@ class ModifyModelStateTest {
                 .build();
 
         ImmutableSessionState sessionStateAfterProcessing = state.process(sessionState);
-        assertEquals(PROMPTING_FINISHED, sessionStateAfterProcessing.sessionStatus());
+        assertEquals(PROMPTING_FINISHED_OK, sessionStateAfterProcessing.sessionStatus());
     }
 
     @Test

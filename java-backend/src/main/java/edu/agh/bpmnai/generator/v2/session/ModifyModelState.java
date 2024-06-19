@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.session;
 
+import com.google.common.primitives.UnsignedInteger;
 import edu.agh.bpmnai.generator.bpmn.BpmnToStringExporter;
 import edu.agh.bpmnai.generator.datatype.Result;
 import edu.agh.bpmnai.generator.openai.OpenAI;
@@ -32,6 +33,8 @@ public class ModifyModelState {
             Current diagram state:
             %s
             END REQUEST CONTEXT""";
+    private static final UnsignedInteger FAILED_FUNCTION_CALLS_LIMIT = UnsignedInteger.valueOf(10);
+
     private final FunctionExecutionService functionExecutionService;
     private final OpenAIChatCompletionApi chatCompletionApi;
     private final OpenAI.OpenAIModel usedModel;
@@ -83,11 +86,12 @@ public class ModifyModelState {
         if (chatCompletion.toolCalls() == null || chatCompletion.toolCalls().isEmpty()) {
             conversationHistoryStore.appendMessage(chatCompletion.content());
             return ImmutableSessionState.builder().from(sessionState)
-                    .sessionStatus(PROMPTING_FINISHED)
+                    .sessionStatus(PROMPTING_FINISHED_OK)
                     .modelContext(updatedModelContext)
                     .build();
         }
 
+        int numberOfFailedFunctionCalls = 0;
         for (ToolCallDto toolCall : chatCompletion.toolCalls()) {
             log.info("Calling function '{}'", toolCall);
             String calledFunctionName = toolCall.functionCallProperties().name();
@@ -96,6 +100,8 @@ public class ModifyModelState {
                     sessionState
             );
             if (functionCallResult.isError()) {
+                numberOfFailedFunctionCalls += 1;
+
                 log.warn(
                         "Call of function '{}' returned error '{}'",
                         calledFunctionName,
@@ -114,6 +120,16 @@ public class ModifyModelState {
                 );
 
                 updatedModelContext.add(errorResponse);
+
+                if (numberOfFailedFunctionCalls >= FAILED_FUNCTION_CALLS_LIMIT.intValue()) {
+                    log.error("Reached the limit of failed function calls");
+                    updatedModelContext.add(chatMessageBuilder.buildSystemMessage(
+                            "Stop what you are doing and wait for further instructions"));
+                    return ImmutableSessionState.builder()
+                            .from(sessionState)
+                            .sessionStatus(PROMPTING_FINISHED_ERROR)
+                            .build();
+                }
             } else {
                 var successResponse = chatMessageBuilder.buildToolCallResponseMessage(
                         toolCall.id(),

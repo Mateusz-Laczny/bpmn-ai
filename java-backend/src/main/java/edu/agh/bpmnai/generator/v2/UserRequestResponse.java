@@ -8,6 +8,7 @@ import java.util.Set;
 
 public record UserRequestResponse(@Nullable String responseContent,
                                   String bpmnXml,
+                                  FinishReason finishReason,
                                   Set<NodeModificationLog> nodeModificationLogs,
                                   Set<FlowModificationLog> flowModificationLogs) {
 }
