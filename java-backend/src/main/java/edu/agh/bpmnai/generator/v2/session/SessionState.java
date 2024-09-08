@@ -16,6 +16,8 @@ public abstract class SessionState {
 
     public abstract String sessionId();
 
+    public abstract String apiKey();
+
     @Value.Default
     public SessionStatus sessionStatus() {
         return NEW;

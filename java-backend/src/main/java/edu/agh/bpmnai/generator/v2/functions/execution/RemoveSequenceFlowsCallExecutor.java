@@ -60,7 +60,7 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
                 "Following sequence flows are not present in the diagram:\n");
         for (SequenceFlowDto sequenceFlowDto : sequenceFlowDtos) {
             if (!isHumanReadableIdentifier(sequenceFlowDto.source())) {
-                return Result.error("'%s' is not in the correct format".formatted(sequenceFlowDto.source()));
+                return Result.error("'%s' is not in the correct format (name#id)".formatted(sequenceFlowDto.source()));
             }
 
             String sequenceFlowSourceModelFacingId = HumanReadableId.fromString(sequenceFlowDto.source()).id();
@@ -71,7 +71,7 @@ public class RemoveSequenceFlowsCallExecutor implements FunctionCallExecutor {
             }
 
             if (!isHumanReadableIdentifier(sequenceFlowDto.source())) {
-                return Result.error("'%s' is not in the correct format".formatted(sequenceFlowDto.source()));
+                return Result.error("'%s' is not in the correct format (name#id)".formatted(sequenceFlowDto.source()));
             }
 
             String sequenceFlowTargetModelFacingId = HumanReadableId.fromString(sequenceFlowDto.target()).id();

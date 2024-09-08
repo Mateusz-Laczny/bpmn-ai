@@ -51,11 +51,11 @@ public class AddSequenceFlowsCallExecutor implements FunctionCallExecutor {
         BpmnModel model = sessionState.bpmnModel();
         for (SequenceFlowDto sequenceFlow : callArguments.sequenceFlows()) {
             if (!isHumanReadableIdentifier(sequenceFlow.source())) {
-                return Result.error("'%s' is not in the correct id format".formatted(sequenceFlow.source()));
+                return Result.error("'%s' is not in the correct id format (name#id)".formatted(sequenceFlow.source()));
             }
 
             if (!isHumanReadableIdentifier(sequenceFlow.target())) {
-                return Result.error("'%s' is not in the correct id format".formatted(sequenceFlow.target()));
+                return Result.error("'%s' is not in the correct id format (name#id)".formatted(sequenceFlow.target()));
             }
 
             String sourceNodeLlmInterfacingId = HumanReadableId.fromString(sequenceFlow.source()).id();

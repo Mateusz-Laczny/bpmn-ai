@@ -1,5 +1,6 @@
 package edu.agh.bpmnai.generator.v2.session;
 
+import edu.agh.bpmnai.generator.NewSessionRequest;
 import edu.agh.bpmnai.generator.bpmn.model.BpmnModel;
 import edu.agh.bpmnai.generator.v2.ChatMessageBuilder;
 import org.springframework.stereotype.Service;
@@ -25,12 +26,13 @@ public class SessionService {
 
     public SessionService(ChatMessageBuilder chatMessageBuilder) {this.chatMessageBuilder = chatMessageBuilder;}
 
-    public ImmutableSessionState initializeNewSession() {
+    public ImmutableSessionState initializeNewSession(NewSessionRequest sessionInfo) {
         var model = new BpmnModel();
         model.addLabelledStartEvent("Start");
         String sessionId = UUID.randomUUID().toString();
         return ImmutableSessionState.builder()
                 .sessionId(sessionId)
+                .apiKey(sessionInfo.apiKey())
                 .model(model)
                 .addModelContext(chatMessageBuilder.buildSystemMessage(SYSTEM_PROMPT))
                 .putNodeIdToModelInterfaceId(model.getStartEvent(), "start-event")

@@ -65,7 +65,7 @@ public class AddSequenceOfTasksCallExecutor implements FunctionCallExecutor {
         BpmnModel model = sessionState.bpmnModel();
 
         if (!isHumanReadableIdentifier(callArguments.insertionPoint())) {
-            return Result.error("'%s' is not in the correct format".formatted(callArguments.insertionPoint()));
+            return Result.error("'%s' is not in the correct format (name#id)".formatted(callArguments.insertionPoint()));
         }
 
         HumanReadableId insertionPointModelFacingId = HumanReadableId.fromString(callArguments.insertionPoint());

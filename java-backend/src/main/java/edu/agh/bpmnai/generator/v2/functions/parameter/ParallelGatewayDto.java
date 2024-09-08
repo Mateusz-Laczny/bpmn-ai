@@ -13,7 +13,8 @@ public record ParallelGatewayDto(
         @Description("Diagram node after which the subprocess will be inserted. Must "
                      + "exist in the diagram and have exactly 0 or one successors. The subprocess will be inserted "
                      + "between"
-                     + " the insertion point and it's successor.")
+                     + " the insertion point and it's successor. Must be in the name#id format, as provided in the "
+                     + "list of nodes in the request context")
         String insertionPoint,
         @Description("Tasks inside the gateway. In the verb+object naming convention. A gateway must contain at least"
                      + " 2 activities")

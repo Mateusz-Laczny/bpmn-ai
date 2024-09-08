@@ -9,7 +9,8 @@ public record SequenceOfTasksDto(
                      + "be executed in this order, so I will add them as a sequence\"")
         String reasoning,
         @Description("Diagram node after which the subprocess will be inserted.  "
-                     + "Must be a node id which exists in the diagram. Must have exactly 0 or 1 successors.")
+                     + "Must be a node id which exists in the diagram. Must have exactly 0 or 1 successors. Must be "
+                     + "in the name#id format, as provided in the list of nodes in the request context")
         String insertionPoint,
         @Description("Tasks which will be added to the diagram, in the verb+object naming convention. Each "
                      + "task will be connected to the next task via a sequence flow. Last task will be "

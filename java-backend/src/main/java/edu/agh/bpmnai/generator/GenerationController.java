@@ -48,8 +48,8 @@ public class GenerationController {
     }
 
     @PostMapping("sessions/create")
-    public NewSessionInfo createNewSession() {
-        ImmutableSessionState newSessionState = sessionService.initializeNewSession();
+    public NewSessionInfo createNewSession(@RequestBody NewSessionRequest request) {
+        ImmutableSessionState newSessionState = sessionService.initializeNewSession(request);
         sessionStateStore.saveSessionState(newSessionState);
         return new NewSessionInfo(newSessionState.sessionId());
     }
@@ -67,7 +67,9 @@ public class GenerationController {
     }
 
     @PostMapping("sessions/{sessionId}/completions/generate")
-    public UserRequestResponse sendMessage(@PathVariable String sessionId) {
+    public UserRequestResponse sendMessage(
+            @PathVariable String sessionId
+    ) {
         UserRequestResponse response = llmService.getResponse(sessionId);
         fileExporter.exportToFile(bpmnLogFilepath, response.bpmnXml());
         return response;

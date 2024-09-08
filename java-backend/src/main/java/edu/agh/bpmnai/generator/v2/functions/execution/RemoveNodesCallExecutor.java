@@ -65,7 +65,7 @@ public class RemoveNodesCallExecutor implements FunctionCallExecutor {
                 "Following elements are not present in the diagram:\n");
         for (String nodeToRemove : callArguments.nodesToRemove()) {
             if (!isHumanReadableIdentifier(nodeToRemove)) {
-                return Result.error("'%s' is not in the correct format".formatted(nodeToRemove));
+                return Result.error("'%s' is not in the correct format (name#id)".formatted(nodeToRemove));
             }
 
             String nodeToRemoveModelFacingId = HumanReadableId.fromString(nodeToRemove).id();
