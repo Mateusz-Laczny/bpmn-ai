@@ -51,6 +51,7 @@ class AddParallelGatewayCallExecutorTest {
         var model = new BpmnModel();
         String predecessorTaskId = model.addTask("task");
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
                 .model(model)
@@ -97,6 +98,7 @@ class AddParallelGatewayCallExecutorTest {
         var model = new BpmnModel();
         String predecessorTaskId = model.addTask("task");
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
                 .model(model)

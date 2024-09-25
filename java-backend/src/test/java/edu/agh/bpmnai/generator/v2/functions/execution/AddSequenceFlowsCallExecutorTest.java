@@ -40,6 +40,7 @@ class AddSequenceFlowsCallExecutorTest {
         String task1Id = model.addTask("task1");
         String task2Id = model.addTask("task2");
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .model(model)
                 .putNodeIdToModelInterfaceId(task1Id, "task1")

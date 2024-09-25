@@ -36,6 +36,7 @@ class ModelPostProcessingTest {
         model.addUnlabelledSequenceFlow(predecessor, gateway);
         model.addUnlabelledSequenceFlow(gateway, successor);
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .model(model)
                 .putNodeIdToModelInterfaceId(predecessor, "A")
@@ -60,6 +61,7 @@ class ModelPostProcessingTest {
         model.addUnlabelledSequenceFlow(predecessor2, gateway);
         model.addUnlabelledSequenceFlow(gateway, successor);
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .model(model)
                 .build();
@@ -74,6 +76,7 @@ class ModelPostProcessingTest {
     void adds_end_event_to_elements_without_successors() {
         String task = model.addTask("task");
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .model(model)
                 .build();
@@ -90,6 +93,7 @@ class ModelPostProcessingTest {
     void does_not_add_end_event_to_end_event() {
         String endEvent = model.addEndEvent();
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .model(model)
                 .build();

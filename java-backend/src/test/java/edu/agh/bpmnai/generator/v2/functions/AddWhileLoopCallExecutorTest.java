@@ -60,6 +60,7 @@ class AddWhileLoopCallExecutorTest {
                 List.of("task1", "task2")
         );
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
                 .model(model)
@@ -93,6 +94,7 @@ class AddWhileLoopCallExecutorTest {
         BpmnModel model = new BpmnModel();
         String predecessorTaskId = model.addTask("task");
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
                 .model(model)

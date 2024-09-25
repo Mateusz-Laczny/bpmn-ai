@@ -44,6 +44,7 @@ class RemoveNodesCallExecutorTest {
         var model = new BpmnModel();
         String taskId = model.addTask("task");
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
                 .model(model)

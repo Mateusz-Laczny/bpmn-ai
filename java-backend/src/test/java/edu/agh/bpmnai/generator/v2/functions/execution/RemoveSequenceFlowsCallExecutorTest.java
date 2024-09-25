@@ -45,6 +45,7 @@ class RemoveSequenceFlowsCallExecutorTest {
         String task2Id = model.addTask("task2");
         model.addUnlabelledSequenceFlow(task1Id, task2Id);
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
                 .model(model)

@@ -53,6 +53,7 @@ class ModifyModelStateTest {
                 null
         ));
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(NEW)
                 .model(new BpmnModel())
@@ -87,6 +88,7 @@ class ModifyModelStateTest {
                 List.of(toolCall)
         ));
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(NEW)
                 .model(new BpmnModel())
@@ -123,6 +125,7 @@ class ModifyModelStateTest {
                 List.of(toolCall)
         ));
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(NEW)
                 .model(new BpmnModel())
@@ -159,6 +162,7 @@ class ModifyModelStateTest {
                 List.of(toolCall)
         ));
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(NEW)
                 .model(new BpmnModel())

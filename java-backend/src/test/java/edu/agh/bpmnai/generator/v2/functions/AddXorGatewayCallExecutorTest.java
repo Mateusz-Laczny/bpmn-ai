@@ -55,6 +55,7 @@ class AddXorGatewayCallExecutorTest {
         String checkTaskPredecessorId = model.addTask("checkTaskPredecessor");
         model.addUnlabelledSequenceFlow(checkTaskPredecessorId, checkTaskId);
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
                 .model(model)
@@ -107,6 +108,7 @@ class AddXorGatewayCallExecutorTest {
         var model = new BpmnModel();
         String taskId = model.addTask("task");
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
                 .model(model)
@@ -159,6 +161,7 @@ class AddXorGatewayCallExecutorTest {
         String successorTaskId = model.addTask("successorTask");
         model.addUnlabelledSequenceFlow(predecessorTaskId, successorTaskId);
         var sessionState = ImmutableSessionState.builder()
+                .apiKey("123")
                 .sessionId(aSessionId)
                 .sessionStatus(aSessionStatus)
                 .model(model)
