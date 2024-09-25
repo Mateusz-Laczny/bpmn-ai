@@ -1,6 +1,25 @@
 This is the backend part of the application. The frontend part can be
 found [here](https://github.com/Mateusz-Laczny/bpmn-ai-ui).
 
+# Running locally with Docker
+
+To run the application locally with Docker, Docker must be installed on your system.
+
+To build the image, run:
+
+```bash
+docker build -t bpmn-ai-backend .
+```
+
+in the root directory of the repository.
+To run the container, run:
+
+```bash
+docker run -p 8080:8080 bpmn-ai-backend
+```
+
+The application will be available at `localhost:3000`.
+
 # Acknowledgments
 
 This project includes a rewrite of a BPMN layouting algorithm; the original implementation can be
