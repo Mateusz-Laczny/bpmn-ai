@@ -1,3 +1,0 @@
-The description is: The company receives the order, checks the buyer’s credit,
-fulfills the order, and sends an invoice.
-First, create a BPMN model in JSON format for the process happy path:

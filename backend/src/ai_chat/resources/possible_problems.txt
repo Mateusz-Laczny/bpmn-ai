@@ -1,1 +1,0 @@
-Modify the model by including possible problems during the process and how to handle them:
